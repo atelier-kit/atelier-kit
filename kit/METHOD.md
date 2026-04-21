@@ -1,6 +1,6 @@
 # atelier-kit — operating method
 
-atelier-kit helps AI coding agents follow a disciplined, phased workflow inspired by **Research–Plan–Implement (RPI)** and its expanded form (**QRSPI**).  
+atelier-kit helps AI coding agents follow a disciplined workflow inspired by **Research–Plan–Implement (RPI)** and its expanded form (**QRSPI**). The current kit ships a phased workflow and now defines a planner-oriented state model built around epics, tasks, and slices.  
 **Credit:** Dexter Horthy & HumanLayer documented the core ideas; this file is a clean-room workflow description. **This project is not affiliated with HumanLayer.**
 
 ## Principles
@@ -8,9 +8,26 @@ atelier-kit helps AI coding agents follow a disciplined, phased workflow inspire
 1. **Instruction budget:** keep each skill’s `## Instructions` short (≤40 items). Never load every skill at once.
 2. **Isolation in research:** the researcher must not read `.atelier/brief.md` — only `.atelier/artifacts/questions.md`.
 3. **Unified research in stages:** a single `research.md` with three stages — repository mapping (`[repo]`), external technical research (`[tech]`), and market/UX benchmark (`[market]`). Questions are classified upstream so the researcher knows which evidence each answer needs.
-4. **Layered planning:** `design.md` (why/what) → `outline.md` (structure) → `plan.md` (tasks). Separate human review between them.
-5. **Vertical slices:** implement **one slice** end-to-end (stack layers together) before starting the next.
-6. **Human owns merge:** the agent assists review; the developer approves what ships.
+4. **Layered planning:** `design.md` (why/what) → `outline.md` (structure) → `plan.md` (tasks). In planner mode these artifacts become projections of the task graph rather than the only source of truth.
+5. **Tasks before slices:** use tasks to investigate, de-risk, and synthesize. Tasks can be parallel and may cover repository, technical, business, or decision work.
+6. **Vertical slices:** slices remain the delivery primitive. A slice is the end-to-end unit the implementer ships after planning tasks converge.
+7. **Human owns merge:** the agent assists review; the developer approves what ships.
+
+## Planning model
+
+The kit now distinguishes four planning concepts:
+
+- **Epic:** strategic container for a larger initiative, often larger than one iteration.
+- **Task:** planning or execution work item; can represent repo mapping, technical research, business discovery, synthesis, implementation prep, or decisions.
+- **Slice:** a vertical delivery unit produced by planning. Slices should be small enough to ship end-to-end and depend on resolved tasks.
+- **Sprint:** optional scheduling context. A sprint may contain multiple epics or tasks, but it is not the primary planning primitive.
+
+Recommended relationship:
+
+1. User goal opens or updates an **epic**.
+2. Planner creates parallel **tasks** to answer repo, tech, and business questions.
+3. Planner synthesizes those tasks into executable **slices**.
+4. Implementer ships one slice at a time.
 
 ## Phases & trigger phrases
 
@@ -27,7 +44,7 @@ atelier-kit helps AI coding agents follow a disciplined, phased workflow inspire
 | ship | `/ship` | release checklist (project-defined) |
 | learn | `/learn` | `.atelier/artifacts/decision-log.md` |
 
-Use `atelier-kit phase <name>` to force phase when the agent does not auto-select a skill.
+Use `atelier-kit phase <name>` to force phase when the agent does not auto-select a skill. In planner-oriented sessions, `phase` remains useful as an operational lens, but the authoritative planning model can live in `.atelier/context.md` as epics, tasks, and slices.
 
 ## Modes (.atelierrc)
 
@@ -37,7 +54,16 @@ Use `atelier-kit phase <name>` to force phase when the agent does not auto-selec
 
 ## Session state
 
-Authoritative state lives in `.atelier/context.md` (YAML frontmatter + optional notes).  
+Authoritative state lives in `.atelier/context.md` (YAML frontmatter + optional notes). The state now supports:
+
+- `workflow`: `phased` or `planner`
+- `current_epic`, `current_task`, `current_slice`
+- `epics[]`
+- `tasks[]`
+- `slices[]`
+
+This allows teams to preserve the phased workflow while gradually moving planning to task graphs.
+
 CLI: `atelier-kit status`, `atelier-kit return`, `atelier-kit handoff`.
 
 ## Ship checklist (suggested)

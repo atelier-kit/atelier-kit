@@ -2,6 +2,12 @@
 
 Skills-first CLI for **RPI / QRSPI**-style agent workflows. Installs a `.atelier/` directory with **`SKILL.md` skills**, templates, gates, and optional adapters for **Claude Code**, **Cursor**, **Codex CLI**, **Windsurf**, or a **generic** prompt file.
 
+The current workflow is phase-oriented, but the session state can also represent a planner model built around **epics**, **tasks**, and **slices**:
+
+- **epic**: the business or technical initiative being planned
+- **task**: a unit of discovery, analysis, decision, or implementation planning
+- **slice**: a vertical delivery cut derived from planning tasks and executed end-to-end
+
 **Not affiliated with HumanLayer.** See [CREDITS.md](./CREDITS.md).
 
 ## Install
@@ -25,6 +31,25 @@ Answer prompts (agent target + mode). Then:
 2. `atelier-kit phase questions` (or say `/questions` in-agent) — tag each question with `[repo]`, `[tech]`, or `[market]`.
 3. `atelier-kit phase research` — produces a single `research.md` with stages for repo, tech, and market.
 4. Work through phases; use `atelier-kit status` anytime.
+
+## Planning model
+
+atelier-kit can express both a phased workflow and a planner workflow in `.atelier/context.md`.
+
+- **Phased workflow** keeps the current RPI/QRSPI behavior intact.
+- **Planner workflow** keeps the same skills and artifacts, but treats them as support for a task graph instead of the only source of truth.
+
+Recommended relationship between entities:
+
+- **Epic** groups a larger initiative, such as "migrate Python framework to PHP".
+- **Task** captures work needed to understand or sequence the initiative, such as repo mapping, tech feasibility, business impact, or final synthesis.
+- **Slice** is the output of planning: a vertical, executable delivery unit with acceptance checks and dependencies.
+
+In this model:
+
+- tasks answer **what needs to be discovered or decided**
+- slices answer **what can be delivered end-to-end next**
+- phases remain useful as compatibility and operator guidance
 
 ## CLI
 

@@ -96,10 +96,17 @@ export async function cmdInit(
   await writeContext(
     cwd,
     defaultContextMeta({
+      workflow: "phased",
       phase: "brief",
       mode,
       adapter,
       gate_pending: null,
+      current_epic: null,
+      current_task: null,
+      current_slice: null,
+      epics: [],
+      tasks: [],
+      slices: [],
       returns: [],
     }),
   );

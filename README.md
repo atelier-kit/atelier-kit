@@ -34,7 +34,11 @@ Answer prompts (agent target + mode). Then:
 
 ## Planning model
 
-For the full planner architecture and mental model, see [PLANNER.md](./PLANNER.md).
+Planner documentation is now split by purpose:
+
+- [PLANNER.md](./PLANNER.md) — mental model, lifecycle, and planner philosophy
+- [AGENT-USAGE.md](./AGENT-USAGE.md) — how to use the planner from Claude, Cursor, Codex, Windsurf, Cline, Kilo, Anti-GRAVITY, and generic agents
+- [ARCHITECTURE.md](./ARCHITECTURE.md) — internal architecture, state model, runtime, adapters, and artifacts
 
 atelier-kit can express both a phased workflow and a planner workflow in `.atelier/context.md`.
 

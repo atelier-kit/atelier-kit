@@ -10,6 +10,12 @@ This document explains the planner as a product and as an operating model:
 
 The goal is to describe the **mental model** behind the framework, not only the CLI syntax.
 
+Related documents:
+
+- [README.md](./README.md) — entry point and feature summary
+- [AGENT-USAGE.md](./AGENT-USAGE.md) — how to use the planner inside Claude, Cursor, Codex, Windsurf, Cline, Kilo, Anti-GRAVITY, and generic agent setups
+- [ARCHITECTURE.md](./ARCHITECTURE.md) — internal design of state, runtime, adapters, skills, and artifacts
+
 ## What the planner is
 
 The planner is a **control plane for agent work**.

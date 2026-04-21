@@ -16,7 +16,7 @@ alwaysApply: true
 # atelier-kit (Cursor)
 
 1. Read \`.atelier/context.md\` (YAML frontmatter). Use field \`phase\` as the source of truth.
-2. Load the matching skill under \`.cursor/skills/<name>/SKILL.md\` (questions, researcher, designer, planner, implementer, reviewer, chronicler) according to \`phase\` (see \`.atelier/METHOD.md\` mapping).
+2. Load the matching skill under \`.cursor/skills/<name>/SKILL.md\` (questions, researcher, market-researcher, designer, planner, implementer, reviewer, chronicler) according to \`phase\` (see \`.atelier/METHOD.md\` mapping).
 3. Obey skill constraints: **reads** / **produces** only.
 4. Prefer \`atelier-kit phase\` / \`atelier-kit status\` from the terminal when the workspace state must change.
 

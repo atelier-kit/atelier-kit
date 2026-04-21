@@ -23,7 +23,8 @@ Answer prompts (agent target + mode). Then:
 
 1. Edit `.atelier/brief.md`.
 2. `atelier-kit phase questions` (or say `/questions` in-agent).
-3. Work through phases; use `atelier-kit status` anytime.
+3. Optional for external benchmarking: `atelier-kit phase market-research`.
+4. Work through phases; use `atelier-kit status` anytime.
 
 ## CLI
 

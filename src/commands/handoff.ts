@@ -9,6 +9,7 @@ export async function cmdHandoff(cwd: string): Promise<void> {
   const arts = [
     "questions.md",
     "research.md",
+    "market-research.md",
     "design.md",
     "outline.md",
     "plan.md",

@@ -2,11 +2,12 @@
 name: designer
 description: |
   Use when phase is `design` or `outline`, or user says /design, /outline, /approve-design.
-  Read brief + research. Produce design.md then outline.md; no production code.
+  Read brief + repo research + market research. Produce design.md then outline.md; no production code.
 phase: design
 reads:
   - .atelier/brief.md
   - .atelier/artifacts/research.md
+  - .atelier/artifacts/market-research.md
 produces:
   - .atelier/artifacts/design.md
   - .atelier/artifacts/outline.md
@@ -16,7 +17,7 @@ produces:
 
 ## Instructions
 
-1. Read `.atelier/brief.md` and `.atelier/artifacts/research.md` fully first.
+1. Read `.atelier/brief.md`, `.atelier/artifacts/research.md`, and `.atelier/artifacts/market-research.md` fully first.
 2. Build `design.md` using the template sections; keep 150–300 lines.
 3. Anchor "Current state" strictly in research facts.
 4. Express "Desired state" as testable behavior changes.

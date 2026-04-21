@@ -36,7 +36,7 @@ import {
 const program = new Command();
 program
   .name("atelier-kit")
-  .description("Skills-first CLI for RPI/QRSPI-style agent workflows")
+  .description("Planner-first CLI for AI agent workflows")
   .version("0.1.0");
 
 program

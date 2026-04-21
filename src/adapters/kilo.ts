@@ -13,6 +13,7 @@ Read \`.atelier/context.md\` before acting.
 
 - ${plannerStateReminder()}
 - Current skill: ${currentSkill}
+- Treat planner mode as the primary operating model.
 - Skills live under \`.atelier/skills/\` and mirrored adapter folders when present.
 - Full protocol: \`${join(".atelier", "METHOD.md")}\`.
 
@@ -21,7 +22,7 @@ ${plannerCommandProtocol()}
 
   const rule = `# atelier-kit rule
 
-Always read \`.atelier/context.md\` first and follow the active planner or phase skill.
+Always read \`.atelier/context.md\` first and follow the active planner skill implied by current state.
 
 Current skill: ${currentSkill}
 

@@ -24,7 +24,7 @@ export async function applyGeneric(
     }
   }
 
-  const out = `atelier-kit — generated system prompt (generic adapter)
+  const out = `atelier-kit — generated planner prompt (generic adapter)
 Not affiliated with HumanLayer.
 
 === .atelier/context.md (authoritative) ===

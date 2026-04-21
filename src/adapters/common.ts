@@ -15,5 +15,5 @@ export function plannerCommandProtocol(): string {
 }
 
 export function plannerStateReminder(): string {
-  return "Use `workflow`, `phase`, `current_task`, and `current_slice` together as the state machine.";
+  return "Use `workflow`, `planner_mode`, `planner_state`, `approval_status`, `current_task`, and `current_slice` together as the state machine.";
 }

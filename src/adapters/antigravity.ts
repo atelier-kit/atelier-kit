@@ -10,13 +10,13 @@ Read \`.atelier/context.md\` first. ${plannerStateReminder()}
 
 Active state:
 - workflow: ${meta.workflow}
-- phase: ${meta.phase}
+- planner_state: ${meta.planner_state}
 - current_task: ${meta.current_task ?? "—"}
 - current_slice: ${meta.current_slice ?? "—"}
 
 ${plannerCommandProtocol()}
 
-Always re-read \`.atelier/context.md\` after running planner or phase commands.
+Always re-read \`.atelier/context.md\` after running planner commands.
 `;
 
   await writeText(`${cwd}/AGENTS.md`, body);

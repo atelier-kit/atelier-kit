@@ -10,13 +10,12 @@ export async function applyClaude(cwd: string, atelier: string): Promise<void> {
 
   const md = `# atelier-kit (Claude Code)
 
-Before any tool use or code change, read \`.atelier/context.md\` (frontmatter) to learn the current **workflow** and **phase**.
+Before any tool use or code change, read \`.atelier/context.md\` (frontmatter) to learn the current planner state.
 
-- Skills are vendored into \`.claude/skills/\` — in phased workflow, follow the \`SKILL.md\` for the active phase.
-- In planner workflow, prefer the skill implied by \`.atelier/context.md → current_task\` and that task's type.
+- Skills are vendored into \`.claude/skills/\`.
+- Prefer the skill implied by \`.atelier/context.md → current_task\`, \`current_slice\`, and planner state.
 - ${plannerStateReminder()}
 - Full operating contract: \`.atelier/METHOD.md\`.
-- User may say \`/research\`, \`/design\`, etc. — treat those as explicit phase intent triggers.
 
 ${plannerCommandProtocol()}
 

@@ -10,16 +10,16 @@ export async function applyCursor(cwd: string, atelier: string): Promise<void> {
   await cp(skillsSrc, destSkills, { recursive: true });
 
   const mdc = `---
-description: atelier-kit — always read session workflow state from .atelier/context.md before acting
+description: atelier-kit — always read planner state from .atelier/context.md before acting
 alwaysApply: true
 ---
 
 # atelier-kit (Cursor)
 
-1. Read \`.atelier/context.md\` (YAML frontmatter). Use \`workflow\`, \`phase\`, \`current_task\`, and \`current_slice\` as the source of truth.
-2. When \`workflow=planner\` and \`current_task\` is set, derive the active skill from that task type. Otherwise map skill by \`phase\` (see \`.atelier/METHOD.md\`).
+1. Read \`.atelier/context.md\` (YAML frontmatter). Use \`workflow\`, \`planner_mode\`, \`planner_state\`, \`current_task\`, and \`current_slice\` as the source of truth.
+2. Derive the active skill from planner state: current task type during planning, planner skill while awaiting approval, implementer during execution with an active slice.
 3. Obey skill constraints: **reads** / **produces** only.
-4. Prefer \`atelier-kit planner ...\`, \`atelier-kit phase\`, and \`atelier-kit status\` from the terminal when the workspace state must change.
+4. Prefer \`atelier-kit planner ...\` and \`atelier-kit status\` from the terminal when the workspace state must change.
 
 ${plannerStateReminder()}
 

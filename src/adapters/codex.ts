@@ -21,16 +21,15 @@ You are operating under **atelier-kit**. This repository is not affiliated with 
 - ${plannerStateReminder()}
 - Active skill file (if any): \`${skillPath}\`
   - When a skill applies, follow **only** that \`SKILL.md\` plus \`.atelier/METHOD.md\`.
-  - Ignore other skills' bodies unless the user changes the planner focus or runs \`atelier-kit phase <name>\`.
+  - Ignore other skills' bodies unless the user changes planner state or planner focus.
 
 ## Constraints
 
 - Respect **reads** / **produces** in the skill frontmatter.
-- Researcher phase: never read \`.atelier/brief.md\`.
 
 ## Updates
 
-When the user changes phase or planner focus, re-read \`.atelier/context.md\` before continuing.
+When the user changes planner state or planner focus, re-read \`.atelier/context.md\` before continuing.
 
 ## Planner entry commands
 

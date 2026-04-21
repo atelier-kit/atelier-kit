@@ -13,9 +13,10 @@ export async function cmdStatus(cwd: string): Promise<void> {
 
   console.log(pc.bold("Session"));
   console.log(`  workflow:       ${pc.cyan(meta.workflow)}`);
-  console.log(`  phase:          ${pc.cyan(meta.phase)}`);
+  console.log(`  planner_mode:   ${meta.planner_mode}`);
   console.log(`  planner_state:  ${meta.planner_state}`);
   console.log(`  approval:       ${meta.approval_status}`);
+  console.log(`  phase_lens:     ${pc.cyan(meta.phase)}`);
   console.log(`  gate_pending:   ${meta.gate_pending ?? "—"}`);
   console.log(`  current_epic:   ${meta.current_epic ?? "—"}`);
   console.log(`  current_task:   ${meta.current_task ?? "—"}`);

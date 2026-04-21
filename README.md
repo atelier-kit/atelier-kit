@@ -5,11 +5,8 @@ Skills-first CLI for AI coding workflows. Installs a `.atelier/` directory with
 **Cursor**, **Codex CLI**, **Windsurf**, **Cline**, **Kilo**, **Anti-GRAVITY**, or a
 **generic** prompt file.
 
-atelier-kit currently supports **two operating models**:
-
-- **Planner workflow** — the newer control-plane model built around epics, tasks, slices,
-  approval, and execution
-- **Phased workflow** — the older RPI / QRSPI-style flow kept for compatibility
+atelier-kit is now designed as a **planner-first framework** built around epics, tasks,
+slices, approval, and execution.
 
 In planner workflow, the key primitives are:
 
@@ -31,7 +28,7 @@ npx atelier-kit@latest init
 
 ### Planner-first quickstart
 
-This is the recommended path when you want the framework to act like a planner.
+This is the primary product experience.
 
 ```bash
 cd your-repo
@@ -49,24 +46,6 @@ This path:
 3. generates `.atelier/artifacts/plan.md`
 4. stops for approval before implementation
 
-### Phased quickstart
-
-Use this only if you explicitly want the older phased workflow.
-
-```bash
-cd your-repo
-npx atelier-kit init
-```
-
-Then:
-
-1. Edit `.atelier/brief.md`.
-2. `atelier-kit phase questions` (or say `/questions` in-agent) — tag each question with `[repo]`, `[tech]`, or `[market]`.
-3. `atelier-kit phase research` — produces a single `research.md` with stages for repo, tech, and market.
-4. Work through phases; use `atelier-kit status` anytime.
-
-`brief.md` belongs to the phased workflow. It is **not required** for the planner-first flow.
-
 ## Planning model
 
 Planner documentation is now split by purpose:
@@ -75,11 +54,11 @@ Planner documentation is now split by purpose:
 - [AGENT-USAGE.md](./AGENT-USAGE.md) — how to use the planner from Claude, Cursor, Codex, Windsurf, Cline, Kilo, Anti-GRAVITY, and generic agents
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — internal architecture, state model, runtime, adapters, and artifacts
 
-atelier-kit can express both a phased workflow and a planner workflow in `.atelier/context.md`.
+atelier-kit uses a planner-oriented runtime in `.atelier/context.md`.
 
-- **Planner workflow** is the primary planning model.
-- **Phased workflow** keeps the older RPI/QRSPI behavior intact for teams that still want it.
-- In planner workflow, artifacts support the graph; they are not the only source of truth.
+- The planner workflow is the product's primary operating model.
+- Artifacts support the graph; they are not the only source of truth.
+- `phase` still exists in the runtime, but as an operational compatibility field rather than the main planning abstraction.
 
 Recommended relationship between entities:
 
@@ -169,15 +148,12 @@ After every state-changing command, the agent is instructed to re-read `.atelier
 | Command | Purpose |
 |---------|---------|
 | `atelier-kit init` | Create `.atelier/` + install adapter |
-| `atelier-kit phase <name>` | Set `phase` in `.atelier/context.md` |
 | `atelier-kit status` | Print session state |
-| `atelier-kit return <phase> --reason "..."` | Roll back with recorded reason |
 | `atelier-kit mode quick\|standard\|deep` | Default mode in `.atelierrc` |
 | `atelier-kit handoff` | Dump context + artifact excerpts |
 | `atelier-kit doctor` | Run all validators |
-| `atelier-kit validate <phase>` | Validate one phase |
 | `atelier-kit install-adapter <name>` | Switch adapter outputs |
-| `atelier-kit planner workflow <phased\|planner>` | Switch workflow model |
+| `atelier-kit planner workflow <planner>` | Switch workflow model |
 | `atelier-kit planner start "<goal>"` | Create an epic and starter tasks from a goal |
 | `atelier-kit planner autoplan "<goal>"` | Run planning automatically until a final plan is ready for approval |
 | `atelier-kit planner present` | Print the current final plan summary for human validation |

@@ -14,7 +14,7 @@ export async function applyCline(cwd: string, atelier: string): Promise<void> {
 Read \`.atelier/context.md\` before acting.
 
 - ${plannerStateReminder()}
-- Follow the skill implied by the current planner state or active phase.
+- Follow the skill implied by the current planner state.
 - Full protocol: \`.atelier/METHOD.md\`.
 
 ${plannerCommandProtocol()}

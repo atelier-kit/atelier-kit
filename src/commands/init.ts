@@ -1,6 +1,6 @@
 import prompts from "prompts";
 import pc from "picocolors";
-import { cp, mkdir, readFile } from "node:fs/promises";
+import { cp, mkdir, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { getKitRoot } from "../paths.js";
 import { atelierDir, writeText } from "../fs-utils.js";
@@ -57,16 +57,7 @@ export async function cmdInit(
 
   await cp(kit, dest, { recursive: true });
 
-  const briefTplPath = join(kit, "templates", "brief.md");
-  try {
-    const briefTpl = await readFile(briefTplPath, "utf8");
-    await writeText(join(dest, "brief.md"), briefTpl);
-  } catch {
-    await writeText(
-      join(dest, "brief.md"),
-      "# Brief\n\n## Goal\n\n## Acceptance criteria\n\n## Out of scope\n\n## Constraints\n",
-    );
-  }
+  await rm(join(dest, "brief.md"), { force: true }).catch(() => {});
 
   const artFiles = [
     "questions.md",
@@ -79,6 +70,13 @@ export async function cmdInit(
     "decision-log.md",
   ];
   for (const f of artFiles) {
+    if (f === "questions.md" || f === "research.md") {
+      await writeText(
+        join(dest, "artifacts", f),
+        `# ${f.replace(".md", "")}\n\n_Optional in planner-first mode._\n`,
+      );
+      continue;
+    }
     const p = join(kit, "templates", f);
     try {
       const body = await readFile(p, "utf8");
@@ -99,8 +97,11 @@ export async function cmdInit(
   await writeContext(
     cwd,
     defaultContextMeta({
-      workflow: "phased",
-      phase: "brief",
+      workflow: "planner",
+      planner_mode: "autoplan",
+      planner_state: "idle",
+      approval_status: "none",
+      phase: "plan",
       mode,
       adapter,
       gate_pending: null,
@@ -120,7 +121,7 @@ export async function cmdInit(
   console.log(pc.dim(`Adapter: ${adapter}, mode: ${mode}`));
   console.log(
     pc.dim(
-      "Next: edit .atelier/brief.md, then: atelier-kit phase questions",
+      'Next: run `atelier-kit planner autoplan "your goal"`',
     ),
   );
 }

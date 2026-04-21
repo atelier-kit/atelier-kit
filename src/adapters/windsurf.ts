@@ -34,14 +34,14 @@ Not affiliated with HumanLayer.
 ---
 
 ## Current workflow: ${meta.workflow}
-## Current phase: ${meta.phase}
+## Planner state: ${meta.planner_state}
 ## Current task: ${meta.current_task ?? "—"}
 
-${folder ? `### Embedded skill (\`${folder}\`)\n\n${skillSnippet}` : "### No per-phase SKILL file (brief/ship/learn or follow METHOD)"}
+${folder ? `### Embedded skill (\`${folder}\`)\n\n${skillSnippet}` : "### No planner skill resolved; follow METHOD and context state"}
 
 ---
 
-When planner focus changes, the user should run \`atelier-kit planner focus ...\` or \`atelier-kit phase <name>\` then continue.
+When planner focus changes, the user should run \`atelier-kit planner ...\` commands and then continue from the refreshed state.
 `;
 
   await writeText(join(cwd, ".windsurfrules"), rules);

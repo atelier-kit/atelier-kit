@@ -145,17 +145,18 @@ Slices are used to **deliver vertical value**.
 - tasks answer: **what do we need to learn or decide?**
 - slices answer: **what can we deliver end-to-end next?**
 
-## Why phases still exist
+## Why `phase` still exists internally
 
-The planner does not delete the original phase model.
+The redesigned product is planner-first.
 
-`phase` still matters because:
+`phase` remains in the runtime as an internal compatibility and routing field because:
 
-- it remains a compatibility layer for older RPI/QRSPI flows
 - it helps adapters and skills load the right behavior
 - it communicates the current operating lens (`plan`, `implement`, `review`, ...)
+- it keeps a small amount of backward-compatible structure in the state machine
 
-But in planner workflow, `phase` is no longer the primary source of truth.
+But in planner workflow, `phase` is not the primary source of truth and should not be
+treated as the product's main mental model.
 
 The real source of truth becomes:
 

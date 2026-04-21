@@ -1,8 +1,13 @@
 # atelier-kit — operating method
 
-atelier-kit helps AI coding agents follow a disciplined workflow inspired by **Research–Plan–Implement (RPI)** and its expanded form (**QRSPI**). The current kit ships **two compatible workflows**:
-- a legacy **phased workflow** centered on `brief -> questions -> research -> design -> ...`
-- a newer **planner workflow** centered on goals, tasks, slices, approval, and execution
+atelier-kit is a planner-first operating model for AI coding agents.
+
+Its core job is to turn a raw goal into:
+
+1. discovery tasks
+2. synthesized execution slices
+3. a human-reviewable plan
+4. approval-gated execution
 
 The planner-oriented state model is built around epics, tasks, and slices.  
 **Credit:** Dexter Horthy & HumanLayer documented the core ideas; this file is a clean-room workflow description. **This project is not affiliated with HumanLayer.**
@@ -17,37 +22,18 @@ The planner-oriented state model is built around epics, tasks, and slices.
 6. **Vertical slices:** slices remain the delivery primitive. A slice is the end-to-end unit the implementer ships after planning tasks converge.
 7. **Human owns merge:** the agent assists review; the developer approves what ships.
 
-## Workflow modes
+## Planner operating model
 
-### 1. Phased workflow
+The primary path is:
 
-This is the original RPI/QRSPI-oriented path:
+1. receive a goal
+2. create discovery tasks
+3. synthesize slices
+4. generate `plan.md`
+5. stop for approval
+6. execute slices after approval
 
-- `brief`
-- `questions`
-- `research`
-- `design`
-- `outline`
-- `plan`
-- `implement`
-- `review`
-
-Use this when you want a document-first, phase-gated workflow.
-
-### 2. Planner workflow
-
-This is the newer goal-first path:
-
-- receive a goal
-- create tasks
-- synthesize slices
-- generate `plan.md`
-- stop for approval
-- execute slices after approval
-
-Use this when you want a planner/control-plane experience rather than a document-first phase flow.
-
-The two workflows can coexist in the same repository, but they are **not the same operating model**.
+This is the product's intended workflow.
 
 ## Planning model
 
@@ -97,7 +83,7 @@ Agent trigger protocol:
 - `/slice start` -> run `atelier-kit planner next` and continue if a slice becomes active
 - After every mutating planner command, re-read `.atelier/context.md` before proceeding
 
-## Phases & trigger phrases
+## Phases as compatibility lenses
 
 | Phase | Typical triggers | Primary artifact(s) |
 |-------|------------------|---------------------|
@@ -112,7 +98,7 @@ Agent trigger protocol:
 | ship | `/ship` | release checklist (project-defined) |
 | learn | `/learn` | `.atelier/artifacts/decision-log.md` |
 
-Use `atelier-kit phase <name>` to force phase when the agent does not auto-select a skill. In planner-oriented sessions, `phase` remains useful as an operational lens, but the authoritative planning model lives in `.atelier/context.md` as goals, epics, tasks, slices, planner mode, planner state, and approval state.
+`phase` still exists internally because it helps skills, adapters, and older tooling resolve the right behavior. In the redesigned planner-first product, however, the authoritative planning model lives in `.atelier/context.md` as goals, epics, tasks, slices, planner mode, planner state, and approval state.
 
 ## Modes (.atelierrc)
 
@@ -133,7 +119,7 @@ Authoritative state lives in `.atelier/context.md` (YAML frontmatter + optional 
 - `tasks[]`
 - `slices[]`
 
-This allows teams to preserve the phased workflow while gradually moving planning to task graphs.
+This state model exists to support the planner-first runtime. Any older phase-oriented behavior should be understood as an implementation detail or compatibility layer, not as the product's main workflow.
 
 Read [../PLANNER.md](../PLANNER.md) for the full mental model, lifecycle, and architectural boundaries of planner mode.
 

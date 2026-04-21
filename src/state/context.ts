@@ -38,7 +38,11 @@ export function defaultContextMeta(
 ): ContextMeta {
   return ContextMetaSchema.parse({
     atelier_context_version: 1,
-    phase: "brief",
+    workflow: "planner",
+    planner_mode: "autoplan",
+    planner_state: "idle",
+    approval_status: "none",
+    phase: "plan",
     updated_at: new Date().toISOString(),
     returns: [],
     ...partial,

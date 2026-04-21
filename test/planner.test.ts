@@ -8,8 +8,12 @@ import {
   addEpic,
   addSlice,
   addTask,
+  advancePlanner,
   focusTask,
+  generatePlannerSlices,
+  markCurrentDone,
   setWorkflow,
+  startPlannerGoal,
   updateTask,
 } from "../src/state/planner.js";
 import { activeSkillFolder } from "../src/skill-loader.js";
@@ -151,5 +155,35 @@ describe("planner state helpers", () => {
     });
 
     expect(activeSkillFolder(meta)).toBe("implementer");
+  });
+
+  test("planner start creates initial flow and next/done advance it", async () => {
+    await startPlannerGoal(dir, "Migrate Python framework to PHP");
+    let state = await readContext(dir);
+    expect(state.meta.workflow).toBe("planner");
+    expect(state.meta.current_task).toBe("migrate-python-framework-to-php-repo");
+    expect(activeSkillFolder(state.meta)).toBe("repo-analyst");
+
+    await markCurrentDone(dir);
+    state = await readContext(dir);
+    expect(state.meta.current_task).toBe("migrate-python-framework-to-php-tech");
+    expect(activeSkillFolder(state.meta)).toBe("tech-analyst");
+
+    await markCurrentDone(dir);
+    await markCurrentDone(dir);
+    state = await readContext(dir);
+    expect(state.meta.current_task).toBe("migrate-python-framework-to-php-synthesis");
+    expect(activeSkillFolder(state.meta)).toBe("planner");
+
+    await markCurrentDone(dir);
+    state = await readContext(dir);
+    expect(state.meta.slices.length).toBeGreaterThan(0);
+    expect(state.meta.current_slice).toBe("migrate-python-framework-to-php-slice-1");
+    expect(state.meta.phase).toBe("implement");
+
+    await advancePlanner(dir);
+    await generatePlannerSlices(dir);
+    state = await readContext(dir);
+    expect(state.meta.current_slice).toBe("migrate-python-framework-to-php-slice-1");
   });
 });

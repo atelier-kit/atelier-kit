@@ -1,6 +1,6 @@
 # atelier-kit
 
-Skills-first CLI for **RPI / QRSPI**-style agent workflows. Installs a `.atelier/` directory with **`SKILL.md` skills**, templates, gates, and optional adapters for **Claude Code**, **Cursor**, **Codex CLI**, **Windsurf**, or a **generic** prompt file.
+Skills-first CLI for **RPI / QRSPI**-style agent workflows. Installs a `.atelier/` directory with **`SKILL.md` skills**, templates, gates, and optional adapters for **Claude Code**, **Cursor**, **Codex CLI**, **Windsurf**, **Cline**, **Kilo**, **Anti-GRAVITY**, or a **generic** prompt file.
 
 The current workflow is phase-oriented, but the session state can also represent a planner model built around **epics**, **tasks**, and **slices**:
 
@@ -54,13 +54,11 @@ In this model:
 ### Planner workflow example
 
 ```bash
-atelier-kit workflow planner
-atelier-kit epic add python-to-php "Migrate Python framework to PHP" --goal "Preserve incremental delivery"
-atelier-kit task add repo-discovery python-to-php repo "Map current framework coupling"
-atelier-kit task add tech-feasibility python-to-php tech "Compare PHP framework candidates"
-atelier-kit task add business-impact python-to-php business "Capture rollout and team impact"
-atelier-kit task focus tech-feasibility
-atelier-kit slice add auth-migration python-to-php "Migrate authentication vertically" --goal "Login/session/authz in PHP" --from-task tech-feasibility
+atelier-kit planner start "Migrate Python framework to PHP"
+atelier-kit planner next
+atelier-kit planner done
+atelier-kit planner generate-slices
+atelier-kit planner slice focus migrate-python-framework-to-php-slice-1
 atelier-kit status
 ```
 
@@ -73,12 +71,31 @@ In planner mode, the active skill is derived from the focused task:
 - `implementation` -> `implementer`
 - `decision` -> `designer`
 
+### Triggering the planner from an agent
+
+All supported adapters now share the same textual protocol. Inside the agent, you can say:
+
+```text
+/planner migrate Python framework to PHP
+/planner next
+/planner done
+/planner status
+```
+
+The adapter instructions tell the agent to translate those commands into:
+
+- `atelier-kit planner start "<goal>"`
+- `atelier-kit planner next`
+- `atelier-kit planner done`
+- `atelier-kit status`
+
+After every state-changing command, the agent is instructed to re-read `.atelier/context.md` and continue with the newly active skill.
+
 ## CLI
 
 | Command | Purpose |
 |---------|---------|
 | `atelier-kit init` | Create `.atelier/` + install adapter |
-| `atelier-kit workflow <phased|planner>` | Switch workflow model in `.atelier/context.md` |
 | `atelier-kit phase <name>` | Set `phase` in `.atelier/context.md` |
 | `atelier-kit status` | Print session state |
 | `atelier-kit return <phase> --reason "..."` | Roll back with recorded reason |
@@ -87,9 +104,15 @@ In planner mode, the active skill is derived from the focused task:
 | `atelier-kit doctor` | Run all validators |
 | `atelier-kit validate <phase>` | Validate one phase |
 | `atelier-kit install-adapter <name>` | Switch adapter outputs |
-| `atelier-kit epic <add|update|focus>` | Manage planner epics |
-| `atelier-kit task <add|update|focus>` | Manage planner tasks |
-| `atelier-kit slice <add|update|focus>` | Manage planner slices |
+| `atelier-kit planner workflow <phased\|planner>` | Switch workflow model |
+| `atelier-kit planner start "<goal>"` | Create an epic and starter tasks from a goal |
+| `atelier-kit planner next` | Advance focus to the next ready task or slice |
+| `atelier-kit planner done` | Mark the current task or slice done and advance |
+| `atelier-kit planner generate-slices` | Generate initial slices from completed synthesis work |
+| `atelier-kit planner sync-phase` | Recompute phase from planner focus |
+| `atelier-kit planner epic <add\|update\|focus>` | Manage planner epics |
+| `atelier-kit planner task <add\|update\|focus>` | Manage planner tasks |
+| `atelier-kit planner slice <add\|update\|focus>` | Manage planner slices |
 
 ## Compatibility
 
@@ -99,6 +122,9 @@ In planner mode, the active skill is derived from the focused task:
 | Cursor | `.cursor/skills/` + `.cursor/rules/atelier-core.mdc` |
 | Codex CLI | `AGENTS.md` |
 | Windsurf | `.windsurfrules` |
+| Cline | `.clinerules/atelier.md` |
+| Kilo | `.kilocode/rules/atelier.md` + `AGENTS.md` |
+| Anti-GRAVITY | `.agent/rules/atelier.md` + `AGENTS.md` |
 | Generic | `atelier-system-prompt.txt` |
 
 ## License

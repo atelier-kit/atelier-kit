@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { readContext } from "../state/context.js";
 import { writeText } from "../fs-utils.js";
 import { activeSkillFolder } from "../skill-loader.js";
+import { plannerCommandProtocol, plannerStateReminder } from "./common.js";
 
 export async function applyWindsurf(
   cwd: string,
@@ -26,8 +27,9 @@ Not affiliated with HumanLayer.
 
 ## Global
 
-- Authoritative session state: \`.atelier/context.md\` (YAML). Use \`workflow\`, \`current_task\`, and \`phase\` together.
+- Authoritative session state: \`.atelier/context.md\` (YAML). ${plannerStateReminder()}
 - Full protocol: \`.atelier/METHOD.md\`.
+- ${plannerCommandProtocol()}
 
 ---
 

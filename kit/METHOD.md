@@ -31,12 +31,26 @@ Recommended relationship:
 
 Operational commands for planner mode:
 
-- `atelier-kit workflow planner`
-- `atelier-kit epic add <id> --title "..." [--goal "..."]`
-- `atelier-kit task add <id> --epic <epic-id> --type repo|tech|business|synthesis|implementation|decision --title "..."`
-- `atelier-kit slice add <id> --epic <epic-id> --title "..." --goal "..."`
-- `atelier-kit focus epic|task|slice <id>`
-- `atelier-kit workflow phased`
+- `atelier-kit planner workflow planner`
+- `atelier-kit planner start "<goal>"`
+- `atelier-kit planner next`
+- `atelier-kit planner done`
+- `atelier-kit planner generate-slices`
+- `atelier-kit planner sync-phase`
+- `atelier-kit planner epic add --id <id> --title "..." [--goal "..."]`
+- `atelier-kit planner task add --id <id> --epic <epic-id> --type repo|tech|business|synthesis|implementation|decision --title "..."`
+- `atelier-kit planner slice add --id <id> --epic <epic-id> --title "..." --goal "..."`
+- `atelier-kit planner epic|task|slice focus <id>`
+- `atelier-kit planner workflow phased`
+
+Agent trigger protocol:
+
+- `/planner <goal>` -> run `atelier-kit planner start "<goal>"`
+- `/planner next` -> run `atelier-kit planner next`
+- `/planner done` -> run `atelier-kit planner done`
+- `/planner status` -> run `atelier-kit status`
+- `/slice start` -> run `atelier-kit planner next` and continue if a slice becomes active
+- After every mutating planner command, re-read `.atelier/context.md` before proceeding
 
 ## Phases & trigger phrases
 

@@ -5,6 +5,9 @@ export const AdapterSchema = z.enum([
   "cursor",
   "codex",
   "windsurf",
+  "cline",
+  "kilo",
+  "antigravity",
   "generic",
 ]);
 

@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { readContext } from "../state/context.js";
 import { writeText } from "../fs-utils.js";
 import { activeSkillFolder } from "../skill-loader.js";
+import { plannerCommandProtocol } from "./common.js";
 
 export async function applyGeneric(
   cwd: string,
@@ -37,6 +38,9 @@ returns: ${meta.returns.length}
 
 === METHOD.md ===
 ${method}
+
+=== Planner commands ===
+${plannerCommandProtocol()}
 
 === Active skill (${folder ?? "none"}) ===
 ${skillBody || "(follow METHOD.md only)"}

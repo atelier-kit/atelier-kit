@@ -1,6 +1,7 @@
 import { cp } from "node:fs/promises";
 import { join } from "node:path";
 import { ensureDir, writeText } from "../fs-utils.js";
+import { plannerCommandProtocol, plannerStateReminder } from "./common.js";
 
 export async function applyCursor(cwd: string, atelier: string): Promise<void> {
   const skillsSrc = join(atelier, "skills");
@@ -19,6 +20,10 @@ alwaysApply: true
 2. When \`workflow=planner\` and \`current_task\` is set, derive the active skill from that task type. Otherwise map skill by \`phase\` (see \`.atelier/METHOD.md\`).
 3. Obey skill constraints: **reads** / **produces** only.
 4. Prefer \`atelier-kit planner ...\`, \`atelier-kit phase\`, and \`atelier-kit status\` from the terminal when the workspace state must change.
+
+${plannerStateReminder()}
+
+${plannerCommandProtocol()}
 
 Full protocol: \`.atelier/METHOD.md\`.
 `;

@@ -2,6 +2,7 @@ import { join } from "node:path";
 import { readContext } from "../state/context.js";
 import { writeText } from "../fs-utils.js";
 import { activeSkillFolder } from "../skill-loader.js";
+import { plannerCommandProtocol, plannerStateReminder } from "./common.js";
 
 export async function applyCodex(cwd: string, atelier: string): Promise<void> {
   const { meta } = await readContext(cwd);
@@ -17,7 +18,7 @@ You are operating under **atelier-kit**. This repository is not affiliated with 
 ## Session state
 
 - Read \`.atelier/context.md\` **first**. The YAML frontmatter is authoritative.
-- Use \`workflow\`, \`phase\`, and \`current_task\` together to determine the active skill.
+- ${plannerStateReminder()}
 - Active skill file (if any): \`${skillPath}\`
   - When a skill applies, follow **only** that \`SKILL.md\` plus \`.atelier/METHOD.md\`.
   - Ignore other skills' bodies unless the user changes the planner focus or runs \`atelier-kit phase <name>\`.
@@ -30,6 +31,10 @@ You are operating under **atelier-kit**. This repository is not affiliated with 
 ## Updates
 
 When the user changes phase or planner focus, re-read \`.atelier/context.md\` before continuing.
+
+## Planner entry commands
+
+${plannerCommandProtocol()}
 `;
 
   await writeText(join(cwd, "AGENTS.md"), body);

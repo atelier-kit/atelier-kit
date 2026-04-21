@@ -12,11 +12,16 @@ import {
   addEpic,
   addSlice,
   addTask,
+  advancePlanner,
   focusEpic,
   focusSlice,
   focusTask,
+  generatePlannerSlices,
+  markCurrentDone,
   setWorkflow,
+  startPlannerGoal,
   summarizePlannerCounts,
+  syncPlannerPhase,
   updateEpic,
   updateSlice,
   updateTask,
@@ -79,6 +84,81 @@ export async function cmdWorkflow(cwd: string, workflow: string): Promise<void> 
     console.log(
       pc.green(
         `Workflow set to ${normalized} (${summarizePlannerCounts(meta)})`,
+      ),
+    );
+  } catch (error) {
+    console.error(pc.red((error as Error).message));
+    process.exitCode = 1;
+  }
+}
+
+export async function cmdPlannerStart(cwd: string, goal: string): Promise<void> {
+  try {
+    const meta = await startPlannerGoal(cwd, goal);
+    await refreshFallbackAdapters(cwd);
+    console.log(
+      pc.green(
+        `Planner started for "${goal}" (${summarizePlannerCounts(meta)})`,
+      ),
+    );
+  } catch (error) {
+    console.error(pc.red((error as Error).message));
+    process.exitCode = 1;
+  }
+}
+
+export async function cmdPlannerNext(cwd: string): Promise<void> {
+  try {
+    const meta = await advancePlanner(cwd);
+    await refreshFallbackAdapters(cwd);
+    console.log(
+      pc.green(
+        `Planner advanced (${summarizePlannerCounts(meta)}) focus task=${meta.current_task ?? "—"} slice=${meta.current_slice ?? "—"}`,
+      ),
+    );
+  } catch (error) {
+    console.error(pc.red((error as Error).message));
+    process.exitCode = 1;
+  }
+}
+
+export async function cmdPlannerDone(cwd: string): Promise<void> {
+  try {
+    const meta = await markCurrentDone(cwd);
+    await refreshFallbackAdapters(cwd);
+    console.log(
+      pc.green(
+        `Marked current planner focus done (${summarizePlannerCounts(meta)}) next task=${meta.current_task ?? "—"} slice=${meta.current_slice ?? "—"}`,
+      ),
+    );
+  } catch (error) {
+    console.error(pc.red((error as Error).message));
+    process.exitCode = 1;
+  }
+}
+
+export async function cmdPlannerGenerateSlices(cwd: string): Promise<void> {
+  try {
+    const meta = await generatePlannerSlices(cwd);
+    await refreshFallbackAdapters(cwd);
+    console.log(
+      pc.green(
+        `Generated planner slices (${summarizePlannerCounts(meta)})`,
+      ),
+    );
+  } catch (error) {
+    console.error(pc.red((error as Error).message));
+    process.exitCode = 1;
+  }
+}
+
+export async function cmdPlannerSyncPhase(cwd: string): Promise<void> {
+  try {
+    const meta = await syncPlannerPhase(cwd);
+    await refreshFallbackAdapters(cwd);
+    console.log(
+      pc.green(
+        `Planner phase synced to ${meta.phase} (${summarizePlannerCounts(meta)})`,
       ),
     );
   } catch (error) {

@@ -12,6 +12,11 @@ import { cmdValidate } from "./commands/validate.js";
 import { cmdInstallAdapter } from "./commands/install-adapter.js";
 import {
   cmdWorkflow,
+  cmdPlannerStart,
+  cmdPlannerNext,
+  cmdPlannerDone,
+  cmdPlannerGenerateSlices,
+  cmdPlannerSyncPhase,
   cmdEpicAdd,
   cmdEpicFocus,
   cmdEpicUpdate,
@@ -89,7 +94,7 @@ program
 
 program
   .command("install-adapter <name>")
-  .description("claude | cursor | codex | windsurf | generic")
+  .description("claude | cursor | codex | windsurf | cline | kilo | antigravity | generic")
   .action(async (name: string) => {
     await cmdInstallAdapter(processCwd(), name);
   });
@@ -103,6 +108,41 @@ planner
   .description("Set workflow to phased or planner")
   .action(async (mode: string) => {
     await cmdWorkflow(processCwd(), mode);
+  });
+
+planner
+  .command("start <goal>")
+  .description("Start a planner workflow from a goal")
+  .action(async (goal: string) => {
+    await cmdPlannerStart(processCwd(), goal);
+  });
+
+planner
+  .command("next")
+  .description("Advance planner focus to the next task or slice")
+  .action(async () => {
+    await cmdPlannerNext(processCwd());
+  });
+
+planner
+  .command("done")
+  .description("Mark the current planner task or slice as done and advance")
+  .action(async () => {
+    await cmdPlannerDone(processCwd());
+  });
+
+planner
+  .command("generate-slices")
+  .description("Generate initial slices from completed synthesis work")
+  .action(async () => {
+    await cmdPlannerGenerateSlices(processCwd());
+  });
+
+planner
+  .command("sync-phase")
+  .description("Sync phase with the current planner focus")
+  .action(async () => {
+    await cmdPlannerSyncPhase(processCwd());
   });
 
 const epic = planner

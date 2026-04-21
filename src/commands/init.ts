@@ -28,9 +28,12 @@ export async function cmdInit(
         { title: "Cursor (.cursor/skills)", value: "cursor" },
         { title: "Codex CLI (AGENTS.md)", value: "codex" },
         { title: "Windsurf (.windsurfrules)", value: "windsurf" },
+        { title: "Cline (.clinerules/)", value: "cline" },
+        { title: "Kilo (.kilocode/rules + AGENTS.md)", value: "kilo" },
+        { title: "Anti-GRAVITY (.agent/rules + AGENTS.md)", value: "antigravity" },
         { title: "Generic (atelier-system-prompt.txt)", value: "generic" },
       ],
-      initial: 4,
+      initial: 7,
     });
     if (typeof a.adapter === "string") adapter = a.adapter as AdapterName;
 

@@ -26,6 +26,10 @@ Answer prompts (agent target + mode). Then:
 3. `atelier-kit phase research` — produces a single `research.md` with stages for repo, tech, and market.
 4. Work through phases; use `atelier-kit status` anytime.
 
+## Documentation
+
+- [Framework architecture and phase flow](./docs/framework-architecture-and-phase-flow.md)
+
 ## CLI
 
 | Command | Purpose |

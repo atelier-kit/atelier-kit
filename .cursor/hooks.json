@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "PICKLEJAR_AGENT_ORIGIN=\"cursor\" node .picklejar/hooks/run-hook.js session-start"
+      }
+    ],
+    "sessionEnd": [
+      {
+        "command": "PICKLEJAR_AGENT_ORIGIN=\"cursor\" node .picklejar/hooks/run-hook.js session-end"
+      }
+    ],
+    "postToolUse": [
+      {
+        "command": "PICKLEJAR_AGENT_ORIGIN=\"cursor\" node .picklejar/hooks/run-hook.js post-tool-use",
+        "matcher": "*"
+      }
+    ],
+    "preCompact": [
+      {
+        "command": "PICKLEJAR_AGENT_ORIGIN=\"cursor\" node .picklejar/hooks/run-hook.js pre-compact"
+      }
+    ],
+    "stop": [
+      {
+        "command": "PICKLEJAR_AGENT_ORIGIN=\"cursor\" node .picklejar/hooks/run-hook.js stop"
+      }
+    ]
+  }
+}

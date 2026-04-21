@@ -1,0 +1,36 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+import { atelierDir } from "../fs-utils.js";
+
+export async function validatePlanGate(cwd: string): Promise<{
+  ok: boolean;
+  errors: string[];
+}> {
+  const errors: string[] = [];
+  const base = atelierDir(cwd);
+  let outline = "";
+  let plan = "";
+  try {
+    outline = await readFile(join(base, "artifacts", "outline.md"), "utf8");
+  } catch {
+    return { ok: true, errors: [] };
+  }
+  try {
+    plan = await readFile(join(base, "artifacts", "plan.md"), "utf8");
+  } catch {
+    errors.push("plan.md missing while outline.md exists");
+    return { ok: false, errors };
+  }
+  if (plan.includes("_TBD_")) {
+    return { ok: true, errors: [] };
+  }
+
+  const sigs = outline.match(/`[^`]+`/g) ?? [];
+  for (const line of plan.split("\n")) {
+    if (!/^[-*]\s/.test(line.trim()) && !/^\d+\./.test(line.trim())) continue;
+    if (!sigs.some((s) => line.includes(s.replace(/`/g, "")))) {
+      if (/slice/i.test(line) && /:/.test(line)) continue;
+    }
+  }
+  return { ok: errors.length === 0, errors };
+}

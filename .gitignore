@@ -1,0 +1,11 @@
+node_modules/
+dist/
+*.log
+.DS_Store
+coverage/
+# picklejar
+.picklejar/snapshots/
+.picklejar/transcripts/
+.picklejar/.picklejar.lock
+.picklejar/force-resume.json
+.github/hooks/logs/

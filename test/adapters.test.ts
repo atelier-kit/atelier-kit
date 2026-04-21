@@ -5,9 +5,9 @@ import { cmdInit } from "../src/commands/init.js";
 import { cmdInstallAdapter } from "../src/commands/install-adapter.js";
 import { tempDir, kitPath } from "./helpers.js";
 import {
-  cmdPlannerStart,
-  cmdPlannerNext,
-  cmdPlannerDone,
+  cmdPlannerAutoplan,
+  cmdPlannerApprove,
+  cmdPlannerExecute,
 } from "../src/commands/planner.js";
 
 describe("agent adapters include planner protocol", () => {
@@ -24,13 +24,14 @@ describe("agent adapters include planner protocol", () => {
     process.env.ATELIER_KIT_ROOT = kitPath();
 
     await cmdInit(path, { yes: true });
-    await cmdPlannerStart(path, "Migrate Python framework to PHP");
-    await cmdPlannerNext(path);
-    await cmdPlannerDone(path);
+    await cmdPlannerAutoplan(path, "Migrate Python framework to PHP");
+    await cmdPlannerApprove(path);
+    await cmdPlannerExecute(path);
 
     const prompt = await readFile(join(path, "atelier-system-prompt.txt"), "utf8");
     expect(prompt).toContain("/planner <goal>");
-    expect(prompt).toContain("atelier-kit planner start");
+    expect(prompt).toContain("atelier-kit planner autoplan");
+    expect(prompt).toContain("atelier-kit planner approve");
     expect(prompt).toContain("current_task:");
   });
 
@@ -40,7 +41,7 @@ describe("agent adapters include planner protocol", () => {
     process.env.ATELIER_KIT_ROOT = kitPath();
 
     await cmdInit(path, { yes: true });
-    await cmdPlannerStart(path, "Evaluate framework migration");
+    await cmdPlannerAutoplan(path, "Evaluate framework migration");
 
     await cmdInstallAdapter(path, "cline");
     const clineRules = await readFile(
@@ -55,7 +56,7 @@ describe("agent adapters include planner protocol", () => {
       "utf8",
     );
     const kiloAgents = await readFile(join(path, "AGENTS.md"), "utf8");
-    expect(kiloRules).toContain("atelier-kit planner next");
+    expect(kiloRules).toContain("atelier-kit planner autoplan");
     expect(kiloAgents).toContain("Current skill");
 
     await cmdInstallAdapter(path, "antigravity");
@@ -64,7 +65,7 @@ describe("agent adapters include planner protocol", () => {
       "utf8",
     );
     const gemini = await readFile(join(path, "GEMINI.md"), "utf8");
-    expect(agRules).toContain("atelier-kit planner done");
+    expect(agRules).toContain("atelier-kit planner approve");
     expect(gemini).toContain("/planner <goal>");
   });
 });

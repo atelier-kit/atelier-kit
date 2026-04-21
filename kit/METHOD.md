@@ -32,7 +32,12 @@ Recommended relationship:
 Operational commands for planner mode:
 
 - `atelier-kit planner workflow planner`
-- `atelier-kit planner start "<goal>"`
+- `atelier-kit planner autoplan "<goal>"`
+- `atelier-kit planner start "<goal>"` (manual mode)
+- `atelier-kit planner present`
+- `atelier-kit planner approve`
+- `atelier-kit planner reject --reason "..."`
+- `atelier-kit planner execute`
 - `atelier-kit planner next`
 - `atelier-kit planner done`
 - `atelier-kit planner generate-slices`
@@ -45,7 +50,11 @@ Operational commands for planner mode:
 
 Agent trigger protocol:
 
-- `/planner <goal>` -> run `atelier-kit planner start "<goal>"`
+- `/planner <goal>` -> run `atelier-kit planner autoplan "<goal>"`
+- `/planner present` -> run `atelier-kit planner present`
+- `/planner approve` -> run `atelier-kit planner approve`
+- `/planner reject` -> run `atelier-kit planner reject --reason "<reason>"`
+- `/planner execute` -> run `atelier-kit planner execute`
 - `/planner next` -> run `atelier-kit planner next`
 - `/planner done` -> run `atelier-kit planner done`
 - `/planner status` -> run `atelier-kit status`
@@ -80,6 +89,8 @@ Use `atelier-kit phase <name>` to force phase when the agent does not auto-selec
 Authoritative state lives in `.atelier/context.md` (YAML frontmatter + optional notes). The state now supports:
 
 - `workflow`: `phased` or `planner`
+- `planner_stage`: `idle` | `planning` | `awaiting_approval` | `executing`
+- `approval_status`: `not_required` | `pending` | `approved` | `rejected`
 - `current_epic`, `current_task`, `current_slice`
 - `epics[]`
 - `tasks[]`

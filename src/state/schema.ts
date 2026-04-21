@@ -14,6 +14,20 @@ export const AdapterSchema = z.enum([
 export const ModeSchema = z.enum(["quick", "standard", "deep"]);
 
 export const WorkflowSchema = z.enum(["phased", "planner"]);
+export const PlannerModeSchema = z.enum(["manual", "autoplan"]);
+export const PlannerStateSchema = z.enum([
+  "idle",
+  "planning",
+  "awaiting_approval",
+  "approved",
+  "executing",
+]);
+export const ApprovalStatusSchema = z.enum([
+  "none",
+  "pending",
+  "approved",
+  "rejected",
+]);
 
 export const PhaseSchema = z.enum([
   "brief",
@@ -105,6 +119,10 @@ export const SliceSchema = z.object({
 export const ContextMetaSchema = z.object({
   atelier_context_version: z.literal(1).default(1),
   workflow: WorkflowSchema.default("phased"),
+  planner_mode: PlannerModeSchema.default("manual"),
+  planner_state: PlannerStateSchema.default("idle"),
+  approval_status: ApprovalStatusSchema.default("none"),
+  approval_reason: z.string().nullable().default(null),
   phase: PhaseSchema.default("brief"),
   mode: ModeSchema.optional(),
   adapter: AdapterSchema.optional(),
@@ -122,6 +140,9 @@ export const ContextMetaSchema = z.object({
 export type ContextMeta = z.infer<typeof ContextMetaSchema>;
 export type Phase = z.infer<typeof PhaseSchema>;
 export type Workflow = z.infer<typeof WorkflowSchema>;
+export type PlannerMode = z.infer<typeof PlannerModeSchema>;
+export type PlannerState = z.infer<typeof PlannerStateSchema>;
+export type ApprovalStatus = z.infer<typeof ApprovalStatusSchema>;
 export type WorkStatus = z.infer<typeof WorkStatusSchema>;
 export type TaskType = z.infer<typeof TaskTypeSchema>;
 export type SliceKind = z.infer<typeof SliceKindSchema>;

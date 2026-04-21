@@ -12,10 +12,15 @@ import { cmdValidate } from "./commands/validate.js";
 import { cmdInstallAdapter } from "./commands/install-adapter.js";
 import {
   cmdWorkflow,
+  cmdPlannerAutoplan,
   cmdPlannerStart,
   cmdPlannerNext,
   cmdPlannerDone,
   cmdPlannerGenerateSlices,
+  cmdPlannerPresent,
+  cmdPlannerApprove,
+  cmdPlannerReject,
+  cmdPlannerExecute,
   cmdPlannerSyncPhase,
   cmdEpicAdd,
   cmdEpicFocus,
@@ -111,6 +116,13 @@ planner
   });
 
 planner
+  .command("autoplan <goal>")
+  .description("Run planning through presentation and stop for approval")
+  .action(async (goal: string) => {
+    await cmdPlannerAutoplan(processCwd(), goal);
+  });
+
+planner
   .command("start <goal>")
   .description("Start a planner workflow from a goal")
   .action(async (goal: string) => {
@@ -136,6 +148,35 @@ planner
   .description("Generate initial slices from completed synthesis work")
   .action(async () => {
     await cmdPlannerGenerateSlices(processCwd());
+  });
+
+planner
+  .command("present")
+  .description("Render the planner proposal and stop for human approval")
+  .action(async () => {
+    await cmdPlannerPresent(processCwd());
+  });
+
+planner
+  .command("approve")
+  .description("Approve the current planner proposal for execution")
+  .action(async () => {
+    await cmdPlannerApprove(processCwd());
+  });
+
+planner
+  .command("reject")
+  .description("Reject the current planner proposal and return to planning")
+  .requiredOption("-r, --reason <text>", "Reason for rejection")
+  .action(async (opts: { reason: string }) => {
+    await cmdPlannerReject(processCwd(), opts.reason);
+  });
+
+planner
+  .command("execute")
+  .description("Enter execution mode after approval and focus the next approved slice")
+  .action(async () => {
+    await cmdPlannerExecute(processCwd());
   });
 
 planner

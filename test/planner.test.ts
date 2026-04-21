@@ -8,15 +8,21 @@ import {
   addEpic,
   addSlice,
   addTask,
+  approvePlan,
+  autoplanGoal,
   advancePlanner,
+  executePlan,
   focusTask,
   generatePlannerSlices,
   markCurrentDone,
+  presentPlan,
+  rejectPlan,
   setWorkflow,
   startPlannerGoal,
   updateTask,
 } from "../src/state/planner.js";
 import { activeSkillFolder } from "../src/skill-loader.js";
+import { readFile } from "node:fs/promises";
 
 describe("planner state helpers", () => {
   let dir = "";
@@ -178,12 +184,53 @@ describe("planner state helpers", () => {
     await markCurrentDone(dir);
     state = await readContext(dir);
     expect(state.meta.slices.length).toBeGreaterThan(0);
-    expect(state.meta.current_slice).toBe("migrate-python-framework-to-php-slice-1");
-    expect(state.meta.phase).toBe("implement");
+    expect(state.meta.current_slice).toBe(null);
+    expect(state.meta.phase).toBe("plan");
+    expect(state.meta.planner_state).toBe("awaiting_approval");
 
     await advancePlanner(dir);
     await generatePlannerSlices(dir);
     state = await readContext(dir);
+    expect(state.meta.current_slice).toBe(null);
+    expect(state.meta.planner_state).toBe("awaiting_approval");
+  });
+
+  test("autoplan runs to approval gate and writes plan artifact", async () => {
+    const meta = await autoplanGoal(dir, "Migrate Python framework to PHP");
+    expect(meta.planner_state).toBe("awaiting_approval");
+    expect(meta.approval_status).toBe("pending");
+    expect(meta.current_task).toBe(null);
+    expect(meta.current_slice).toBe(null);
+    expect(meta.slices[0]?.status).toBe("ready");
+
+    const plan = await readFile(join(dir, ".atelier", "artifacts", "plan.md"), "utf8");
+    expect(plan).toContain("# Plan");
+    expect(plan).toContain("Approval");
+    expect(plan).toContain("Approve plan");
+  });
+
+  test("reject and approve control execution gate", async () => {
+    await autoplanGoal(dir, "Migrate Python framework to PHP");
+    await rejectPlan(dir, "Need clearer migration risks");
+    let state = await readContext(dir);
+    expect(state.meta.approval_status).toBe("rejected");
+    expect(state.meta.planner_state).toBe("planning");
+
+    await presentPlan(dir);
+    state = await readContext(dir);
+    expect(state.meta.approval_status).toBe("pending");
+
+    await approvePlan(dir);
+    state = await readContext(dir);
+    expect(state.meta.approval_status).toBe("approved");
+    expect(state.meta.slices.every((slice) => slice.status === "ready")).toBe(true);
+
+    await executePlan(dir);
+    state = await readContext(dir);
+    expect(state.meta.planner_state).toBe("executing");
+    expect(state.meta.phase).toBe("implement");
     expect(state.meta.current_slice).toBe("migrate-python-framework-to-php-slice-1");
+    expect(state.meta.slices[0]?.status).toBe("executing");
+    expect(activeSkillFolder(state.meta)).toBe("implementer");
   });
 });

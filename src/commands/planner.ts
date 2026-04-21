@@ -1,4 +1,6 @@
 import pc from "picocolors";
+import { join } from "node:path";
+import { atelierDir, readText } from "../fs-utils.js";
 import {
   WorkStatusSchema,
   WorkflowSchema,
@@ -13,11 +15,16 @@ import {
   addSlice,
   addTask,
   advancePlanner,
+  approvePlan,
+  autoplanGoal,
   focusEpic,
   focusSlice,
   focusTask,
   generatePlannerSlices,
   markCurrentDone,
+  presentPlan,
+  rejectPlan,
+  executePlan,
   setWorkflow,
   startPlannerGoal,
   summarizePlannerCounts,
@@ -107,6 +114,21 @@ export async function cmdPlannerStart(cwd: string, goal: string): Promise<void> 
   }
 }
 
+export async function cmdPlannerAutoplan(cwd: string, goal: string): Promise<void> {
+  try {
+    const meta = await autoplanGoal(cwd, goal);
+    await refreshFallbackAdapters(cwd);
+    console.log(
+      pc.green(
+        `Planner autoplan complete for "${goal}" (${summarizePlannerCounts(meta)}) approval=${meta.approval_status}`,
+      ),
+    );
+  } catch (error) {
+    console.error(pc.red((error as Error).message));
+    process.exitCode = 1;
+  }
+}
+
 export async function cmdPlannerNext(cwd: string): Promise<void> {
   try {
     const meta = await advancePlanner(cwd);
@@ -114,6 +136,67 @@ export async function cmdPlannerNext(cwd: string): Promise<void> {
     console.log(
       pc.green(
         `Planner advanced (${summarizePlannerCounts(meta)}) focus task=${meta.current_task ?? "—"} slice=${meta.current_slice ?? "—"}`,
+      ),
+    );
+  } catch (error) {
+    console.error(pc.red((error as Error).message));
+    process.exitCode = 1;
+  }
+}
+
+export async function cmdPlannerPresent(cwd: string): Promise<void> {
+  try {
+    const meta = await presentPlan(cwd);
+    await refreshFallbackAdapters(cwd);
+    console.log(
+      pc.green(
+        `Planner presented (${summarizePlannerCounts(meta)}) approval=${meta.approval_status}`,
+      ),
+    );
+    console.log(await readText(join(atelierDir(cwd), "artifacts", "plan.md")));
+  } catch (error) {
+    console.error(pc.red((error as Error).message));
+    process.exitCode = 1;
+  }
+}
+
+export async function cmdPlannerApprove(cwd: string): Promise<void> {
+  try {
+    const meta = await approvePlan(cwd);
+    await refreshFallbackAdapters(cwd);
+    console.log(
+      pc.green(
+        `Planner approved (${summarizePlannerCounts(meta)}) state=${meta.planner_state}`,
+      ),
+    );
+  } catch (error) {
+    console.error(pc.red((error as Error).message));
+    process.exitCode = 1;
+  }
+}
+
+export async function cmdPlannerReject(cwd: string, reason: string): Promise<void> {
+  try {
+    const meta = await rejectPlan(cwd, reason);
+    await refreshFallbackAdapters(cwd);
+    console.log(
+      pc.green(
+        `Planner rejected (${summarizePlannerCounts(meta)}) approval=${meta.approval_status}`,
+      ),
+    );
+  } catch (error) {
+    console.error(pc.red((error as Error).message));
+    process.exitCode = 1;
+  }
+}
+
+export async function cmdPlannerExecute(cwd: string): Promise<void> {
+  try {
+    const meta = await executePlan(cwd);
+    await refreshFallbackAdapters(cwd);
+    console.log(
+      pc.green(
+        `Planner execution started (${summarizePlannerCounts(meta)}) slice=${meta.current_slice ?? "—"}`,
       ),
     );
   } catch (error) {

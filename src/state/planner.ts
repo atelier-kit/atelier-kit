@@ -2,10 +2,14 @@ import {
   readContext,
   writeContext,
 } from "./context.js";
+import { join } from "node:path";
+import { atelierDir, writeText } from "../fs-utils.js";
 import type {
+  ApprovalStatus,
   ContextMeta,
   Epic,
   Phase,
+  PlannerState,
   Slice,
   Task,
   WorkStatus,
@@ -100,7 +104,12 @@ export async function setWorkflow(
   cwd: string,
   workflow: Workflow,
 ): Promise<ContextMeta> {
-  return mutatePlannerState(cwd, (meta) => ({ ...meta, workflow }));
+  return mutatePlannerState(cwd, (meta) => ({
+    ...meta,
+    workflow,
+    planner_state: workflow === "planner" ? meta.planner_state : "idle",
+    approval_status: workflow === "planner" ? meta.approval_status : "none",
+  }));
 }
 
 function slugify(input: string): string {
@@ -117,10 +126,13 @@ function syncPhase(meta: ContextMeta): ContextMeta {
   if (meta.workflow !== "planner") {
     return meta;
   }
+  if (meta.planner_state === "awaiting_approval") {
+    return { ...meta, phase: "plan" };
+  }
   const currentTask = meta.current_task
     ? meta.tasks.find((task) => task.id === meta.current_task)
     : null;
-  if (meta.current_slice) {
+  if (meta.current_slice && meta.planner_state === "executing") {
     phase = "implement";
   } else if (currentTask) {
     switch (currentTask.type) {
@@ -178,7 +190,12 @@ function chooseNextTask(meta: ContextMeta): Task | null {
 
 function chooseNextSlice(meta: ContextMeta): Slice | null {
   const candidates = meta.slices.filter(
-    (slice) => slice.status !== "done" && slice.status !== "cancelled",
+    (slice) =>
+      slice.status !== "done" &&
+      slice.status !== "cancelled" &&
+      (meta.planner_state === "executing"
+        ? slice.status === "ready" || slice.status === "executing"
+        : slice.status === "ready"),
   );
   const next = candidates.find((slice) =>
     slice.depends_on.every((dep) => {
@@ -243,6 +260,13 @@ function generateSlicesForSynthesis(meta: ContextMeta): ContextMeta {
 
 function syncFocus(meta: ContextMeta): ContextMeta {
   let nextMeta = meta;
+  if (nextMeta.planner_state === "awaiting_approval") {
+    return syncPhase({
+      ...nextMeta,
+      current_task: null,
+      current_slice: null,
+    });
+  }
   const nextTask = chooseNextTask(nextMeta);
   const nextSlice = chooseNextSlice(nextMeta);
 
@@ -365,6 +389,8 @@ export async function startPlannerGoal(
       ...meta,
       workflow: "planner",
       phase: "plan",
+      planner_state: "planning",
+      approval_status: "none",
       current_epic: epicId,
       current_task: `${epicId}-repo`,
       current_slice: null,
@@ -379,6 +405,9 @@ export async function markCurrentDone(cwd: string): Promise<ContextMeta> {
   return mutatePlannerState(cwd, (meta) => {
     let nextMeta = meta;
     if (meta.current_slice) {
+      if (meta.planner_state !== "executing") {
+        throw new Error("Cannot complete a slice before planner execution is approved");
+      }
       nextMeta = {
         ...meta,
         slices: meta.slices.map((slice) =>
@@ -395,6 +424,7 @@ export async function markCurrentDone(cwd: string): Promise<ContextMeta> {
         current_task: null,
       };
       nextMeta = generateSlicesForSynthesis(nextMeta);
+      nextMeta = transitionToAwaitingApproval(nextMeta);
     } else {
       throw new Error("No current task or slice is focused");
     }
@@ -406,6 +436,202 @@ export async function advancePlanner(cwd: string): Promise<ContextMeta> {
   return mutatePlannerState(cwd, (meta) => syncFocus(generateSlicesForSynthesis(meta)));
 }
 
+function transitionToAwaitingApproval(meta: ContextMeta): ContextMeta {
+  const synthesisDone = meta.tasks.some(
+    (task) => task.type === "synthesis" && task.status === "done",
+  );
+  if (!synthesisDone || meta.slices.length === 0) {
+    return meta;
+  }
+  return {
+    ...meta,
+    planner_state: "awaiting_approval",
+    approval_status: "pending",
+    current_task: null,
+    current_slice: null,
+  };
+}
+
+function nextApprovalStatus(state: PlannerState): ApprovalStatus {
+  return state === "awaiting_approval" ? "pending" : "none";
+}
+
+function renderPlan(meta: ContextMeta): string {
+  const epic = meta.current_epic
+    ? meta.epics.find((entry) => entry.id === meta.current_epic)
+    : meta.epics[0];
+  const relevantTasks = epic
+    ? meta.tasks.filter((task) => task.epic_id === epic.id)
+    : meta.tasks;
+  const relevantSlices = epic
+    ? meta.slices.filter((slice) => slice.epic_id === epic.id)
+    : meta.slices;
+
+  const lines: string[] = [
+    "# Plan",
+    "",
+    epic ? `## Epic\n\n- ${epic.title}` : "## Epic\n\n- _No epic selected_",
+    "",
+    `Planner state: ${meta.planner_state}`,
+    `Approval: ${meta.approval_status}`,
+    "",
+    "## Discovery tracks",
+    "",
+  ];
+
+  if (relevantTasks.length === 0) {
+    lines.push("- _No tasks_");
+  } else {
+    for (const task of relevantTasks) {
+      const deps = task.depends_on.length
+        ? ` (depends on: ${task.depends_on.join(", ")})`
+        : "";
+      lines.push(`- [${task.status}] (${task.type}) ${task.title}${deps}`);
+      for (const item of task.acceptance) {
+        lines.push(`  - acceptance: ${item}`);
+      }
+    }
+  }
+
+  lines.push("", "## Proposed slices", "");
+  if (relevantSlices.length === 0) {
+    lines.push("- _No slices yet_");
+  } else {
+    for (const slice of relevantSlices) {
+      const deps = slice.depends_on.length
+        ? ` (depends on: ${slice.depends_on.join(", ")})`
+        : "";
+      lines.push(`### ${slice.title}`);
+      lines.push(
+        `- Status: ${slice.status}${deps}`,
+        `- Goal: ${slice.goal}`,
+      );
+      if (slice.acceptance.length) {
+        lines.push("- Acceptance:");
+        for (const item of slice.acceptance) {
+          lines.push(`  - ${item}`);
+        }
+      }
+      if (slice.risks.length) {
+        lines.push("- Risks:");
+        for (const risk of slice.risks) {
+          lines.push(`  - ${risk}`);
+        }
+      }
+      lines.push("");
+    }
+  }
+
+  lines.push(
+    "## Human review",
+    "",
+    meta.approval_status === "pending"
+      ? "- [ ] Approve plan"
+      : meta.approval_status === "approved"
+        ? "- [x] Plan approved"
+        : meta.approval_status === "rejected"
+          ? "- [ ] Plan rejected; revise before execution"
+          : "- [ ] Approval not required yet",
+  );
+
+  return `${lines.join("\n").trim()}\n`;
+}
+
+export async function writePlannerPlanArtifact(
+  cwd: string,
+  meta?: ContextMeta,
+): Promise<void> {
+  const currentMeta = meta ?? (await readContext(cwd)).meta;
+  const planPath = join(atelierDir(cwd), "artifacts", "plan.md");
+  await writeText(planPath, renderPlan(currentMeta));
+}
+
+export async function presentPlannerPlan(cwd: string): Promise<ContextMeta> {
+  const meta = await mutatePlannerState(cwd, (current) => {
+    const next = transitionToAwaitingApproval(current);
+    if (next.slices.length === 0) {
+      throw new Error("Cannot present a planner plan before slices exist");
+    }
+    return {
+      ...next,
+      planner_state: "awaiting_approval",
+      approval_status: "pending",
+      approval_reason: null,
+      current_task: null,
+      current_slice: null,
+    };
+  });
+  await writePlannerPlanArtifact(cwd, meta);
+  return meta;
+}
+
+export async function approvePlannerPlan(cwd: string): Promise<ContextMeta> {
+  const meta = await mutatePlannerState(cwd, (current) => {
+    if (current.planner_state !== "awaiting_approval") {
+      throw new Error("Planner is not awaiting approval");
+    }
+    return {
+      ...current,
+      planner_state: "approved",
+      approval_status: "approved",
+      approval_reason: null,
+    };
+  });
+  await writePlannerPlanArtifact(cwd, meta);
+  return meta;
+}
+
+export async function rejectPlannerPlan(
+  cwd: string,
+  reason: string,
+): Promise<ContextMeta> {
+  return mutatePlannerState(cwd, (current) => ({
+    ...current,
+    planner_state: "planning",
+    approval_status: "rejected",
+    approval_reason: reason,
+    gate_pending: reason,
+    current_task: current.tasks.find((task) => task.type === "synthesis")?.id ?? current.current_task,
+    current_slice: null,
+  }));
+}
+
+export async function executeApprovedPlan(cwd: string): Promise<ContextMeta> {
+  return mutatePlannerState(cwd, (current) => {
+    if (current.approval_status !== "approved") {
+      throw new Error("Cannot execute planner before approval");
+    }
+    const executableSlices: Slice[] = current.slices.map((slice) =>
+      slice.status === "ready" ? { ...slice, status: "executing" } : slice,
+    );
+    const firstSlice = executableSlices.find((slice) => slice.status === "executing");
+    return syncPhase({
+      ...current,
+      planner_state: "executing",
+      current_task: null,
+      current_slice: firstSlice?.id ?? null,
+      slices: executableSlices,
+      gate_pending: null,
+    });
+  });
+}
+
+export const presentPlan = presentPlannerPlan;
+export const approvePlan = approvePlannerPlan;
+export const rejectPlan = rejectPlannerPlan;
+export const executePlan = executeApprovedPlan;
+export const approvePlannerExecution = approvePlannerPlan;
+export const rejectPlannerExecution = rejectPlannerPlan;
+
+export async function autoplanGoal(cwd: string, goal: string): Promise<ContextMeta> {
+  let meta = await startPlannerGoal(cwd, goal);
+  while (meta.current_task) {
+    meta = await markCurrentDone(cwd);
+  }
+  meta = await presentPlannerPlan(cwd);
+  return meta;
+}
+
 export async function addEpic(
   cwd: string,
   epic: Epic,
@@ -415,6 +641,8 @@ export async function addEpic(
     return {
       ...meta,
       workflow: "planner",
+      planner_state: meta.planner_state === "idle" ? "planning" : meta.planner_state,
+      approval_status: nextApprovalStatus(meta.planner_state),
       current_epic: meta.current_epic ?? epic.id,
       epics: [...meta.epics, epic],
     };
@@ -460,6 +688,8 @@ export async function addTask(
     return {
       ...meta,
       workflow: "planner",
+      planner_state: meta.planner_state === "idle" ? "planning" : meta.planner_state,
+      approval_status: nextApprovalStatus(meta.planner_state),
       current_epic: meta.current_epic ?? task.epic_id,
       current_task: meta.current_task ?? task.id,
       tasks: [...meta.tasks, task],
@@ -509,6 +739,8 @@ export async function addSlice(
     return {
       ...meta,
       workflow: "planner",
+      planner_state: meta.planner_state === "idle" ? "planning" : meta.planner_state,
+      approval_status: nextApprovalStatus(meta.planner_state),
       current_epic: meta.current_epic ?? slice.epic_id,
       current_slice: meta.current_slice ?? slice.id,
       slices: [...meta.slices, slice],

@@ -54,13 +54,42 @@ In this model:
 ### Planner workflow example
 
 ```bash
-atelier-kit planner start "Migrate Python framework to PHP"
-atelier-kit planner next
-atelier-kit planner done
-atelier-kit planner generate-slices
-atelier-kit planner slice focus migrate-python-framework-to-php-slice-1
+atelier-kit planner autoplan "Migrate Python framework to PHP"
+atelier-kit planner present
+atelier-kit planner approve
+atelier-kit planner execute
 atelier-kit status
 ```
+
+The planner now supports two distinct moments:
+
+- **Autoplan**: run discovery and synthesis automatically until a final plan is ready for human validation
+- **Execution**: only begins after approval and focuses approved slices in implementer mode
+
+### Approval flow
+
+When autoplan completes, the planner:
+
+- generates `.atelier/artifacts/plan.md`
+- sets `planner_stage=awaiting_approval`
+- sets `approval_status=pending`
+- clears active task/slice focus so the plan can be reviewed
+
+From there:
+
+```bash
+atelier-kit planner present
+atelier-kit planner approve
+atelier-kit planner execute
+```
+
+or, if changes are needed:
+
+```bash
+atelier-kit planner reject --reason "Need a lower-risk rollout plan"
+```
+
+Execution is blocked until approval.
 
 In planner mode, the active skill is derived from the focused task:
 
@@ -77,16 +106,18 @@ All supported adapters now share the same textual protocol. Inside the agent, yo
 
 ```text
 /planner migrate Python framework to PHP
-/planner next
-/planner done
+/planner present
+/planner approve
+/planner execute
 /planner status
 ```
 
 The adapter instructions tell the agent to translate those commands into:
 
-- `atelier-kit planner start "<goal>"`
-- `atelier-kit planner next`
-- `atelier-kit planner done`
+- `atelier-kit planner autoplan "<goal>"`
+- `atelier-kit planner present`
+- `atelier-kit planner approve`
+- `atelier-kit planner execute`
 - `atelier-kit status`
 
 After every state-changing command, the agent is instructed to re-read `.atelier/context.md` and continue with the newly active skill.
@@ -106,6 +137,11 @@ After every state-changing command, the agent is instructed to re-read `.atelier
 | `atelier-kit install-adapter <name>` | Switch adapter outputs |
 | `atelier-kit planner workflow <phased\|planner>` | Switch workflow model |
 | `atelier-kit planner start "<goal>"` | Create an epic and starter tasks from a goal |
+| `atelier-kit planner autoplan "<goal>"` | Run planning automatically until a final plan is ready for approval |
+| `atelier-kit planner present` | Print the current final plan summary for human validation |
+| `atelier-kit planner approve` | Approve proposed slices and unlock execution |
+| `atelier-kit planner reject --reason "..."` | Reject the proposed plan and return to planning |
+| `atelier-kit planner execute` | Enter execution mode and focus the first approved slice |
 | `atelier-kit planner next` | Advance focus to the next ready task or slice |
 | `atelier-kit planner done` | Mark the current task or slice done and advance |
 | `atelier-kit planner generate-slices` | Generate initial slices from completed synthesis work |
@@ -122,9 +158,9 @@ After every state-changing command, the agent is instructed to re-read `.atelier
 | Cursor | `.cursor/skills/` + `.cursor/rules/atelier-core.mdc` |
 | Codex CLI | `AGENTS.md` |
 | Windsurf | `.windsurfrules` |
-| Cline | `.clinerules/atelier.md` |
-| Kilo | `.kilocode/rules/atelier.md` + `AGENTS.md` |
-| Anti-GRAVITY | `.agent/rules/atelier.md` + `AGENTS.md` |
+| Cline | `.clinerules/atelier-core.md` |
+| Kilo | `.kilocode/rules/atelier-core.md` + `AGENTS.md` |
+| Anti-GRAVITY | `.agent/rules/atelier-core.md` + `AGENTS.md` |
 | Generic | `atelier-system-prompt.txt` |
 
 ## License

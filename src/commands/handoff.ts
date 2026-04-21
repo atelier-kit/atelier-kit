@@ -21,6 +21,9 @@ export async function cmdHandoff(cwd: string): Promise<void> {
   console.log("```\n");
   if (meta.epics.length || meta.tasks.length || meta.slices.length) {
     console.log("## Planning state\n");
+    console.log(
+      `Planner state: ${meta.planner_state} | approval: ${meta.approval_status}\n`,
+    );
     if (meta.current_epic || meta.current_task || meta.current_slice) {
       console.log(
         `Current focus: epic=${meta.current_epic ?? "—"}, task=${meta.current_task ?? "—"}, slice=${meta.current_slice ?? "—"}\n`,

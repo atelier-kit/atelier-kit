@@ -71,13 +71,21 @@ export function taskTypeToSkillFolder(taskType: TaskType): string {
 }
 
 export function activeSkillFolder(meta: ContextMeta): string | null {
+  if (meta.workflow === "planner" && meta.planner_state === "awaiting_approval") {
+    return "planner";
+  }
   if (meta.workflow === "planner" && meta.current_task) {
     const task = meta.tasks.find((entry) => entry.id === meta.current_task);
     if (task) {
       return taskTypeToSkillFolder(task.type);
     }
   }
-  if (meta.workflow === "planner" && meta.current_slice && meta.phase === "implement") {
+  if (
+    meta.workflow === "planner" &&
+    meta.current_slice &&
+    meta.phase === "implement" &&
+    meta.planner_state === "executing"
+  ) {
     return "implementer";
   }
   return phaseToSkillFolder(meta.phase);

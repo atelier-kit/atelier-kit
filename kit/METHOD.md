@@ -6,8 +6,8 @@ atelier-kit helps AI coding agents follow a disciplined, phased workflow inspire
 ## Principles
 
 1. **Instruction budget:** keep each skill’s `## Instructions` short (≤40 items). Never load every skill at once.
-2. **Isolation in repo research:** the researcher must not read `.atelier/brief.md` — only `.atelier/artifacts/questions.md`.
-3. **Separated market scan:** run `market-research` for external sources before design when product/UX benchmarking is needed.
+2. **Isolation in research:** the researcher must not read `.atelier/brief.md` — only `.atelier/artifacts/questions.md`.
+3. **Unified research in stages:** a single `research.md` with three stages — repository mapping (`[repo]`), external technical research (`[tech]`), and market/UX benchmark (`[market]`). Questions are classified upstream so the researcher knows which evidence each answer needs.
 4. **Layered planning:** `design.md` (why/what) → `outline.md` (structure) → `plan.md` (tasks). Separate human review between them.
 5. **Vertical slices:** implement **one slice** end-to-end (stack layers together) before starting the next.
 6. **Human owns merge:** the agent assists review; the developer approves what ships.
@@ -17,9 +17,8 @@ atelier-kit helps AI coding agents follow a disciplined, phased workflow inspire
 | Phase | Typical triggers | Primary artifact(s) |
 |-------|------------------|---------------------|
 | brief | `/brief` | `.atelier/brief.md` (human-led; agent may assist) |
-| questions | `/questions` | `.atelier/artifacts/questions.md` |
-| research | `/research` | `.atelier/artifacts/research.md` |
-| market-research | `/market-research` | `.atelier/artifacts/market-research.md` |
+| questions | `/questions` | `.atelier/artifacts/questions.md` (scoped `[repo] [tech] [market]`) |
+| research | `/research` | `.atelier/artifacts/research.md` (3 stages: repo / tech / market) |
 | design | `/design` | `.atelier/artifacts/design.md` |
 | outline | `/outline`, `/approve-design` | `.atelier/artifacts/outline.md` |
 | plan | `/plan`, `/approve-outline` | `.atelier/artifacts/plan.md` |

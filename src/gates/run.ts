@@ -2,7 +2,6 @@ import { validateInstructionBudget } from "./instruction-budget.js";
 import { validateSkillShape } from "./skill-shape.js";
 import { validateQuestionsGate } from "./questions.js";
 import { validateResearchGate } from "./research.js";
-import { validateMarketResearchGate } from "./market-research.js";
 import { validateDesignGate } from "./design.js";
 import { validatePlanGate } from "./plan.js";
 import { validateImplementGate } from "./implement.js";
@@ -14,7 +13,6 @@ export type GateName =
   | "skills"
   | "questions"
   | "research"
-  | "market-research"
   | "design"
   | "plan"
   | "implement";
@@ -36,9 +34,6 @@ export async function runDoctor(cwd: string, skillsRoot: string): Promise<{
 
   const r = await validateResearchGate(cwd);
   reports.push({ name: "research", errors: r.errors });
-
-  const mr = await validateMarketResearchGate(cwd);
-  reports.push({ name: "market-research", errors: mr.errors });
 
   const d = await validateDesignGate(cwd);
   reports.push({ name: "design", errors: d.errors });
@@ -63,8 +58,6 @@ export async function runValidatePhase(
       return validateQuestionsGate(cwd);
     case "research":
       return validateResearchGate(cwd);
-    case "market-research":
-      return validateMarketResearchGate(cwd);
     case "design":
     case "outline":
       return validateDesignGate(cwd);

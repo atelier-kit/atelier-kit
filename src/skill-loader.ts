@@ -48,7 +48,6 @@ export function phaseToSkillFolder(phase: Phase): string | null {
   const map: Partial<Record<Phase, string>> = {
     questions: "questions",
     research: "researcher",
-    "market-research": "market-researcher",
     design: "designer",
     outline: "designer",
     plan: "planner",

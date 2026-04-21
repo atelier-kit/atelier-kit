@@ -6,7 +6,7 @@ _TBD_: replace this stub before running design gate validators.
 
 ## Current state
 
-What the codebase and market context show today (grounded in `research.md` and `market-research.md`).
+What the codebase and market context show today (grounded in `research.md` — covers repo, tech, and market stages).
 
 ## Desired state
 

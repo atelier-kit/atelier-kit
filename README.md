@@ -56,9 +56,9 @@ Planner documentation is now split by purpose:
 
 atelier-kit uses a planner-oriented runtime in `.atelier/context.md`.
 
-- The planner workflow is the product's primary operating model.
+- The planner workflow is the product's operating model.
 - Artifacts support the graph; they are not the only source of truth.
-- `phase` still exists in the runtime, but as an operational compatibility field rather than the main planning abstraction.
+- Runtime compatibility fields may still exist internally, but they are not part of the planner's public mental model.
 
 Recommended relationship between entities:
 
@@ -70,7 +70,6 @@ In this model:
 
 - tasks answer **what needs to be discovered or decided**
 - slices answer **what can be delivered end-to-end next**
-- phases remain useful as compatibility and operator guidance
 
 ### Planner workflow example
 
@@ -143,30 +142,34 @@ The adapter instructions tell the agent to translate those commands into:
 
 After every state-changing command, the agent is instructed to re-read `.atelier/context.md` and continue with the newly active skill.
 
-## CLI
+## Core CLI
 
 | Command | Purpose |
 |---------|---------|
-| `atelier-kit init` | Create `.atelier/` + install adapter |
-| `atelier-kit status` | Print session state |
-| `atelier-kit mode quick\|standard\|deep` | Default mode in `.atelierrc` |
-| `atelier-kit handoff` | Dump context + artifact excerpts |
-| `atelier-kit doctor` | Run all validators |
-| `atelier-kit install-adapter <name>` | Switch adapter outputs |
-| `atelier-kit planner workflow <planner>` | Switch workflow model |
-| `atelier-kit planner start "<goal>"` | Create an epic and starter tasks from a goal |
+| `atelier-kit init` | Initialize the planner workspace and install an agent adapter |
+| `atelier-kit status` | Show current planner state |
+| `atelier-kit install-adapter <name>` | Install or switch the active agent adapter |
 | `atelier-kit planner autoplan "<goal>"` | Run planning automatically until a final plan is ready for approval |
 | `atelier-kit planner present` | Print the current final plan summary for human validation |
-| `atelier-kit planner approve` | Approve proposed slices and unlock execution |
-| `atelier-kit planner reject --reason "..."` | Reject the proposed plan and return to planning |
-| `atelier-kit planner execute` | Enter execution mode and focus the first approved slice |
+| `atelier-kit planner approve` | Approve the plan and unlock execution |
+| `atelier-kit planner reject --reason "..."` | Reject the plan and return to planning |
+| `atelier-kit planner execute` | Enter execution mode and focus the first slice |
 | `atelier-kit planner next` | Advance focus to the next ready task or slice |
 | `atelier-kit planner done` | Mark the current task or slice done and advance |
-| `atelier-kit planner generate-slices` | Generate initial slices from completed synthesis work |
-| `atelier-kit planner sync-phase` | Recompute phase from planner focus |
-| `atelier-kit planner epic <add\|update\|focus>` | Manage planner epics |
-| `atelier-kit planner task <add\|update\|focus>` | Manage planner tasks |
-| `atelier-kit planner slice <add\|update\|focus>` | Manage planner slices |
+
+### Advanced planner commands
+
+These exist for tighter control, debugging, or maintainers:
+
+- `atelier-kit planner start "<goal>"`
+- `atelier-kit planner generate-slices`
+- `atelier-kit planner sync-phase`
+- `atelier-kit planner epic <add|update|focus>`
+- `atelier-kit planner task <add|update|focus>`
+- `atelier-kit planner slice <add|update|focus>`
+- `atelier-kit mode quick|standard|deep`
+- `atelier-kit handoff`
+- `atelier-kit doctor`
 
 ## Compatibility
 

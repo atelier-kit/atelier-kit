@@ -149,14 +149,13 @@ Slices are used to **deliver vertical value**.
 
 The redesigned product is planner-first.
 
-`phase` remains in the runtime as an internal compatibility and routing field because:
+`phase` remains in the runtime only as a small internal routing field because:
 
 - it helps adapters and skills load the right behavior
 - it communicates the current operating lens (`plan`, `implement`, `review`, ...)
-- it keeps a small amount of backward-compatible structure in the state machine
+- it simplifies a few runtime transitions
 
-But in planner workflow, `phase` is not the primary source of truth and should not be
-treated as the product's main mental model.
+It should not be treated as part of the planner's public mental model.
 
 The real source of truth becomes:
 

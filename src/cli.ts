@@ -49,7 +49,7 @@ program
 
 program
   .command("phase <name>")
-  .description("Set session phase in .atelier/context.md")
+  .description("Advanced/internal runtime lens override")
   .action(async (name: string) => {
     await cmdPhase(processCwd(), name);
   });
@@ -63,7 +63,7 @@ program
 
 program
   .command("return <phase>")
-  .description("Go back to a phase with a recorded reason")
+  .description("Advanced/internal runtime rollback")
   .requiredOption("-r, --reason <text>", "Reason for the return")
   .action(async (phase: string, opts: { reason: string }) => {
     await cmdReturn(processCwd(), phase, opts.reason);
@@ -92,7 +92,7 @@ program
 
 program
   .command("validate <phase>")
-  .description("Run validators for a phase name")
+  .description("Run an advanced/internal validator")
   .action(async (phase: string) => {
     await cmdValidate(processCwd(), phase);
   });
@@ -110,7 +110,7 @@ const planner = program
 
 planner
   .command("workflow <mode>")
-  .description("Set workflow to phased or planner")
+  .description("Ensure planner workflow is active")
   .action(async (mode: string) => {
     await cmdWorkflow(processCwd(), mode);
   });
@@ -181,7 +181,7 @@ planner
 
 planner
   .command("sync-phase")
-  .description("Sync phase with the current planner focus")
+  .description("Sync the internal execution lens")
   .action(async () => {
     await cmdPlannerSyncPhase(processCwd());
   });

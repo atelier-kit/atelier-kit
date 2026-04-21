@@ -68,7 +68,6 @@ Operational commands for planner mode:
 - `atelier-kit planner task add --id <id> --epic <epic-id> --type repo|tech|business|synthesis|implementation|decision --title "..."`
 - `atelier-kit planner slice add --id <id> --epic <epic-id> --title "..." --goal "..."`
 - `atelier-kit planner epic|task|slice focus <id>`
-- `atelier-kit planner workflow phased`
 
 Agent trigger protocol:
 
@@ -83,22 +82,17 @@ Agent trigger protocol:
 - `/slice start` -> run `atelier-kit planner next` and continue if a slice becomes active
 - After every mutating planner command, re-read `.atelier/context.md` before proceeding
 
-## Phases as compatibility lenses
+## Internal phase lens
 
-| Phase | Typical triggers | Primary artifact(s) |
-|-------|------------------|---------------------|
-| brief | `/brief` | `.atelier/brief.md` (human-led; agent may assist) |
-| questions | `/questions` | `.atelier/artifacts/questions.md` (scoped `[repo] [tech] [market]`) |
-| research | `/research` | `.atelier/artifacts/research.md` (3 stages: repo / tech / market) |
-| design | `/design` | `.atelier/artifacts/design.md` |
-| outline | `/outline`, `/approve-design` | `.atelier/artifacts/outline.md` |
-| plan | `/plan`, `/approve-outline` | `.atelier/artifacts/plan.md` |
-| implement | `/implement` | code + `.atelier/artifacts/impl-log.md` |
-| review | `/review`, `/approve` | `.atelier/artifacts/review.md` |
-| ship | `/ship` | release checklist (project-defined) |
-| learn | `/learn` | `.atelier/artifacts/decision-log.md` |
+The runtime still keeps a `phase` field because it helps skills and adapters resolve the
+current operating lens (`plan`, `implement`, `review`, ...).
 
-`phase` still exists internally because it helps skills, adapters, and older tooling resolve the right behavior. In the redesigned planner-first product, however, the authoritative planning model lives in `.atelier/context.md` as goals, epics, tasks, slices, planner mode, planner state, and approval state.
+This should be treated as an internal runtime detail, not as the product's primary
+workflow model.
+
+In the planner-first product, the authoritative planning model lives in
+`.atelier/context.md` as goals, epics, tasks, slices, planner mode, planner state, and
+approval state.
 
 ## Modes (.atelierrc)
 
@@ -108,9 +102,9 @@ Agent trigger protocol:
 
 ## Session state
 
-Authoritative state lives in `.atelier/context.md` (YAML frontmatter + optional notes). The state now supports:
+Authoritative state lives in `.atelier/context.md` (YAML frontmatter + optional notes). The planner runtime state includes:
 
-- `workflow`: `phased` or `planner`
+- `workflow`: `planner`
 - `planner_mode`: `manual` | `autoplan`
 - `planner_state`: `idle` | `planning` | `awaiting_approval` | `approved` | `executing`
 - `approval_status`: `none` | `pending` | `approved` | `rejected`
@@ -119,7 +113,7 @@ Authoritative state lives in `.atelier/context.md` (YAML frontmatter + optional 
 - `tasks[]`
 - `slices[]`
 
-This state model exists to support the planner-first runtime. Any older phase-oriented behavior should be understood as an implementation detail or compatibility layer, not as the product's main workflow.
+This state model exists to support the planner-first runtime.
 
 Read [../PLANNER.md](../PLANNER.md) for the full mental model, lifecycle, and architectural boundaries of planner mode.
 

@@ -376,18 +376,20 @@ This reduces state duplication and makes the execution gate easier to reason abo
 
 ---
 
-## 9. Why phases were preserved
+## 9. Why `phase` still exists internally
 
-Even though planner mode uses richer state, `phase` still exists for:
+The product is planner-first, but the runtime still keeps a `phase` field as an internal
+supporting signal.
 
-- backward compatibility
+That field remains useful for:
+
 - adapter simplicity
 - status visibility
-- legacy phased workflows
+- skill routing
 
 In other words:
 
-- **phase** is a lens
+- **phase** is an internal lens
 - **planner state** is the machine state
 
 ---

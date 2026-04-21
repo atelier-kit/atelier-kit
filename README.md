@@ -5,8 +5,8 @@ Skills-first CLI for AI coding workflows. Installs a `.atelier/` directory with
 **Cursor**, **Codex CLI**, **Windsurf**, **Cline**, **Kilo**, **Anti-GRAVITY**, or a
 **generic** prompt file.
 
-atelier-kit is now designed as a **planner-first framework** built around epics, tasks,
-slices, approval, and execution.
+atelier-kit is a **planner-first framework** built around epics, tasks, slices, approval,
+and execution.
 
 In planner workflow, the key primitives are:
 
@@ -28,7 +28,7 @@ npx atelier-kit@latest init
 
 ### Planner-first quickstart
 
-This is the primary product experience.
+This is the recommended starting point.
 
 ```bash
 cd your-repo
@@ -48,7 +48,7 @@ This path:
 
 ## Planning model
 
-Planner documentation is now split by purpose:
+Planner documentation is organized by purpose:
 
 - [PLANNER.md](./PLANNER.md) — mental model, lifecycle, and planner philosophy
 - [AGENT-USAGE.md](./AGENT-USAGE.md) — how to use the planner from Claude, Cursor, Codex, Windsurf, Cline, Kilo, Anti-GRAVITY, and generic agents
@@ -58,7 +58,7 @@ atelier-kit uses a planner-oriented runtime in `.atelier/context.md`.
 
 - The planner workflow is the product's operating model.
 - Artifacts support the graph; they are not the only source of truth.
-- Runtime compatibility fields may still exist internally, but they are not part of the planner's public mental model.
+- Internal runtime fields support routing and adapters; they are not part of the planner's public mental model.
 
 Recommended relationship between entities:
 
@@ -81,7 +81,7 @@ atelier-kit planner execute
 atelier-kit status
 ```
 
-The planner now supports two distinct moments:
+The planner operates across two distinct moments:
 
 - **Autoplan**: run discovery and synthesis automatically until a final plan is ready for human validation
 - **Execution**: only begins after approval and focuses approved slices in implementer mode
@@ -122,7 +122,7 @@ In planner mode, the active skill is derived from the focused task:
 
 ### Triggering the planner from an agent
 
-All supported adapters now share the same textual protocol. Inside the agent, you can say:
+All supported adapters share the same textual protocol. Inside the agent, you can say:
 
 ```text
 /planner migrate Python framework to PHP

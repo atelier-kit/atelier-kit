@@ -37,7 +37,7 @@ This is the product's intended workflow.
 
 ## Planning model
 
-The kit now distinguishes four planning concepts:
+The kit distinguishes four planning concepts:
 
 - **Epic:** strategic container for a larger initiative, often larger than one iteration.
 - **Task:** planning or execution work item; can represent repo mapping, technical research, business discovery, synthesis, implementation prep, or decisions.
@@ -84,8 +84,8 @@ Agent trigger protocol:
 
 ## Internal phase lens
 
-The runtime still keeps a `phase` field because it helps skills and adapters resolve the
-current operating lens (`plan`, `implement`, `review`, ...).
+The runtime keeps a `phase` field as an internal signal that helps skills and adapters
+resolve the current operating lens (`plan`, `implement`, `review`, ...).
 
 This should be treated as an internal runtime detail, not as the product's primary
 workflow model.

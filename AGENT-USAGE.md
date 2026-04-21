@@ -250,7 +250,7 @@ Expectation:
 
 - Cline reads the rule file
 - the rule points it back to `.atelier/context.md`
-- the agent still uses the same planner commands
+- the agent uses the same planner commands
 
 ### Kilo
 
@@ -286,7 +286,7 @@ Repository-local guidance is written to:
 Expectation:
 
 - use this when the host agent does not have a dedicated adapter
-- the same planner command protocol still applies
+- the same planner command protocol applies
 
 ## Recommended prompts for humans
 
@@ -341,7 +341,7 @@ Check:
 
 Check:
 
-- is `planner_state` still `planning` instead of `awaiting_approval`?
+- is `planner_state` stuck in `planning` instead of `awaiting_approval`?
 - did the human call `/planner approve`?
 - is the agent ignoring adapter instructions?
 

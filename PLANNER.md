@@ -145,9 +145,9 @@ Slices are used to **deliver vertical value**.
 - tasks answer: **what do we need to learn or decide?**
 - slices answer: **what can we deliver end-to-end next?**
 
-## Why `phase` still exists internally
+## Why `phase` exists internally
 
-The redesigned product is planner-first.
+The product is planner-first.
 
 `phase` remains in the runtime only as a small internal routing field because:
 
@@ -232,7 +232,7 @@ reaches a reviewable final plan.
 7. human approves or rejects
 8. if approved: `planner execute`
 
-This is the default high-level experience the framework is moving toward.
+This is the default high-level experience.
 
 ## The artifact strategy
 
@@ -438,7 +438,7 @@ The planner should be able to move from approved plan to slice-by-slice executio
 The framework is only useful if the same mental model survives changes in host
 environment.
 
-atelier-kit now meets these conditions at a meaningful level.
+atelier-kit meets these conditions.
 
 ## Current strengths of the framework
 
@@ -451,7 +451,7 @@ atelier-kit now meets these conditions at a meaningful level.
 
 ## Current limitations
 
-There are still important limits:
+There are known limits:
 
 - discovery tasks are currently generic starter tracks, not domain-specific planners
 - autoplan progresses deterministically, not with true multi-agent parallel execution

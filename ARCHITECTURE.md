@@ -376,9 +376,9 @@ This reduces state duplication and makes the execution gate easier to reason abo
 
 ---
 
-## 9. Why `phase` still exists internally
+## 9. Why `phase` exists internally
 
-The product is planner-first, but the runtime still keeps a `phase` field as an internal
+The product is planner-first. The runtime keeps a `phase` field as an internal
 supporting signal.
 
 That field remains useful for:
@@ -401,7 +401,7 @@ In other words:
 - CLI-based control plane
 - cross-agent adapter strategy
 - approval gate between planning and implementation
-- planner docs and operating docs now aligned
+- planner docs and operating docs aligned
 
 ---
 

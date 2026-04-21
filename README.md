@@ -1,8 +1,17 @@
 # atelier-kit
 
-Skills-first CLI for **RPI / QRSPI**-style agent workflows. Installs a `.atelier/` directory with **`SKILL.md` skills**, templates, gates, and optional adapters for **Claude Code**, **Cursor**, **Codex CLI**, **Windsurf**, **Cline**, **Kilo**, **Anti-GRAVITY**, or a **generic** prompt file.
+Skills-first CLI for AI coding workflows. Installs a `.atelier/` directory with
+**`SKILL.md` skills**, templates, gates, and optional adapters for **Claude Code**,
+**Cursor**, **Codex CLI**, **Windsurf**, **Cline**, **Kilo**, **Anti-GRAVITY**, or a
+**generic** prompt file.
 
-The current workflow is phase-oriented, but the session state can also represent a planner model built around **epics**, **tasks**, and **slices**:
+atelier-kit currently supports **two operating models**:
+
+- **Planner workflow** — the newer control-plane model built around epics, tasks, slices,
+  approval, and execution
+- **Phased workflow** — the older RPI / QRSPI-style flow kept for compatibility
+
+In planner workflow, the key primitives are:
 
 - **epic**: the business or technical initiative being planned
 - **task**: a unit of discovery, analysis, decision, or implementation planning
@@ -20,17 +29,43 @@ npx atelier-kit@latest init
 
 ## Quickstart
 
+### Planner-first quickstart
+
+This is the recommended path when you want the framework to act like a planner.
+
+```bash
+cd your-repo
+npx atelier-kit init
+atelier-kit planner autoplan "Migrate Python framework to PHP"
+atelier-kit planner present
+atelier-kit planner approve
+atelier-kit planner execute
+```
+
+This path:
+
+1. creates planner state in `.atelier/context.md`
+2. runs discovery and synthesis
+3. generates `.atelier/artifacts/plan.md`
+4. stops for approval before implementation
+
+### Phased quickstart
+
+Use this only if you explicitly want the older phased workflow.
+
 ```bash
 cd your-repo
 npx atelier-kit init
 ```
 
-Answer prompts (agent target + mode). Then:
+Then:
 
 1. Edit `.atelier/brief.md`.
 2. `atelier-kit phase questions` (or say `/questions` in-agent) — tag each question with `[repo]`, `[tech]`, or `[market]`.
 3. `atelier-kit phase research` — produces a single `research.md` with stages for repo, tech, and market.
 4. Work through phases; use `atelier-kit status` anytime.
+
+`brief.md` belongs to the phased workflow. It is **not required** for the planner-first flow.
 
 ## Planning model
 
@@ -42,8 +77,9 @@ Planner documentation is now split by purpose:
 
 atelier-kit can express both a phased workflow and a planner workflow in `.atelier/context.md`.
 
-- **Phased workflow** keeps the current RPI/QRSPI behavior intact.
-- **Planner workflow** keeps the same skills and artifacts, but treats them as support for a task graph instead of the only source of truth.
+- **Planner workflow** is the primary planning model.
+- **Phased workflow** keeps the older RPI/QRSPI behavior intact for teams that still want it.
+- In planner workflow, artifacts support the graph; they are not the only source of truth.
 
 Recommended relationship between entities:
 

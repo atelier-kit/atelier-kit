@@ -1,6 +1,10 @@
 # atelier-kit — operating method
 
-atelier-kit helps AI coding agents follow a disciplined workflow inspired by **Research–Plan–Implement (RPI)** and its expanded form (**QRSPI**). The current kit ships a phased workflow and now defines a planner-oriented state model built around epics, tasks, and slices.  
+atelier-kit helps AI coding agents follow a disciplined workflow inspired by **Research–Plan–Implement (RPI)** and its expanded form (**QRSPI**). The current kit ships **two compatible workflows**:
+- a legacy **phased workflow** centered on `brief -> questions -> research -> design -> ...`
+- a newer **planner workflow** centered on goals, tasks, slices, approval, and execution
+
+The planner-oriented state model is built around epics, tasks, and slices.  
 **Credit:** Dexter Horthy & HumanLayer documented the core ideas; this file is a clean-room workflow description. **This project is not affiliated with HumanLayer.**
 
 ## Principles
@@ -12,6 +16,38 @@ atelier-kit helps AI coding agents follow a disciplined workflow inspired by **R
 5. **Tasks before slices:** use tasks to investigate, de-risk, and synthesize. Tasks can be parallel and may cover repository, technical, business, or decision work.
 6. **Vertical slices:** slices remain the delivery primitive. A slice is the end-to-end unit the implementer ships after planning tasks converge.
 7. **Human owns merge:** the agent assists review; the developer approves what ships.
+
+## Workflow modes
+
+### 1. Phased workflow
+
+This is the original RPI/QRSPI-oriented path:
+
+- `brief`
+- `questions`
+- `research`
+- `design`
+- `outline`
+- `plan`
+- `implement`
+- `review`
+
+Use this when you want a document-first, phase-gated workflow.
+
+### 2. Planner workflow
+
+This is the newer goal-first path:
+
+- receive a goal
+- create tasks
+- synthesize slices
+- generate `plan.md`
+- stop for approval
+- execute slices after approval
+
+Use this when you want a planner/control-plane experience rather than a document-first phase flow.
+
+The two workflows can coexist in the same repository, but they are **not the same operating model**.
 
 ## Planning model
 
@@ -76,7 +112,7 @@ Agent trigger protocol:
 | ship | `/ship` | release checklist (project-defined) |
 | learn | `/learn` | `.atelier/artifacts/decision-log.md` |
 
-Use `atelier-kit phase <name>` to force phase when the agent does not auto-select a skill. In planner-oriented sessions, `phase` remains useful as an operational lens, but the authoritative planning model can live in `.atelier/context.md` as epics, tasks, and slices.
+Use `atelier-kit phase <name>` to force phase when the agent does not auto-select a skill. In planner-oriented sessions, `phase` remains useful as an operational lens, but the authoritative planning model lives in `.atelier/context.md` as goals, epics, tasks, slices, planner mode, planner state, and approval state.
 
 ## Modes (.atelierrc)
 

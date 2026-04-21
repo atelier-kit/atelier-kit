@@ -51,11 +51,34 @@ In this model:
 - slices answer **what can be delivered end-to-end next**
 - phases remain useful as compatibility and operator guidance
 
+### Planner workflow example
+
+```bash
+atelier-kit workflow planner
+atelier-kit epic add python-to-php "Migrate Python framework to PHP" --goal "Preserve incremental delivery"
+atelier-kit task add repo-discovery python-to-php repo "Map current framework coupling"
+atelier-kit task add tech-feasibility python-to-php tech "Compare PHP framework candidates"
+atelier-kit task add business-impact python-to-php business "Capture rollout and team impact"
+atelier-kit task focus tech-feasibility
+atelier-kit slice add auth-migration python-to-php "Migrate authentication vertically" --goal "Login/session/authz in PHP" --from-task tech-feasibility
+atelier-kit status
+```
+
+In planner mode, the active skill is derived from the focused task:
+
+- `repo` -> `repo-analyst`
+- `tech` -> `tech-analyst`
+- `business` -> `business-analyst`
+- `synthesis` -> `planner`
+- `implementation` -> `implementer`
+- `decision` -> `designer`
+
 ## CLI
 
 | Command | Purpose |
 |---------|---------|
 | `atelier-kit init` | Create `.atelier/` + install adapter |
+| `atelier-kit workflow <phased|planner>` | Switch workflow model in `.atelier/context.md` |
 | `atelier-kit phase <name>` | Set `phase` in `.atelier/context.md` |
 | `atelier-kit status` | Print session state |
 | `atelier-kit return <phase> --reason "..."` | Roll back with recorded reason |
@@ -64,6 +87,9 @@ In this model:
 | `atelier-kit doctor` | Run all validators |
 | `atelier-kit validate <phase>` | Validate one phase |
 | `atelier-kit install-adapter <name>` | Switch adapter outputs |
+| `atelier-kit epic <add|update|focus>` | Manage planner epics |
+| `atelier-kit task <add|update|focus>` | Manage planner tasks |
+| `atelier-kit slice <add|update|focus>` | Manage planner slices |
 
 ## Compatibility
 

@@ -10,6 +10,18 @@ import { cmdHandoff } from "./commands/handoff.js";
 import { cmdDoctor } from "./commands/doctor.js";
 import { cmdValidate } from "./commands/validate.js";
 import { cmdInstallAdapter } from "./commands/install-adapter.js";
+import {
+  cmdWorkflow,
+  cmdEpicAdd,
+  cmdEpicFocus,
+  cmdEpicUpdate,
+  cmdTaskAdd,
+  cmdTaskFocus,
+  cmdTaskUpdate,
+  cmdSliceAdd,
+  cmdSliceFocus,
+  cmdSliceUpdate,
+} from "./commands/planner.js";
 
 const program = new Command();
 program
@@ -80,6 +92,203 @@ program
   .description("claude | cursor | codex | windsurf | generic")
   .action(async (name: string) => {
     await cmdInstallAdapter(processCwd(), name);
+  });
+
+const planner = program
+  .command("planner")
+  .description("Manage planner workflow, epics, tasks, and slices");
+
+planner
+  .command("workflow <mode>")
+  .description("Set workflow to phased or planner")
+  .action(async (mode: string) => {
+    await cmdWorkflow(processCwd(), mode);
+  });
+
+const epic = planner
+  .command("epic")
+  .description("Manage planner epics");
+
+epic
+  .command("add")
+  .description("Add an epic to planner state")
+  .requiredOption("--id <id>", "Epic identifier")
+  .requiredOption("--title <title>", "Epic title")
+  .option("--goal <goal>", "Epic goal")
+  .option("--summary <summary>", "Epic summary")
+  .option("--status <status>", "draft|researching|blocked|ready|executing|done|cancelled")
+  .option("--sprint-id <id>", "Optional sprint identifier")
+  .option("--labels <labels>", "Comma-separated labels")
+  .action(async (opts) => {
+    await cmdEpicAdd(processCwd(), opts.id, {
+      title: opts.title,
+      goal: opts.goal,
+      summary: opts.summary,
+      status: opts.status,
+      sprint: opts.sprintId,
+      labels: opts.labels,
+    });
+  });
+
+epic
+  .command("update <id>")
+  .description("Update an existing epic")
+  .option("--title <title>", "Epic title")
+  .option("--goal <goal>", "Epic goal")
+  .option("--summary <summary>", "Epic summary")
+  .option("--status <status>", "draft|researching|blocked|ready|executing|done|cancelled")
+  .option("--sprint-id <id>", "Optional sprint identifier")
+  .option("--labels <labels>", "Comma-separated labels")
+  .action(async (id: string, opts) => {
+    await cmdEpicUpdate(processCwd(), id, {
+      title: opts.title,
+      goal: opts.goal,
+      summary: opts.summary,
+      status: opts.status,
+      sprint: opts.sprintId,
+      labels: opts.labels,
+    });
+  });
+
+epic
+  .command("focus <id>")
+  .description("Focus an epic in planner state")
+  .action(async (id: string) => {
+    await cmdEpicFocus(processCwd(), id);
+  });
+
+const task = planner
+  .command("task")
+  .description("Manage planner tasks");
+
+task
+  .command("add")
+  .description("Add a task to planner state")
+  .requiredOption("--id <id>", "Task identifier")
+  .requiredOption("--epic <epicId>", "Epic identifier")
+  .requiredOption("--title <title>", "Task title")
+  .requiredOption("--type <type>", "repo|tech|business|synthesis|implementation|decision")
+  .option("--summary <summary>", "Task summary")
+  .option("--status <status>", "draft|researching|blocked|ready|executing|done|cancelled")
+  .option("--depends-on <ids>", "Comma-separated task dependencies")
+  .option("--acceptance <items>", "Pipe-separated acceptance criteria")
+  .option("--open-questions <items>", "Pipe-separated open questions")
+  .option("--evidence-refs <items>", "Pipe-separated evidence references")
+  .option("--slice <sliceId>", "Associated slice identifier")
+  .action(async (opts) => {
+    await cmdTaskAdd(processCwd(), opts.id, {
+      epic: opts.epic,
+      title: opts.title,
+      type: opts.type,
+      summary: opts.summary,
+      status: opts.status,
+      dependsOn: opts.dependsOn,
+      acceptance: opts.acceptance,
+      openQuestions: opts.openQuestions,
+      evidenceRefs: opts.evidenceRefs,
+      slice: opts.slice,
+    });
+  });
+
+task
+  .command("update <id>")
+  .description("Update an existing task")
+  .option("--title <title>", "Task title")
+  .option("--type <type>", "repo|tech|business|synthesis|implementation|decision")
+  .option("--summary <summary>", "Task summary")
+  .option("--status <status>", "draft|researching|blocked|ready|executing|done|cancelled")
+  .option("--depends-on <ids>", "Comma-separated task dependencies")
+  .option("--acceptance <items>", "Pipe-separated acceptance criteria")
+  .option("--open-questions <items>", "Pipe-separated open questions")
+  .option("--evidence-refs <items>", "Pipe-separated evidence references")
+  .option("--slice <sliceId>", "Associated slice identifier")
+  .action(async (id: string, opts) => {
+    await cmdTaskUpdate(processCwd(), id, {
+      epic: opts.epic,
+      title: opts.title,
+      type: opts.type,
+      summary: opts.summary,
+      status: opts.status,
+      dependsOn: opts.dependsOn,
+      acceptance: opts.acceptance,
+      openQuestions: opts.openQuestions,
+      evidenceRefs: opts.evidenceRefs,
+      slice: opts.slice,
+    });
+  });
+
+task
+  .command("focus <id>")
+  .description("Focus a task in planner state")
+  .action(async (id: string) => {
+    await cmdTaskFocus(processCwd(), id);
+  });
+
+const slice = planner
+  .command("slice")
+  .description("Manage planner slices");
+
+slice
+  .command("add")
+  .description("Add a slice to planner state")
+  .requiredOption("--id <id>", "Slice identifier")
+  .requiredOption("--epic <epicId>", "Epic identifier")
+  .requiredOption("--title <title>", "Slice title")
+  .requiredOption("--goal <goal>", "Slice goal")
+  .option("--kind <kind>", "discovery|delivery")
+  .option("--summary <summary>", "Slice summary")
+  .option("--status <status>", "draft|researching|blocked|ready|executing|done|cancelled")
+  .option("--depends-on <ids>", "Comma-separated task or slice dependencies")
+  .option("--source-tasks <ids>", "Comma-separated source task identifiers")
+  .option("--acceptance <items>", "Pipe-separated acceptance criteria")
+  .option("--risks <items>", "Pipe-separated risks")
+  .action(async (opts) => {
+    await cmdSliceAdd(processCwd(), opts.id, {
+      epic: opts.epic,
+      title: opts.title,
+      goal: opts.goal,
+      kind: opts.kind,
+      summary: opts.summary,
+      status: opts.status,
+      dependsOn: opts.dependsOn,
+      sourceTasks: opts.sourceTasks,
+      acceptance: opts.acceptance,
+      risks: opts.risks,
+    });
+  });
+
+slice
+  .command("update <id>")
+  .description("Update an existing slice")
+  .option("--title <title>", "Slice title")
+  .option("--goal <goal>", "Slice goal")
+  .option("--kind <kind>", "discovery|delivery")
+  .option("--summary <summary>", "Slice summary")
+  .option("--status <status>", "draft|researching|blocked|ready|executing|done|cancelled")
+  .option("--depends-on <ids>", "Comma-separated task or slice dependencies")
+  .option("--source-tasks <ids>", "Comma-separated source task identifiers")
+  .option("--acceptance <items>", "Pipe-separated acceptance criteria")
+  .option("--risks <items>", "Pipe-separated risks")
+  .action(async (id: string, opts) => {
+    await cmdSliceUpdate(processCwd(), id, {
+      epic: opts.epic,
+      title: opts.title,
+      goal: opts.goal,
+      kind: opts.kind,
+      summary: opts.summary,
+      status: opts.status,
+      dependsOn: opts.dependsOn,
+      sourceTasks: opts.sourceTasks,
+      acceptance: opts.acceptance,
+      risks: opts.risks,
+    });
+  });
+
+slice
+  .command("focus <id>")
+  .description("Focus a slice in planner state")
+  .action(async (id: string) => {
+    await cmdSliceFocus(processCwd(), id);
   });
 
 await program.parseAsync(process.argv);

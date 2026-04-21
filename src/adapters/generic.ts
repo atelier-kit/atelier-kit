@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { readContext } from "../state/context.js";
 import { writeText } from "../fs-utils.js";
-import { phaseToSkillFolder } from "../skill-loader.js";
+import { activeSkillFolder } from "../skill-loader.js";
 
 export async function applyGeneric(
   cwd: string,
@@ -12,7 +12,7 @@ export async function applyGeneric(
   const method = await readFile(join(atelier, "METHOD.md"), "utf8").catch(
     () => "",
   );
-  const folder = phaseToSkillFolder(meta.phase);
+  const folder = activeSkillFolder(meta);
   let skillBody = "";
   if (folder) {
     const sp = join(atelier, "skills", folder, "SKILL.md");
@@ -27,7 +27,11 @@ export async function applyGeneric(
 Not affiliated with HumanLayer.
 
 === .atelier/context.md (authoritative) ===
+workflow: ${meta.workflow}
 phase: ${meta.phase}
+current_epic: ${meta.current_epic ?? "null"}
+current_task: ${meta.current_task ?? "null"}
+current_slice: ${meta.current_slice ?? "null"}
 gate_pending: ${meta.gate_pending ?? "null"}
 returns: ${meta.returns.length}
 

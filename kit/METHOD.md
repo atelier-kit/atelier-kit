@@ -29,6 +29,15 @@ Recommended relationship:
 3. Planner synthesizes those tasks into executable **slices**.
 4. Implementer ships one slice at a time.
 
+Operational commands for planner mode:
+
+- `atelier-kit workflow planner`
+- `atelier-kit epic add <id> --title "..." [--goal "..."]`
+- `atelier-kit task add <id> --epic <epic-id> --type repo|tech|business|synthesis|implementation|decision --title "..."`
+- `atelier-kit slice add <id> --epic <epic-id> --title "..." --goal "..."`
+- `atelier-kit focus epic|task|slice <id>`
+- `atelier-kit workflow phased`
+
 ## Phases & trigger phrases
 
 | Phase | Typical triggers | Primary artifact(s) |
@@ -64,7 +73,7 @@ Authoritative state lives in `.atelier/context.md` (YAML frontmatter + optional 
 
 This allows teams to preserve the phased workflow while gradually moving planning to task graphs.
 
-CLI: `atelier-kit status`, `atelier-kit return`, `atelier-kit handoff`.
+CLI: `atelier-kit status`, `atelier-kit return`, `atelier-kit handoff`, planner commands above.
 
 ## Ship checklist (suggested)
 

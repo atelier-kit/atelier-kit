@@ -1,79 +1,79 @@
-# Arquitetura do framework e fluxo entre fases do atelier-kit
+# atelier-kit framework architecture and phase flow
 
-Este documento descreve, em detalhe, como o framework está implementado hoje, como ele foi pensado para operar e qual e a diferenca entre:
+This document explains, in detail, how the framework is implemented today, how it is intended to operate, and what the difference is between:
 
-- **execucao real no codigo**, e
-- **execucao metodologica esperada entre fases**.
+- **execution implemented directly in code**, and
+- **methodological execution expected between phases**.
 
-Essa distincao e a chave para entender o projeto corretamente.
+That distinction is the key to understanding the project correctly.
 
-## 1. O que este projeto e
+## 1. What this project is
 
-O `atelier-kit` e uma **CLI em TypeScript** para instalar e manter um fluxo de trabalho guiado por fases dentro de um repositorio.
+`atelier-kit` is a **TypeScript CLI** that installs and maintains a phase-oriented workflow inside a repository.
 
-Ele **nao** e:
+It is **not**:
 
-- um orquestrador de jobs em background,
-- uma maquina de estados automatica,
-- um framework web,
-- um sistema que avanca fases sozinho.
+- a background job orchestrator,
+- an automatic state machine,
+- a web framework,
+- or a system that advances phases on its own.
 
-A responsabilidade central dele e:
+Its core responsibility is to:
 
-1. criar uma estrutura `.atelier/` com metodo, skills, templates e gates,
-2. persistir o estado da sessao, principalmente a fase atual,
-3. adaptar esse metodo para diferentes ambientes de agente,
-4. validar se os artefatos produzidos se parecem com o formato esperado para cada fase.
+1. create a `.atelier/` workspace with method docs, skills, templates, and gates,
+2. persist session state, especially the current phase,
+3. adapt the method to different agent environments,
+4. validate whether produced artifacts roughly match the expected shape for each phase.
 
-As partes principais da implementacao estao em:
+The main implementation areas are:
 
-- `src/cli.ts` - ponto de entrada da CLI
-- `src/commands/*` - comandos da CLI
-- `src/state/*` - persistencia e leitura de estado
-- `src/adapters/*` - integracoes por ambiente
-- `src/gates/*` - validadores dos artefatos e das skills
-- `src/skill-loader.ts` - parser das skills e mapeamento fase -> skill
-- `kit/*` - conteudo estatico copiado para `.atelier/`
+- `src/cli.ts` - CLI entrypoint
+- `src/commands/*` - CLI command handlers
+- `src/state/*` - state persistence and parsing
+- `src/adapters/*` - agent-environment integrations
+- `src/gates/*` - validators for artifacts and skills
+- `src/skill-loader.ts` - skill parsing and phase-to-skill mapping
+- `kit/*` - static content copied into `.atelier/`
 
-## 2. Modelo mental do framework
+## 2. The framework mental model
 
-O jeito certo de pensar no projeto e:
+The right way to think about this project is:
 
-> **um framework de coordenacao de sessoes de trabalho com IA, baseado em fases, artefatos e restricao de contexto**
+> **a phase-aware coordination framework for AI-assisted work, built around artifacts and context restriction**
 
-Ele e composto por quatro blocos cooperando entre si.
+It is made of four cooperating building blocks.
 
-### 2.1 O kit
+### 2.1 The kit
 
-O diretorio `kit/` contem o metodo e os ativos reutilizaveis:
+The `kit/` directory contains the reusable method content:
 
-- `kit/METHOD.md` - define o metodo operacional
-- `kit/skills/*/SKILL.md` - instrucao especializada por fase
-- `kit/templates/*.md` - artefatos iniciais
-- `kit/gates/*.md` - documentacao dos gates
+- `kit/METHOD.md` - the operating method
+- `kit/skills/*/SKILL.md` - phase-specific instructions
+- `kit/templates/*.md` - starter artifacts
+- `kit/gates/*.md` - human-readable gate descriptions
 
-No `init`, esse conteudo e copiado para `.atelier/` dentro do repositorio do usuario.
+During `init`, this content is copied into `.atelier/` inside the target repository.
 
-### 2.2 O estado persistente
+### 2.2 Persistent state
 
-O estado do fluxo fica em dois lugares:
+Workflow state lives in two places:
 
-- `.atelierrc` - configuracao global do adapter e do modo
-- `.atelier/context.md` - estado autoritativo da sessao
+- `.atelierrc` - global configuration for adapter and mode
+- `.atelier/context.md` - authoritative session state
 
-O ponto mais importante aqui e:
+The most important point is:
 
-**a fase atual nao fica numa estrutura interna de memoria nem num banco; ela fica num arquivo**
+**the current phase is stored in a file, not in a long-lived in-memory engine**
 
-Ou seja, a "execucao" do framework entre fases e, na pratica, uma combinacao de:
+In practice, "execution" between phases is mostly a combination of:
 
-- reescrever arquivos de estado,
-- ler artefatos anteriores,
-- regenerar instrucoes de adapter quando necessario.
+- rewriting state files,
+- reading previous artifacts,
+- regenerating adapter instructions when needed.
 
-### 2.3 Os adapters
+### 2.3 Adapters
 
-Os adapters traduzem o metodo `.atelier/` para o formato de cada ambiente de agente:
+Adapters translate the `.atelier/` method into the conventions of each agent environment:
 
 - Claude Code -> `.claude/skills/` + `CLAUDE.md`
 - Cursor -> `.cursor/skills/` + `.cursor/rules/atelier-core.mdc`
@@ -81,27 +81,27 @@ Os adapters traduzem o metodo `.atelier/` para o formato de cada ambiente de age
 - Windsurf -> `.windsurfrules`
 - Generic -> `atelier-system-prompt.txt`
 
-Eles nao mudam a logica do framework; eles mudam **como o agente recebe e consome essa logica**.
+They do not change the workflow logic itself. They change **how the agent receives and consumes that logic**.
 
-### 2.4 Os gates
+### 2.4 Gates
 
-Os gates sao validadores heuristicas. Eles observam os artefatos e verificam se:
+Gates are heuristic validators. They inspect artifacts and check whether:
 
-- a forma parece correta,
-- a estrutura segue o metodo,
-- alguns sinais de incoerencia estao presentes ou ausentes.
+- the shape looks correct,
+- the structure follows the method,
+- obvious signs of inconsistency are present or absent.
 
-Importante:
+Important:
 
-**gates nao executam a fase, nao avancam fase e nao controlam um pipeline automatico**
+**gates do not execute phases, do not advance phases, and do not control an automatic pipeline**
 
-Eles apenas dizem se o resultado produzido **parece consistente** com o contrato esperado.
+They only report whether the produced output **looks consistent** with the expected contract.
 
-## 3. Arquitetura de runtime
+## 3. Runtime architecture
 
-## 3.1 Entrypoint da CLI
+### 3.1 CLI entrypoint
 
-O arquivo `src/cli.ts` registra os comandos:
+The file `src/cli.ts` registers these commands:
 
 - `init`
 - `phase <name>`
@@ -113,39 +113,39 @@ O arquivo `src/cli.ts` registra os comandos:
 - `validate <phase>`
 - `install-adapter <name>`
 
-A CLI usa **Commander** e e compilada com **tsup** para `dist/cli.js`.
+The CLI uses **Commander** and is built with **tsup** into `dist/cli.js`.
 
-## 3.2 Resolucao do kit empacotado
+### 3.2 Bundled kit resolution
 
-Em `src/paths.ts`, `getKitRoot()` localiza o diretorio `kit/` ao lado do build, exceto quando `ATELIER_KIT_ROOT` esta definido para testes.
+In `src/paths.ts`, `getKitRoot()` resolves the `kit/` directory next to the compiled build, unless `ATELIER_KIT_ROOT` is overridden for tests.
 
-Isso significa que o pacote distribuido possui dois tipos de conteudo:
+That means the published package has two kinds of content:
 
-- codigo executavel em `dist/`
-- conteudo metodologico estatico em `kit/`
+- executable code in `dist/`
+- static method content in `kit/`
 
-Essa separacao e boa porque permite evoluir o metodo com pouco acoplamento ao codigo da CLI.
+This separation is a strength because the method can evolve with limited coupling to the CLI runtime.
 
-## 4. Ciclo de instalacao
+## 4. Installation lifecycle
 
-O comando principal para adotar o framework e `atelier-kit init`.
+The main adoption entrypoint is `atelier-kit init`.
 
-## 4.1 O que o `init` faz
+### 4.1 What `init` does
 
-O arquivo `src/commands/init.ts` executa a seguinte sequencia:
+`src/commands/init.ts` runs the following sequence:
 
-1. escolhe o `adapter` e o `mode`, por prompt ou por default,
-2. cria `.atelier/` e `.atelier/artifacts/`,
-3. copia todo o conteudo de `kit/` para `.atelier/`,
-4. grava `.atelier/brief.md`,
-5. grava os artefatos iniciais em `.atelier/artifacts/`,
-6. grava `.atelierrc`,
-7. grava `.atelier/context.md` com a fase inicial `brief`,
-8. instala o adapter escolhido na raiz do repositorio.
+1. chooses the `adapter` and `mode`, either from prompts or defaults,
+2. creates `.atelier/` and `.atelier/artifacts/`,
+3. copies the full `kit/` tree into `.atelier/`,
+4. writes `.atelier/brief.md`,
+5. writes starter artifacts under `.atelier/artifacts/`,
+6. writes `.atelierrc`,
+7. writes `.atelier/context.md` with initial phase `brief`,
+8. installs the selected adapter into the repository root.
 
-## 4.2 Resultado do `init`
+### 4.2 Result of `init`
 
-Depois do `init`, o repositorio passa a ter:
+After `init`, the repository contains:
 
 - `.atelier/METHOD.md`
 - `.atelier/skills/...`
@@ -155,29 +155,29 @@ Depois do `init`, o repositorio passa a ter:
 - `.atelier/artifacts/*.md`
 - `.atelier/context.md`
 - `.atelierrc`
-- arquivos de adapter como `AGENTS.md`, `.windsurfrules`, `CLAUDE.md`, `.cursor/rules/atelier-core.mdc` ou `atelier-system-prompt.txt`
+- adapter output files such as `AGENTS.md`, `.windsurfrules`, `CLAUDE.md`, `.cursor/rules/atelier-core.mdc`, or `atelier-system-prompt.txt`
 
-Ou seja, o `init` nao "liga um sistema". Ele **materializa um workspace metodologico** dentro do repositorio.
+So `init` does not "start a system". It **materializes a methodological workspace** inside the repository.
 
-## 5. Modelo de estado
+## 5. State model
 
-## 5.1 `.atelierrc`
+### 5.1 `.atelierrc`
 
-O `.atelierrc` armazena configuracao mais estatica:
+`.atelierrc` stores more stable configuration:
 
 - `version`
 - `adapter`
 - `mode`
 
-Esse arquivo e gerido por `src/state/atelierrc.ts`.
+This file is managed by `src/state/atelierrc.ts`.
 
-## 5.2 `.atelier/context.md`
+### 5.2 `.atelier/context.md`
 
-Esse e o arquivo mais importante do framework.
+This is the most important file in the framework.
 
-`src/state/context.ts` le e escreve esse documento, e `src/state/schema.ts` define sua estrutura com Zod.
+`src/state/context.ts` reads and writes it, and `src/state/schema.ts` defines its structure with Zod.
 
-O frontmatter aceita:
+The frontmatter accepts:
 
 - `atelier_context_version`
 - `phase`
@@ -187,58 +187,58 @@ O frontmatter aceita:
 - `updated_at`
 - `returns`
 
-O corpo do arquivo pode conter notas livres.
+The body may contain freeform notes.
 
-### Implicacao pratica
+### Practical implication
 
-Quando a fase muda, o sistema **nao** atualiza uma estrutura de runtime duradoura.
+When the phase changes, the system does **not** update a long-lived runtime structure.
 
-Ele simplesmente:
+It simply:
 
-1. le `context.md`,
-2. muda o campo `phase`,
-3. regrava o arquivo,
-4. opcionalmente regenera o adapter.
+1. reads `context.md`,
+2. changes the `phase` field,
+3. rewrites the file,
+4. optionally regenerates the adapter output.
 
-Portanto, a transicao entre fases e persistencia documental, nao orquestracao automatica.
+So phase transitions are document persistence, not automatic orchestration.
 
-### Nuance importante sobre duplicacao de estado
+### Important nuance about duplicated state
 
-Embora `.atelierrc` seja o lugar principal para `adapter` e `mode`, o schema de `context.md` tambem aceita esses campos.
+Although `.atelierrc` is the main home for `adapter` and `mode`, the `context.md` schema also allows those fields.
 
-Na pratica:
+In practice:
 
-- `init` grava `mode` e `adapter` em ambos,
-- `mode` atualiza apenas `.atelierrc`,
-- `install-adapter` atualiza apenas `.atelierrc`,
-- `phase` e `return` preservam o que ja existe em `context.md`, mas nao reconciliam esses campos com `.atelierrc`.
+- `init` writes `mode` and `adapter` into both files,
+- `mode` updates only `.atelierrc`,
+- `install-adapter` updates only `.atelierrc`,
+- `phase` and `return` preserve whatever is already in `context.md`, but do not reconcile those fields with `.atelierrc`.
 
-Isso significa que ha uma **duplicacao potencial de informacao** entre os dois arquivos.
+That means there is a **potential duplication of information** between the two files.
 
-Hoje isso nao quebra o fluxo principal, porque:
+Today this does not break the main workflow because:
 
-- a fase e o elemento realmente autoritativo para selecao de skill,
-- `status` le `.atelierrc` para mostrar `adapter` e `mode`,
-- `refreshFallbackAdapters()` tambem consulta `.atelierrc`.
+- `phase` is the truly authoritative input for skill selection,
+- `status` reads `.atelierrc` for displayed `adapter` and `mode`,
+- `refreshFallbackAdapters()` also reads `.atelierrc`.
 
-Mesmo assim, arquiteturalmente, vale notar que `mode` e `adapter` em `context.md` estao mais proximos de um espelho inicial do que de uma fonte de verdade plenamente sincronizada.
+Still, architecturally, `mode` and `adapter` in `context.md` behave more like an initial mirror than a fully synchronized source of truth.
 
-## 5.3 Historico de retorno
+### 5.3 Return history
 
-O comando `return` faz mais do que mudar a fase.
+The `return` command does more than change the phase.
 
-Ele tambem acrescenta uma entrada em `returns[]` com:
+It also appends an entry into `returns[]` with:
 
 - `from`
 - `to`
 - `reason`
 - `at`
 
-Isso cria um pequeno historico auditavel de regressao de fase.
+That creates a small but useful audit trail of backward movement in the workflow.
 
-## 6. Fases canonicas do framework
+## 6. Canonical framework phases
 
-As fases validas sao definidas em `src/state/schema.ts`:
+The valid phases are defined in `src/state/schema.ts`:
 
 - `brief`
 - `questions`
@@ -251,26 +251,26 @@ As fases validas sao definidas em `src/state/schema.ts`:
 - `ship`
 - `learn`
 
-Essas fases batem com o metodo descrito em `kit/METHOD.md`.
+These phases match the method described in `kit/METHOD.md`.
 
-## 6.1 Ideia geral do fluxo
+### 6.1 High-level intended flow
 
-O fluxo pretendido pelo metodo e:
+The method intends work to move like this:
 
-1. registrar o problema,
-2. levantar perguntas neutras,
-3. pesquisar as respostas,
-4. desenhar o estado desejado,
-5. transformar isso em estrutura e slices,
-6. quebrar em plano executavel,
-7. implementar slice por slice,
-8. revisar contra o plano,
-9. preparar ship com aprovacao humana,
-10. registrar aprendizado e decisoes duraveis.
+1. capture the problem,
+2. raise neutral questions,
+3. research the answers,
+4. design the target state,
+5. turn that into structure and slices,
+6. convert it into an executable plan,
+7. implement slice by slice,
+8. review against the plan,
+9. prepare ship with human approval,
+10. record durable lessons and decisions.
 
-## 6.2 Mapeamento fase -> skill
+### 6.2 Phase-to-skill mapping
 
-O arquivo `src/skill-loader.ts` faz o mapeamento em runtime:
+`src/skill-loader.ts` maps runtime phases to skills:
 
 - `questions` -> `questions`
 - `research` -> `researcher`
@@ -281,299 +281,299 @@ O arquivo `src/skill-loader.ts` faz o mapeamento em runtime:
 - `review` -> `reviewer`
 - `learn` -> `chronicler`
 
-Nao existe skill dedicada para:
+There is no dedicated skill for:
 
 - `brief`
 - `ship`
 
-Nesses casos, o sistema depende mais de `METHOD.md` e do processo humano.
+In those cases, the system relies more heavily on `METHOD.md` and human process.
 
-## 6.3 Artefatos esperados por fase
+### 6.3 Expected artifacts by phase
 
-| Fase | Leitura principal | Saida principal |
+| Phase | Main input | Main output |
 | --- | --- | --- |
-| `brief` | definicao humana do problema | `.atelier/brief.md` |
+| `brief` | human problem definition | `.atelier/brief.md` |
 | `questions` | `brief.md` | `.atelier/artifacts/questions.md` |
 | `research` | `questions.md` | `.atelier/artifacts/research.md` |
 | `design` | `brief.md`, `research.md` | `.atelier/artifacts/design.md` |
 | `outline` | `brief.md`, `research.md`, `design.md` | `.atelier/artifacts/outline.md` |
 | `plan` | `design.md`, `outline.md` | `.atelier/artifacts/plan.md` |
-| `implement` | `outline.md`, `plan.md` | codigo + `.atelier/artifacts/impl-log.md` |
+| `implement` | `outline.md`, `plan.md` | source code + `.atelier/artifacts/impl-log.md` |
 | `review` | `outline.md`, `plan.md`, `impl-log.md` | `.atelier/artifacts/review.md` |
-| `ship` | review + checklist do projeto | sem arquivo forte no codigo |
-| `learn` | contexto + artefatos | `.atelier/artifacts/decision-log.md` |
+| `ship` | review result + project-specific release checks | no strongly enforced file |
+| `learn` | context + artifacts | `.atelier/artifacts/decision-log.md` |
 
-## 7. Como a execucao entre fases funciona de verdade
+## 7. How execution between phases actually works
 
-Este e o ponto central da avaliacao.
+This is the central implementation point.
 
-O framework **nao** implementa uma maquina de estados completa com:
+The framework does **not** implement a full state machine with:
 
-- regras de transicao obrigatorias,
-- pre-condicoes fortes,
-- aprovacoes persistidas em estado,
-- avancos automaticos de fase,
-- jobs de fase encadeados.
+- mandatory transition rules,
+- hard prerequisites,
+- persisted approval states,
+- automatic phase advancement,
+- chained phase jobs.
 
-Em vez disso, a execucao entre fases funciona como uma cadeia de handoffs orientados por arquivo.
+Instead, execution between phases works as a file-driven handoff chain.
 
-## 7.1 Passo 1: uma fase e escolhida
+### 7.1 Step 1: a phase is selected
 
-Uma fase muda quando:
+A phase changes when:
 
-- o usuario executa `atelier-kit phase <name>`,
-- o usuario executa `atelier-kit return <phase> --reason ...`,
-- um agente segue a convencao do metodo e o humano atualiza o estado manualmente.
+- the user runs `atelier-kit phase <name>`,
+- the user runs `atelier-kit return <phase> --reason ...`,
+- an agent follows the method convention and the human updates state explicitly.
 
-## 7.2 Passo 2: o estado e persistido
+### 7.2 Step 2: state is persisted
 
-Em `src/commands/phase.ts`, a fase e validada contra o enum e depois enviada para `setPhase()`, que regrava `.atelier/context.md`.
+In `src/commands/phase.ts`, the phase is validated against the enum and then passed to `setPhase()`, which rewrites `.atelier/context.md`.
 
-Em `src/commands/return-cmd.ts`, o mesmo arquivo e regravado, agora com o historico de retorno atualizado.
+In `src/commands/return-cmd.ts`, the same file is rewritten with updated return history.
 
-## 7.3 Passo 3: alguns adapters sao regenerados
+### 7.3 Step 3: some adapters are regenerated
 
-Depois da troca de fase, `refreshFallbackAdapters()` reinstala apenas:
+After a phase change, `refreshFallbackAdapters()` reinstalls only:
 
 - `generic`
 - `windsurf`
 - `codex`
 
-Isso acontece porque esses adapters dependem diretamente da fase atual materializada em arquivo.
+That happens because those adapters depend directly on the current phase being materialized in generated output.
 
-Ja Cursor e Claude funcionam de outro jeito: eles instalam instrucoes fixas que dizem ao agente para **ler `context.md` toda vez**.
+Cursor and Claude work differently: they install stable instructions that tell the agent to **read `context.md` every time**.
 
-## 7.4 Passo 4: o agente descobre o proximo contexto de execucao
+### 7.4 Step 4: the agent discovers the next execution context
 
-O agente ou a proxima sessao deve:
+The agent or next session is expected to:
 
-1. ler `.atelier/context.md`,
-2. identificar a fase atual,
-3. carregar a skill correspondente,
-4. ler apenas os artefatos permitidos por essa skill,
-5. produzir o artefato esperado da fase.
+1. read `.atelier/context.md`,
+2. identify the current phase,
+3. load the corresponding skill,
+4. read only the artifacts allowed by that skill,
+5. produce the expected artifact for that phase.
 
-Esse e o coracao do design "skills-first".
+That is the core of the "skills-first" design.
 
-## 7.5 Passo 5: o artefato gerado vira a entrada da proxima fase
+### 7.5 Step 5: the produced artifact becomes the next phase input
 
-O encadeamento real entre fases nao e feito por jobs internos. Ele e feito por **documentos**.
+The real chaining between phases is not implemented through internal jobs. It is implemented through **documents**.
 
-Exemplos:
+Examples:
 
-- `questions.md` alimenta `research`
-- `research.md` alimenta `design`
-- `design.md` e `outline.md` alimentam `plan`
-- `plan.md` alimenta `implement`
-- `impl-log.md` alimenta `review`
+- `questions.md` feeds `research`
+- `research.md` feeds `design`
+- `design.md` and `outline.md` feed `plan`
+- `plan.md` feeds `implement`
+- `impl-log.md` feeds `review`
 
-Em outras palavras, o verdadeiro "motor" do fluxo hoje e:
+In other words, the real workflow engine today is:
 
-> **campo `phase` + artefatos + adapters que expõem a skill correta**
+> **the `phase` field + artifacts + adapters that expose the correct skill**
 
-Nao existe um motor oculto alem disso.
+There is no hidden engine beyond that.
 
-## 8. Como o framework foi planejado para funcionar entre fases
+## 8. How the framework was planned to work between phases
 
-Pelo `METHOD.md` e pelas `SKILL.md`, da para ver claramente a intencao de design.
+From `METHOD.md` and the `SKILL.md` files, the design intent is very clear.
 
-## 8.1 Questions
+### 8.1 Questions
 
-A fase `questions` foi pensada para:
+The `questions` phase is designed to:
 
-- ler o `brief`,
-- transformar objetivo em perguntas verificaveis,
-- classificar cada pergunta como `[repo]`, `[tech]` ou `[market]`,
-- evitar resposta, desenho ou recomendacao prematura.
+- read the `brief`,
+- turn the goal into verifiable questions,
+- classify each question as `[repo]`, `[tech]`, or `[market]`,
+- avoid premature answers, design, or recommendations.
 
-A ideia aqui e separar:
+The idea is to separate:
 
-- **captura de intencao**, e
-- **levantamento de fatos necessarios**
+- **intent capture**, and
+- **fact gathering**
 
-## 8.2 Research
+### 8.2 Research
 
-A fase `research` foi desenhada para operar em isolamento do `brief`.
+The `research` phase is intentionally isolated from the `brief`.
 
-O pesquisador le `questions.md`, e **nao** deveria ler o documento de objetivo original. Isso e uma decisao metodologica importante: reduzir viés de implementacao antecipada.
+The researcher reads `questions.md` and should **not** read the original goal document. That is an important methodological choice: reduce premature implementation bias.
 
-Dentro de `research`, ha tres estagios internos:
+Inside `research`, there are three internal stages:
 
-1. `[repo]` - mapeamento do repositorio
-2. `[tech]` - pesquisa tecnica externa
-3. `[market]` - benchmark de mercado ou UX
+1. `[repo]` - repository mapping
+2. `[tech]` - external technical research
+3. `[market]` - market or UX benchmark
 
-Esses estagios **nao** sao fases do enum. Sao subetapas internas de uma unica fase.
+Those stages are **not** separate runtime phases. They are internal sub-stages of one phase.
 
-## 8.3 Design -> Outline -> Plan
+### 8.3 Design -> Outline -> Plan
 
-Essa trilha e a principal ideia de execucao planejada.
+This sequence is the main planned execution idea in the framework.
 
-### Design
+#### Design
 
-`design.md` responde ao "por que" e ao "o que":
+`design.md` answers the "why" and the "what":
 
-- estado atual,
-- estado desejado,
-- padroes a seguir,
-- padroes a evitar,
-- decisoes em aberto.
+- current state,
+- desired state,
+- patterns to follow,
+- patterns to avoid,
+- open decisions.
 
-### Outline
+#### Outline
 
-`outline.md` responde ao "qual a forma da solucao":
+`outline.md` answers "what shape should the solution have":
 
-- limites,
-- componentes,
+- boundaries,
+- components,
 - interfaces,
-- contratos,
+- contracts,
 - slices,
-- ordem de construcao.
+- build order.
 
-### Plan
+#### Plan
 
-`plan.md` responde ao "como executar":
+`plan.md` answers "how should this be executed":
 
-- tarefas por slice,
-- ordem de implementacao,
-- dependencias,
-- testes,
-- unidades pequenas de trabalho.
+- tasks per slice,
+- implementation order,
+- dependencies,
+- tests,
+- small executable work units.
 
-O modelo planejado, resumindo, e:
+The planned model, in one line, is:
 
-> **design define direcao -> outline define estrutura -> plan define ordem executavel**
+> **design defines direction -> outline defines structure -> plan defines executable order**
 
-## 8.4 Implement
+### 8.4 Implement
 
-A implementacao foi pensada para acontecer em **vertical slices**.
+Implementation is designed around **vertical slices**.
 
-Ou seja, a ideia nao e:
+That means the intended process is not:
 
-- primeiro mexer em toda a persistencia,
-- depois em toda a API,
-- depois em toda a UI.
+- first change all persistence,
+- then all API code,
+- then all UI code.
 
-A ideia e:
+Instead, the intended process is:
 
-- escolher o primeiro slice,
-- cruzar todas as camadas necessarias,
-- validar esse slice,
-- registrar desvios,
-- so depois ir para o proximo.
+- choose the first slice,
+- cut across all required layers,
+- validate that slice,
+- record deviations,
+- only then move to the next slice.
 
-Isso reduz o risco de abrir frentes grandes demais sem validacao intermediaria.
+That reduces the risk of opening too many fronts without intermediate validation.
 
-## 8.5 Review
+### 8.5 Review
 
-A fase `review` foi pensada como papel separado da implementacao.
+The `review` phase is designed as a role separate from implementation.
 
-O revisor deve confrontar:
+The reviewer should compare:
 
-- codigo produzido,
+- produced code,
 - `outline.md`,
 - `plan.md`,
 - `impl-log.md`
 
-A revisao nao deveria reimplementar. Ela deveria apontar divergencias, riscos e faltas.
+Review should not re-implement. It should identify divergence, risk, and missing work.
 
-## 8.6 Ship e Learn
+### 8.6 Ship and Learn
 
-`ship` e mais um checkpoint operacional do que uma fase fortemente implementada.
+`ship` is more of an operational checkpoint than a deeply implemented phase.
 
-`learn` serve para registrar decisoes e licoes duraveis em `decision-log.md`, usando:
+`learn` exists to record durable decisions and lessons in `decision-log.md`, using:
 
-- historico de retorno,
+- return history,
 - impl-log,
 - review,
-- demais artefatos da sessao.
+- and the rest of the session artifacts.
 
-## 9. Papel dos adapters no fluxo
+## 9. Role of adapters in the workflow
 
-Cada adapter realiza a mesma ideia, mas de forma diferente.
+Each adapter expresses the same method in a different delivery style.
 
-## 9.1 Cursor e Claude
+### 9.1 Cursor and Claude
 
-Esses adapters instalam instrucoes relativamente estaveis e vendem as skills para o ambiente.
+These adapters install relatively stable instructions and vendor the skills into the environment.
 
-Eles dependem do seguinte contrato:
+They rely on this contract:
 
-1. o agente sempre deve ler `.atelier/context.md`,
-2. o campo `phase` e a fonte de verdade,
-3. a skill ativa deve ser escolhida com base nessa fase.
+1. the agent should always read `.atelier/context.md`,
+2. the `phase` field is the source of truth,
+3. the active skill should be chosen from that phase.
 
-Por isso, eles nao precisam ser regenerados toda vez.
+That is why they do not need regeneration on every phase change.
 
-## 9.2 Generic, Codex e Windsurf
+### 9.2 Generic, Codex, and Windsurf
 
-Esses adapters sao mais dependentes da fase atual materializada.
+These adapters are more dependent on the materialized current phase.
 
-- `generic` gera um prompt unico com o metodo e a skill ativa embutida
-- `codex` regenera `AGENTS.md` apontando para a skill ativa
-- `windsurf` regenera `.windsurfrules` com a fase e trecho da skill ativa
+- `generic` generates one prompt file with the method and active skill embedded
+- `codex` regenerates `AGENTS.md` to point at the active skill
+- `windsurf` regenerates `.windsurfrules` with the current phase and an embedded skill snippet
 
-Por isso, apos mudar a fase, o codigo reinstala esses adapters.
+That is why the code reinstalls those adapters after a phase change.
 
-## 10. O que o codigo realmente valida hoje
+## 10. What the code validates today
 
-Os gates possuem niveis de maturidade diferentes.
+The gates have different maturity levels.
 
-## 10.1 Gate de `questions`
+### 10.1 `questions` gate
 
-Ele verifica:
+It checks:
 
-- se os bullets possuem `[repo]`, `[tech]` ou `[market]`,
-- se o conteudo parece coerente com o escopo,
-- se ha sinais de pergunta prescritiva,
-- se ha vazamento indevido do `brief` para as perguntas.
+- whether bullets have `[repo]`, `[tech]`, or `[market]`,
+- whether content seems coherent with the selected scope,
+- whether there are signs of prescriptive questions,
+- whether the `brief` is leaking too directly into the questions.
 
-Esse gate e relativamente forte para o estagio inicial.
+This is a relatively strong early-stage gate.
 
-## 10.2 Gate de `research`
+### 10.2 `research` gate
 
-Ele verifica:
+It checks:
 
-- se cada pergunta possui bloco de resposta,
-- se respostas `[repo]` trazem referencia de codigo ou caminho,
-- se respostas `[tech]` e `[market]` trazem URL,
-- se a resposta esta no stage correto.
+- whether each question has a matching answer block,
+- whether `[repo]` answers contain code or path references,
+- whether `[tech]` and `[market]` answers contain URLs,
+- whether each answer appears under the correct stage.
 
-Esse tambem e um gate relativamente concreto.
+This is also a relatively concrete gate.
 
-## 10.3 Gate de `design`
+### 10.3 `design` gate
 
-Ele verifica:
+It checks:
 
-- se `design.md` nao esta curto ou excessivamente longo,
-- se as secoes obrigatorias existem.
+- whether `design.md` is not too short or too long,
+- whether required sections exist.
 
-Valida bem forma, mas pouco sobre qualidade semantica.
+It validates shape reasonably well, but only lightly validates semantics.
 
-## 10.4 Gate de `plan`
+### 10.4 `plan` gate
 
-Hoje ele e mais fraco do que a metodologia sugere.
+Today it is weaker than the methodology suggests.
 
-Na pratica, ele:
+In practice, it:
 
-- verifica existencia de `outline.md` e `plan.md`,
-- tolera `_TBD_`,
-- quase nao emite erro de desalinhamento real entre outline e plan.
+- checks whether `outline.md` and `plan.md` exist,
+- tolerates `_TBD_`,
+- emits little to no real misalignment feedback between outline and plan.
 
-Ou seja, a ideia metodologica de "plano estritamente derivado do outline" ainda nao esta forte no codigo.
+So the methodological idea of a plan being a strict expansion of the outline is not yet strongly enforced in code.
 
-## 10.5 Gate de `implement`
+### 10.5 `implement` gate
 
-Ele verifica:
+It checks:
 
-- se `plan.md` existe,
-- se `impl-log.md` existe,
-- se slices nomeados no plano aparecem no log.
+- whether `plan.md` exists,
+- whether `impl-log.md` exists,
+- whether slices named in the plan appear in the log.
 
-Ele reforca a disciplina de registro, mas nao valida profundamente a implementacao real contra o plano.
+It reinforces logging discipline, but does not deeply validate implementation against the plan.
 
-## 10.6 `doctor`
+### 10.6 `doctor`
 
-O `doctor` agrega:
+`doctor` aggregates:
 
 - instruction budget
 - skill shape
@@ -583,174 +583,165 @@ O `doctor` agrega:
 - plan
 - implement
 
-Ou seja, ele funciona como um "estado geral de saude" da estrutura do metodo.
+So it acts as a general structural health check for the workflow kit.
 
-## 11. Avaliacao tecnica da implementacao atual
+## 11. Technical evaluation of the current implementation
 
-No geral, a implementacao e boa como estrutura conceitual e como kit operacional, mas ainda esta mais perto de um **framework de coordenacao** do que de um **engine de workflow**.
+Overall, the implementation is good as a conceptual structure and operational kit, but it is still closer to a **workflow coordination framework** than to a **workflow engine**.
 
-## 11.1 Pontos fortes
+### 11.1 Strengths
 
-### 1. Separacao limpa entre metodo e runtime
+#### 1. Clean separation between method and runtime
 
-O metodo fica em `kit/`, enquanto o runtime da CLI fica em `src/`.
+The method lives in `kit/`, while the CLI runtime lives in `src/`.
 
-Isso torna a manutencao boa e reduz acoplamento.
+That keeps maintenance simpler and reduces coupling.
 
-### 2. Estado simples e inspecionavel
+#### 2. Simple, inspectable state
 
-Usar `.atelier/context.md` e `.atelierrc` e uma escolha boa porque:
+Using `.atelier/context.md` and `.atelierrc` is a strong choice because the state is:
 
-- e facil de versionar,
-- e facil de depurar,
-- e portavel,
-- e legivel por humanos e agentes.
+- easy to version,
+- easy to debug,
+- portable,
+- readable by both humans and agents.
 
-### 3. Handoff explicito entre fases
+#### 3. Explicit handoff between phases
 
-Os artefatos intermedios materializam o raciocinio da sessao.
+Intermediate artifacts make session reasoning concrete.
 
-Isso e muito melhor do que depender apenas de contexto conversacional efemero.
+That is much better than depending only on ephemeral conversational context.
 
-### 4. Boa portabilidade entre ambientes
+#### 4. Good portability across environments
 
-A camada de adapters permite levar o mesmo metodo para Cursor, Claude, Codex, Windsurf e um modo generico.
+The adapter layer allows the same method to run across Cursor, Claude, Codex, Windsurf, and a generic mode.
 
-### 5. Boa ideia de isolamento em research
+#### 5. Strong research-isolation idea
 
-A decisao de impedir o pesquisador de ler `brief.md` e forte do ponto de vista metodologico. Ela combate vies de confirmacao cedo demais.
+Preventing the researcher from reading `brief.md` is a strong methodological choice. It helps reduce confirmation bias too early in the process.
 
-## 11.2 Limitacoes importantes
+### 11.2 Important limitations
 
-### 1. Progressao de fase e manual
+#### 1. Phase progression is manual
 
-Qualquer fase valida pode ser setada diretamente.
+Any valid phase can be set directly.
 
-Nao existe:
+There is no:
 
-- grafo de transicao,
-- bloqueio por pre-requisito,
-- obrigacao de gate antes de avancar,
-- automacao de aprovacoes.
+- transition graph,
+- prerequisite enforcement,
+- mandatory gate-before-advance rule,
+- or approval automation.
 
-### 2. Os modos sao mais descritivos do que executaveis
+#### 2. Modes are more descriptive than executable
 
-`quick`, `standard` e `deep` estao persistidos e documentados, mas quase nao alteram o comportamento real do runtime.
+`quick`, `standard`, and `deep` are persisted and documented, but they barely change runtime behavior today.
 
-Hoje, eles representam mais uma **intencao de operacao** do que uma logica fortemente codificada.
+Right now, they represent more of an **operating intent** than strongly encoded logic.
 
-### 3. `gate_pending` e apenas informativo
+#### 3. `gate_pending` is informational only
 
-O campo existe no schema, aparece no `status` e no adapter generico, mas nao ha logica que o governe.
+The field exists in the schema, appears in `status`, and is surfaced by the generic adapter, but no command actively governs it.
 
-### 4. O framework depende bastante da obediencia do agente
+#### 4. The framework depends heavily on agent compliance
 
-Muitos dos contratos do sistema dependem de o agente:
+Many system guarantees depend on the agent actually:
 
-- ler o `context.md`,
-- escolher a skill correta,
-- respeitar `reads` e `produces`,
-- nao pular fases conceituais por conta propria.
+- reading `context.md`,
+- choosing the correct skill,
+- respecting `reads` and `produces`,
+- avoiding conceptual phase skipping.
 
-### 5. Validacoes tardias ainda sao rasas
+#### 5. Later-stage validation is still shallow
 
-O comeco do fluxo esta razoavelmente bem protegido.
+The beginning of the workflow is reasonably well guarded.
 
-Mas `outline`, `plan`, `ship` e a relacao forte entre planejamento e execucao ainda nao estao tao bem materializados em codigo.
+But `outline`, `plan`, `ship`, and the strong planning-to-execution relationship are not yet equally materialized in code.
 
-### 6. `context.md` mistura estado autoritativo com espelho parcial de configuracao
+### 11.3 Concrete implementation gaps
 
-O projeto declara `context.md` como estado autoritativo da sessao, o que e correto para `phase`.
+#### A. `outline` has no dedicated validator
 
-Mas `mode` e `adapter` nao seguem o mesmo padrao de sincronizacao forte. Isso sugere que o design ainda esta no meio do caminho entre:
+Today `validate outline` is routed through the same gate as `design`.
 
-- um documento de sessao estritamente autoritativo, e
-- um documento de sessao enriquecido com metadados redundantes.
+In practice, that means the project still does not validate `outline.md` as its own structural artifact.
 
-## 11.3 Gaps concretos da implementacao
+#### B. The `plan` gate is below the ambition of the method
 
-### A. `outline` nao tem validador proprio
+By the method, `plan` should be a disciplined expansion of `outline`.
 
-Atualmente `validate outline` cai no mesmo gate de `design`.
+In the current code, that relationship is barely enforced.
 
-Na pratica, isso significa que o projeto ainda nao valida de forma especifica a qualidade estrutural de `outline.md`.
+#### C. There are no formal persisted approvals
 
-### B. O gate de `plan` esta abaixo da ambicao do metodo
+References such as `/approve-design`, `/approve-outline`, and `/approve` appear as workflow conventions, not as strong system state.
 
-Pelo metodo, `plan` deveria ser uma expansao disciplinada do `outline`.
+#### D. `ship` exists more in the method than in the runtime
 
-No codigo atual, esse vinculo quase nao e exigido de verdade.
+The phase exists in the enum and the method, but it has no:
 
-### C. Nao ha aprovacoes formais persistidas
+- required artifact,
+- dedicated gate,
+- dedicated operational command.
 
-Referencias como `/approve-design`, `/approve-outline` e `/approve` aparecem como convencao operacional, mas nao como estado forte no sistema.
+## 12. Practical interpretation: what this framework is trying to be
 
-### D. `ship` existe mais no discurso do que na implementacao
+From the current implementation, the project appears intended to be a lightweight operating system for coding-agent sessions, with these properties:
 
-A fase existe no enum e no metodo, mas nao possui:
+1. the human records the goal in `brief.md`,
+2. the agent formulates verifiable questions,
+3. research answers those questions without jumping to a solution,
+4. planning happens in layers before coding starts,
+5. implementation happens in vertical slices,
+6. review is separate from implementation,
+7. the whole method can be carried across different agent environments.
 
-- artefato obrigatorio,
-- gate proprio,
-- comando operacional dedicado.
+So the project is closer to:
 
-## 12. Interpretacao pratica: o que este framework pretende ser
+> **a collaboration contract between human and agent, based on phases and artifacts**
 
-Pela implementacao atual, a intencao do projeto parece ser a de um "sistema operacional leve" para sessoes de coding agent, com estas caracteristicas:
+than to:
 
-1. o humano registra o objetivo em `brief.md`,
-2. o agente formula perguntas verificaveis,
-3. a pesquisa responde essas perguntas sem antecipar solucao,
-4. planejamento acontece em camadas antes de codar,
-5. implementacao acontece em slices verticais,
-6. revisao e separada de implementacao,
-7. tudo isso pode ser transportado entre diferentes ambientes de agente.
+> **an automatic system that executes phases on its own**
 
-Entao, o projeto esta mais proximo de:
+## 13. Final distinction: two meanings of execution
 
-> **um contrato de colaboracao entre humano e agente, baseado em fases e artefatos**
+To avoid misreading the framework, it helps to separate two notions.
 
-do que de:
+### 13.1 Execution directly implemented by the code
 
-> **um sistema automatico que executa fases sozinho**
+The code directly performs these actions:
 
-## 13. Distincao final: duas formas de "execucao"
+- creates files,
+- copies the kit,
+- persists state,
+- changes phase,
+- rewrites adapters,
+- validates artifacts,
+- prints status and handoff output.
 
-Para nao interpretar o framework errado, vale separar duas ideias.
+### 13.2 Execution expected by the method
 
-## 13.1 Execucao que o codigo implementa diretamente
+The method expects the human-agent process to:
 
-O codigo faz diretamente estas coisas:
+- move through disciplined phases,
+- restrict context by skill,
+- preserve evidence from one phase to the next,
+- insert human approval checkpoints,
+- prevent implementation from bypassing the planning layers.
 
-- cria arquivos,
-- copia kit,
-- persiste estado,
-- troca fase,
-- reescreve adapters,
-- valida artefatos,
-- imprime status e handoff.
+### 13.3 Central conclusion
 
-## 13.2 Execucao que o metodo espera que aconteca
+The code implements the **infrastructure of the method** well.
 
-O metodo espera que o processo humano/agente faca isto:
+But the **strong orchestration of the method** is still mostly social and documentary, not programmatic.
 
-- avancar por fases disciplinadas,
-- restringir contexto por skill,
-- preservar evidencias de uma fase para outra,
-- inserir checkpoints humanos de aprovacao,
-- impedir que implementacao destrua a camada de planejamento.
+In short:
 
-## 13.3 Conclusao central
+> today, the framework behaves like a **workflow scaffold with persisted state, skills, and gates**
 
-O codigo implementa muito bem a **infraestrutura do metodo**.
+and it was clearly designed to support a process in which:
 
-Mas a **orquestracao forte do metodo** ainda e majoritariamente social e documental, nao programatica.
+> **each phase produces a verifiable artifact that becomes disciplined input for the next phase**
 
-Em resumo:
-
-> hoje, o framework funciona como um **scaffold de workflow com estado persistido, skills e gates**
-
-e foi claramente planejado para sustentar um processo em que:
-
-> **cada fase produz um artefato verificavel que serve de entrada disciplinada para a fase seguinte**
-
-Essa e a ideia de execucao entre fases aqui.
+That is the core idea of phase execution here.

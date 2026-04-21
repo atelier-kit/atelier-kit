@@ -22,8 +22,8 @@ npx atelier-kit init
 Answer prompts (agent target + mode). Then:
 
 1. Edit `.atelier/brief.md`.
-2. `atelier-kit phase questions` (or say `/questions` in-agent).
-3. Optional for external benchmarking: `atelier-kit phase market-research`.
+2. `atelier-kit phase questions` (or say `/questions` in-agent) — tag each question with `[repo]`, `[tech]`, or `[market]`.
+3. `atelier-kit phase research` — produces a single `research.md` with stages for repo, tech, and market.
 4. Work through phases; use `atelier-kit status` anytime.
 
 ## CLI

@@ -68,7 +68,6 @@ export async function cmdInit(
   const artFiles = [
     "questions.md",
     "research.md",
-    "market-research.md",
     "design.md",
     "outline.md",
     "plan.md",

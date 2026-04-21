@@ -13,7 +13,7 @@ Before any tool use or code change, read \`.atelier/context.md\` (frontmatter) t
 
 - Skills are vendored into \`.claude/skills/\` — follow the \`SKILL.md\` for the active phase (see \`.atelier/context.md → phase\`).
 - Full operating contract: \`.atelier/METHOD.md\`.
-- User may say \`/research\`, \`/market-research\`, \`/design\`, etc. — treat those as explicit phase intent triggers.
+- User may say \`/research\`, \`/design\`, etc. — treat those as explicit phase intent triggers.
 
 **Not affiliated with HumanLayer.**
 `;

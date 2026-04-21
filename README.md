@@ -34,6 +34,8 @@ Answer prompts (agent target + mode). Then:
 
 ## Planning model
 
+For the full planner architecture and mental model, see [PLANNER.md](./PLANNER.md).
+
 atelier-kit can express both a phased workflow and a planner workflow in `.atelier/context.md`.
 
 - **Phased workflow** keeps the current RPI/QRSPI behavior intact.
@@ -71,7 +73,7 @@ The planner now supports two distinct moments:
 When autoplan completes, the planner:
 
 - generates `.atelier/artifacts/plan.md`
-- sets `planner_stage=awaiting_approval`
+- sets `planner_state=awaiting_approval`
 - sets `approval_status=pending`
 - clears active task/slice focus so the plan can be reviewed
 

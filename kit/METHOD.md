@@ -89,14 +89,17 @@ Use `atelier-kit phase <name>` to force phase when the agent does not auto-selec
 Authoritative state lives in `.atelier/context.md` (YAML frontmatter + optional notes). The state now supports:
 
 - `workflow`: `phased` or `planner`
-- `planner_stage`: `idle` | `planning` | `awaiting_approval` | `executing`
-- `approval_status`: `not_required` | `pending` | `approved` | `rejected`
+- `planner_mode`: `manual` | `autoplan`
+- `planner_state`: `idle` | `planning` | `awaiting_approval` | `approved` | `executing`
+- `approval_status`: `none` | `pending` | `approved` | `rejected`
 - `current_epic`, `current_task`, `current_slice`
 - `epics[]`
 - `tasks[]`
 - `slices[]`
 
 This allows teams to preserve the phased workflow while gradually moving planning to task graphs.
+
+Read [../PLANNER.md](../PLANNER.md) for the full mental model, lifecycle, and architectural boundaries of planner mode.
 
 CLI: `atelier-kit status`, `atelier-kit return`, `atelier-kit handoff`, planner commands above.
 

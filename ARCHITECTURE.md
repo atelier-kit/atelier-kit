@@ -56,7 +56,7 @@ It stores:
 - `current_task`
 - `current_slice`
 - `epics[]`
-- `tasks[]`
+- `tasks[]` — each task may carry a `parallel_group` identifier for discovery tracks
 - `slices[]`
 - `returns[]`
 
@@ -400,17 +400,20 @@ In other words:
 - clear separation of runtime vs skill behavior
 - CLI-based control plane
 - cross-agent adapter strategy
-- approval gate between planning and implementation
+- domain-aware task generation (`src/state/task-templates.ts`)
+- parallel discovery tracks modeled in state (`parallel_group` on tasks)
+- approval gate with content validation before execution
+- rich plan artifact with risk register, dependency map, and open questions
 - planner docs and operating docs aligned
 
 ---
 
 ## 11. Current architectural limitations
 
-- runtime planning tracks are starter templates, not domain-aware planners
-- autoplan is deterministic, not true parallel orchestration
+- autoplan processes tasks sequentially; parallel execution requires an external orchestrator
 - there is no dedicated scheduler for multi-agent distributed execution
-- plan artifact generation is summary-oriented rather than highly structured
+- domain classification uses keyword matching; complex goals may fall back to the default template
+- plan artifact dependency map is text-based, not a rendered graph
 
 These are normal evolution points, not architecture failures.
 

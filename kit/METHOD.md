@@ -27,11 +27,13 @@ The planner-oriented state model is built around epics, tasks, and slices.
 The primary path is:
 
 1. receive a goal
-2. create discovery tasks
-3. synthesize slices
-4. generate `plan.md`
-5. stop for approval
-6. execute slices after approval
+2. classify domain (migration, new-feature, refactor, infrastructure, research, or default)
+3. create domain-aware discovery tasks with tailored titles, acceptance criteria, and open questions
+4. run discovery tracks (repo, tech, business) — modeled as parallel in state
+5. synthesize slices
+6. generate `plan.md` — includes risk register, dependency map, and open questions
+7. stop for approval (validated: synthesis done, slices with goals and acceptance)
+8. execute slices after approval
 
 This is the product's intended workflow.
 
@@ -110,7 +112,7 @@ Authoritative state lives in `.atelier/context.md` (YAML frontmatter + optional 
 - `approval_status`: `none` | `pending` | `approved` | `rejected`
 - `current_epic`, `current_task`, `current_slice`
 - `epics[]`
-- `tasks[]`
+- `tasks[]` — discovery tasks carry `parallel_group` to identify concurrent tracks
 - `slices[]`
 
 This state model exists to support the planner-first runtime.

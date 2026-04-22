@@ -20,7 +20,9 @@ import {
   setWorkflow,
   startPlannerGoal,
   updateTask,
+  validatePlanBeforeApproval,
 } from "../src/state/planner.js";
+import { classifyGoal } from "../src/state/task-templates.js";
 import { activeSkillFolder } from "../src/skill-loader.js";
 import { readFile } from "node:fs/promises";
 
@@ -232,5 +234,143 @@ describe("planner state helpers", () => {
     expect(state.meta.current_slice).toBe("migrate-python-framework-to-php-slice-1");
     expect(state.meta.slices[0]?.status).toBe("executing");
     expect(activeSkillFolder(state.meta)).toBe("implementer");
+  });
+
+  test("goal classifier identifies domain from goal text", () => {
+    expect(classifyGoal("Migrate Python framework to PHP")).toBe("migration");
+    expect(classifyGoal("Port the authentication module to Go")).toBe("migration");
+    expect(classifyGoal("Add user notifications feature")).toBe("new-feature");
+    expect(classifyGoal("Build a new payment integration")).toBe("new-feature");
+    expect(classifyGoal("Refactor the database access layer")).toBe("refactor");
+    expect(classifyGoal("Deploy Kubernetes cluster on AWS")).toBe("infrastructure");
+    expect(classifyGoal("Research GraphQL vs REST tradeoffs")).toBe("research");
+    expect(classifyGoal("Evaluate authentication libraries")).toBe("research");
+    expect(classifyGoal("Implement dark mode")).toBe("new-feature");
+    expect(classifyGoal("something completely generic")).toBe("default");
+  });
+
+  test("domain-aware task templates produce migration-specific titles", async () => {
+    await startPlannerGoal(dir, "Migrate Python framework to PHP");
+    const { meta } = await readContext(dir);
+    const repoTask = meta.tasks.find((t) => t.type === "repo");
+    expect(repoTask?.title).toContain("coupling");
+    expect(repoTask?.title).not.toBe("Map repository facts and current implementation boundaries");
+  });
+
+  test("domain-aware task templates produce new-feature-specific titles", async () => {
+    await startPlannerGoal(dir, "Add user authentication feature");
+    const { meta } = await readContext(dir);
+    const repoTask = meta.tasks.find((t) => t.type === "repo");
+    expect(repoTask?.title).toContain("integration points");
+  });
+
+  test("discovery tasks have parallel_group set", async () => {
+    await startPlannerGoal(dir, "Migrate Python framework to PHP");
+    const { meta } = await readContext(dir);
+    const discovery = meta.tasks.filter((t) => t.type !== "synthesis");
+    for (const task of discovery) {
+      expect(task.parallel_group).toBeDefined();
+      expect(task.parallel_group).toContain("discovery");
+    }
+    const synthesis = meta.tasks.find((t) => t.type === "synthesis");
+    expect(synthesis?.parallel_group).toBeUndefined();
+  });
+
+  test("rendered plan includes parallel track and metadata header", async () => {
+    await autoplanGoal(dir, "Migrate Python framework to PHP");
+    const plan = await readFile(join(dir, ".atelier", "artifacts", "plan.md"), "utf8");
+    expect(plan).toContain("Parallel track:");
+    expect(plan).toContain("Generated:");
+    expect(plan).toContain("Tasks:");
+    expect(plan).toContain("Slices:");
+  });
+
+  test("rendered plan includes risk register when slices have risks", async () => {
+    await autoplanGoal(dir, "Migrate Python framework to PHP");
+    const plan = await readFile(join(dir, ".atelier", "artifacts", "plan.md"), "utf8");
+    expect(plan).toContain("Risk register");
+  });
+
+  test("validatePlanBeforeApproval blocks when synthesis is not done", async () => {
+    await startPlannerGoal(dir, "Migrate Python framework to PHP");
+    const { meta } = await readContext(dir);
+    const result = validatePlanBeforeApproval(meta);
+    expect(result.blocks.length).toBeGreaterThan(0);
+    expect(result.blocks.some((b) => b.includes("Synthesis"))).toBe(true);
+  });
+
+  test("validatePlanBeforeApproval blocks when no slices exist", async () => {
+    const meta = defaultContextMeta({
+      workflow: "planner",
+      planner_state: "awaiting_approval",
+      approval_status: "pending",
+      current_epic: "e1",
+      epics: [{ id: "e1", title: "Epic", status: "researching", labels: [] }],
+      tasks: [
+        {
+          id: "e1-synthesis",
+          epic_id: "e1",
+          title: "Synthesis",
+          type: "synthesis",
+          status: "done",
+          depends_on: [],
+          acceptance: ["Slices proposed"],
+          open_questions: [],
+          evidence_refs: [],
+        },
+      ],
+      slices: [],
+    });
+    const result = validatePlanBeforeApproval(meta);
+    expect(result.blocks.some((b) => b.includes("No slices"))).toBe(true);
+  });
+
+  test("validatePlanBeforeApproval warns on slices without acceptance", async () => {
+    const meta = defaultContextMeta({
+      workflow: "planner",
+      planner_state: "awaiting_approval",
+      approval_status: "pending",
+      current_epic: "e1",
+      epics: [{ id: "e1", title: "Epic", status: "researching", labels: [] }],
+      tasks: [
+        {
+          id: "e1-synthesis",
+          epic_id: "e1",
+          title: "Synthesis",
+          type: "synthesis",
+          status: "done",
+          depends_on: [],
+          acceptance: [],
+          open_questions: [],
+          evidence_refs: [],
+        },
+      ],
+      slices: [
+        {
+          id: "s1",
+          epic_id: "e1",
+          title: "Slice 1",
+          goal: "Ship something",
+          kind: "delivery" as const,
+          status: "ready" as const,
+          depends_on: [],
+          source_task_ids: [],
+          acceptance: [],
+          risks: [],
+        },
+      ],
+    });
+    const result = validatePlanBeforeApproval(meta);
+    expect(result.blocks).toHaveLength(0);
+    expect(result.warnings.some((w) => w.includes("acceptance"))).toBe(true);
+  });
+
+  test("approvePlan throws when synthesis is not done", async () => {
+    await startPlannerGoal(dir, "Migrate Python framework to PHP");
+    // Force awaiting_approval without going through proper flow
+    const { meta, body } = await readContext(dir);
+    const { writeContext: wc } = await import("../src/state/context.js");
+    await wc(dir, { ...meta, planner_state: "awaiting_approval", approval_status: "pending" }, body);
+    await expect(approvePlan(dir)).rejects.toThrow("blocked");
   });
 });

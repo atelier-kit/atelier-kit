@@ -100,6 +100,7 @@ export const TaskSchema = z.object({
   open_questions: z.array(z.string()).default([]),
   evidence_refs: z.array(z.string()).default([]),
   slice_id: z.string().optional(),
+  parallel_group: z.string().optional(),
 });
 
 export const SliceSchema = z.object({

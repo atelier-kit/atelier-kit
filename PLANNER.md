@@ -145,6 +145,18 @@ Slices are used to **deliver vertical value**.
 - tasks answer: **what do we need to learn or decide?**
 - slices answer: **what can we deliver end-to-end next?**
 
+## Parallel discovery tracks
+
+Discovery tasks (repo, tech, business) are modeled as a parallel group in the planner state.
+Each of these tasks carries a `parallel_group` identifier that links them as concurrent tracks.
+
+In practice:
+- the CLI processes them sequentially in autoplan mode
+- an agent that supports parallel tool use can run them simultaneously
+- the `plan.md` artifact renders parallel tracks as a labeled group for clarity
+
+The synthesis task has no `parallel_group` — it is sequentially dependent on all three discovery tracks completing first.
+
 ## Why `phase` exists internally
 
 The product is planner-first.
@@ -445,18 +457,20 @@ atelier-kit meets these conditions.
 - unified state model
 - cross-agent adapter strategy
 - explicit planning primitives
-- approval gate before execution
+- domain-aware discovery tasks (migration, new feature, refactor, infrastructure, research)
+- parallel tracks modeled in state (`parallel_group` on discovery tasks)
+- approval gate with content validation before execution
 - slice-oriented execution model
 - CLI as shared control plane
+- rich `plan.md` with risk register, open questions, dependency map, and metadata
 
 ## Current limitations
 
 There are known limits:
 
-- discovery tasks are currently generic starter tracks, not domain-specific planners
-- autoplan progresses deterministically, not with true multi-agent parallel execution
-- `plan.md` is a summary projection, not a rich strategic planning report yet
-- approval is explicit, but not yet tied to deeper validation heuristics
+- autoplan progresses sequentially through tasks; true multi-agent parallel execution requires an external orchestrator
+- `plan.md` dependency map is text-based, not a rendered graph
+- domain classification uses keyword matching; complex or ambiguous goals fall back to the default template
 
 These are product evolution opportunities, not contradictions.
 

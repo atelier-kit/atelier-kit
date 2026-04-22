@@ -15,6 +15,7 @@ import type {
   WorkStatus,
   Workflow,
 } from "./schema.js";
+import { getTaskTemplates } from "./task-templates.js";
 
 type PlannerEntity = Epic | Task | Slice;
 
@@ -335,56 +336,28 @@ export async function startPlannerGoal(
       status: "researching",
       labels: ["planner"],
     };
-    const tasks: Task[] = [
-      {
-        id: `${epicId}-repo`,
+    const discoveryGroup = `${epicId}-discovery`;
+    const templates = getTaskTemplates(goal);
+    const discoveryIds = templates
+      .filter((t) => t.type !== "synthesis")
+      .map((t) => `${epicId}-${t.suffix}`);
+    const tasks: Task[] = templates.map((tpl) => {
+      const isSynthesis = tpl.type === "synthesis";
+      const isRepo = tpl.type === "repo";
+      const base: Task = {
+        id: `${epicId}-${tpl.suffix}`,
         epic_id: epicId,
-        title: "Map repository facts and current implementation boundaries",
-        type: "repo",
-        summary: "Gather repository-local evidence for the goal.",
-        status: "researching",
-        depends_on: [],
-        acceptance: ["Relevant modules and constraints are mapped"],
-        open_questions: [],
+        title: tpl.title,
+        type: tpl.type,
+        summary: tpl.summary,
+        status: isRepo ? "researching" : isSynthesis ? "draft" : "ready",
+        depends_on: isSynthesis ? discoveryIds : [],
+        acceptance: tpl.acceptance,
+        open_questions: tpl.open_questions,
         evidence_refs: [],
-      },
-      {
-        id: `${epicId}-tech`,
-        epic_id: epicId,
-        title: "Research technical feasibility and platform constraints",
-        type: "tech",
-        summary: "Gather external technical evidence required by the goal.",
-        status: "ready",
-        depends_on: [],
-        acceptance: ["Technical tradeoffs and constraints are documented"],
-        open_questions: [],
-        evidence_refs: [],
-      },
-      {
-        id: `${epicId}-business`,
-        epic_id: epicId,
-        title: "Clarify business impact, rollout, and stakeholder concerns",
-        type: "business",
-        summary: "Capture business and delivery implications for the goal.",
-        status: "ready",
-        depends_on: [],
-        acceptance: ["Business assumptions and rollout concerns are documented"],
-        open_questions: [],
-        evidence_refs: [],
-      },
-      {
-        id: `${epicId}-synthesis`,
-        epic_id: epicId,
-        title: "Synthesize research into slices and execution order",
-        type: "synthesis",
-        summary: "Converge the planner tracks into executable delivery slices.",
-        status: "draft",
-        depends_on: [`${epicId}-repo`, `${epicId}-tech`, `${epicId}-business`],
-        acceptance: ["Execution slices are proposed with dependencies and acceptance checks"],
-        open_questions: [],
-        evidence_refs: [],
-      },
-    ];
+      };
+      return isSynthesis ? base : { ...base, parallel_group: discoveryGroup };
+    });
     const nextMeta: ContextMeta = {
       ...meta,
       workflow: "planner",
@@ -467,22 +440,47 @@ function renderPlan(meta: ContextMeta): string {
     ? meta.slices.filter((slice) => slice.epic_id === epic.id)
     : meta.slices;
 
+  const now = new Date().toISOString().slice(0, 10);
   const lines: string[] = [
     "# Plan",
     "",
-    epic ? `## Epic\n\n- ${epic.title}` : "## Epic\n\n- _No epic selected_",
+    `> Generated: ${now} · Tasks: ${relevantTasks.length} · Slices: ${relevantSlices.length} · State: ${meta.planner_state} · Approval: ${meta.approval_status}`,
     "",
-    `Planner state: ${meta.planner_state}`,
-    `Approval: ${meta.approval_status}`,
+    epic
+      ? `## Epic: ${epic.title}${epic.goal && epic.goal !== epic.title ? `\n\n> ${epic.goal}` : ""}`
+      : "## Epic\n\n_No epic selected_",
     "",
     "## Discovery tracks",
     "",
   ];
 
   if (relevantTasks.length === 0) {
-    lines.push("- _No tasks_");
+    lines.push("_No tasks_");
   } else {
+    // Group by parallel_group for display
+    const groups = new Map<string, typeof relevantTasks>();
+    const ungrouped: typeof relevantTasks = [];
     for (const task of relevantTasks) {
+      if (task.parallel_group) {
+        const g = groups.get(task.parallel_group) ?? [];
+        g.push(task);
+        groups.set(task.parallel_group, g);
+      } else {
+        ungrouped.push(task);
+      }
+    }
+    for (const [groupId, groupTasks] of groups) {
+      lines.push(`**Parallel track: ${groupId}**`);
+      lines.push("");
+      for (const task of groupTasks) {
+        lines.push(`- [${task.status}] (${task.type}) ${task.title}`);
+        for (const item of task.acceptance) {
+          lines.push(`  - acceptance: ${item}`);
+        }
+      }
+      lines.push("");
+    }
+    for (const task of ungrouped) {
       const deps = task.depends_on.length
         ? ` (depends on: ${task.depends_on.join(", ")})`
         : "";
@@ -495,7 +493,7 @@ function renderPlan(meta: ContextMeta): string {
 
   lines.push("", "## Proposed slices", "");
   if (relevantSlices.length === 0) {
-    lines.push("- _No slices yet_");
+    lines.push("_No slices yet_");
   } else {
     for (const slice of relevantSlices) {
       const deps = slice.depends_on.length
@@ -522,6 +520,45 @@ function renderPlan(meta: ContextMeta): string {
     }
   }
 
+  // Dependency map
+  const slicesWithDeps = relevantSlices.filter((s) => s.depends_on.length > 0);
+  if (slicesWithDeps.length > 0) {
+    lines.push("## Dependency map", "");
+    for (const slice of slicesWithDeps) {
+      for (const dep of slice.depends_on) {
+        lines.push(`- ${dep} → ${slice.id}`);
+      }
+    }
+    lines.push("");
+  }
+
+  // Risk register
+  const allRisks = relevantSlices.flatMap((s) =>
+    s.risks.map((r) => ({ risk: r, sliceId: s.id })),
+  );
+  if (allRisks.length > 0) {
+    lines.push("## Risk register", "");
+    for (const { risk, sliceId } of allRisks) {
+      lines.push(`- ${risk} _(${sliceId})_`);
+    }
+    lines.push("");
+  }
+
+  // Open questions
+  const openQs = relevantTasks.flatMap((t) =>
+    t.open_questions
+      .filter((q) => q.trim() !== "")
+      .map((q) => ({ question: q, taskId: t.id, resolved: t.evidence_refs.length > 0 })),
+  );
+  if (openQs.length > 0) {
+    lines.push("## Open questions", "");
+    for (const { question, taskId, resolved } of openQs) {
+      const mark = resolved ? "~~" : "";
+      lines.push(`- ${mark}${question}${mark} _(${taskId})_`);
+    }
+    lines.push("");
+  }
+
   lines.push(
     "## Human review",
     "",
@@ -530,9 +567,13 @@ function renderPlan(meta: ContextMeta): string {
       : meta.approval_status === "approved"
         ? "- [x] Plan approved"
         : meta.approval_status === "rejected"
-          ? "- [ ] Plan rejected; revise before execution"
+          ? `- [ ] Plan rejected${meta.approval_reason ? ` — ${meta.approval_reason}` : ""}; revise before execution`
           : "- [ ] Approval not required yet",
   );
+
+  if (meta.approval_reason && meta.approval_status === "rejected") {
+    lines.push("", `> Rejection reason: ${meta.approval_reason}`);
+  }
 
   return `${lines.join("\n").trim()}\n`;
 }
@@ -565,18 +606,90 @@ export async function presentPlannerPlan(cwd: string): Promise<ContextMeta> {
   return meta;
 }
 
+interface PlanValidationResult {
+  warnings: string[];
+  blocks: string[];
+}
+
+export function validatePlanBeforeApproval(meta: ContextMeta): PlanValidationResult {
+  const warnings: string[] = [];
+  const blocks: string[] = [];
+
+  const epicId = meta.current_epic;
+  const relevantTasks = epicId
+    ? meta.tasks.filter((t) => t.epic_id === epicId)
+    : meta.tasks;
+  const relevantSlices = epicId
+    ? meta.slices.filter((s) => s.epic_id === epicId)
+    : meta.slices;
+
+  const synthesisDone = relevantTasks.some(
+    (t) => t.type === "synthesis" && t.status === "done",
+  );
+  if (!synthesisDone) {
+    blocks.push("Synthesis task is not done — discovery has not converged.");
+  }
+
+  const discoveryPending = relevantTasks.filter(
+    (t) =>
+      (t.type === "repo" || t.type === "tech" || t.type === "business") &&
+      t.status !== "done" &&
+      t.status !== "cancelled",
+  );
+  if (discoveryPending.length > 0) {
+    const ids = discoveryPending.map((t) => t.id).join(", ");
+    warnings.push(`Discovery tasks are not done: ${ids}`);
+  }
+
+  if (relevantSlices.length === 0) {
+    blocks.push("No slices exist — synthesis must produce at least one slice before approval.");
+  }
+
+  const slicesWithoutAcceptance = relevantSlices.filter((s) => s.acceptance.length === 0);
+  if (slicesWithoutAcceptance.length > 0) {
+    const ids = slicesWithoutAcceptance.map((s) => s.id).join(", ");
+    warnings.push(`Slices have no acceptance criteria: ${ids}`);
+  }
+
+  const slicesWithoutGoal = relevantSlices.filter((s) => !s.goal || s.goal.trim() === "");
+  if (slicesWithoutGoal.length > 0) {
+    const ids = slicesWithoutGoal.map((s) => s.id).join(", ");
+    blocks.push(`Slices are missing a goal: ${ids}`);
+  }
+
+  const tasksWithOpenQuestions = relevantTasks.filter(
+    (t) => t.open_questions.length > 0 && t.evidence_refs.length === 0 && t.status !== "done",
+  );
+  if (tasksWithOpenQuestions.length > 0) {
+    const ids = tasksWithOpenQuestions.map((t) => t.id).join(", ");
+    warnings.push(`Tasks have open questions without evidence: ${ids}`);
+  }
+
+  return { warnings, blocks };
+}
+
 export async function approvePlannerPlan(cwd: string): Promise<ContextMeta> {
-  const meta = await mutatePlannerState(cwd, (current) => {
-    if (current.planner_state !== "awaiting_approval") {
-      throw new Error("Planner is not awaiting approval");
+  const { meta: current } = await readContext(cwd);
+  if (current.planner_state !== "awaiting_approval") {
+    throw new Error("Planner is not awaiting approval");
+  }
+  const { warnings, blocks } = validatePlanBeforeApproval(current);
+  if (blocks.length > 0) {
+    throw new Error(
+      `Plan approval blocked:\n${blocks.map((b) => `  - ${b}`).join("\n")}`,
+    );
+  }
+  if (warnings.length > 0) {
+    for (const w of warnings) {
+      process.stderr.write(`[planner warn] ${w}\n`);
     }
-    return {
-      ...current,
-      planner_state: "approved",
-      approval_status: "approved",
-      approval_reason: null,
-    };
-  });
+  }
+  const meta = await mutatePlannerState(cwd, (state) => ({
+    ...state,
+    planner_state: "approved" as const,
+    approval_status: "approved" as const,
+    approval_reason: null,
+  }));
   await writePlannerPlanArtifact(cwd, meta);
   return meta;
 }

@@ -16,6 +16,6 @@ This project is an **independent, clean-room implementation** and is **not affil
 
 ## What atelier-kit adds
 
-- Skills-first kit (`SKILL.md` with frontmatter) plus multi-agent adapters (Claude Code, Cursor, Codex CLI, Windsurf, generic).
-- Session state in `.atelier/context.md` and CLI commands (`phase`, `status`, `return`, `handoff`).
+- Planner-first kit (`SKILL.md` with frontmatter) with a persistent planner runtime (epics, tasks, slices, approval gates) and multi-agent adapters (Claude Code, Cursor, Codex CLI, Windsurf, Cline, Kilo, Anti-GRAVITY, generic).
+- Session state in `.atelier/context.md` and CLI commands (`planner`, `status`, `handoff`).
 - Programmatic validators (`doctor`, `validate`).

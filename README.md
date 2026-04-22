@@ -1,7 +1,7 @@
 # atelier-kit
 
-Skills-first CLI for AI coding workflows. Installs a `.atelier/` directory with
-**`SKILL.md` skills**, templates, gates, and optional adapters for **Claude Code**,
+Planner-first CLI for AI coding workflows. Installs a `.atelier/` directory with
+planning state, **`SKILL.md` skills**, templates, gates, and optional adapters for **Claude Code**,
 **Cursor**, **Codex CLI**, **Windsurf**, **Cline**, **Kilo**, **Anti-GRAVITY**, or a
 **generic** prompt file.
 

@@ -1,6 +1,7 @@
 import {
   readContext,
   writeContext,
+  defaultContextRepository,
 } from "./context.js";
 import { join } from "node:path";
 import { atelierDir, writeText } from "../fs-utils.js";
@@ -15,7 +16,14 @@ import type {
   WorkStatus,
   Workflow,
 } from "./schema.js";
-import { getTaskTemplates } from "./task-templates.js";
+import { getTaskTemplates, defaultGoalClassifier } from "./task-templates.js";
+import type { IContextRepository } from "../ports/context-repository.js";
+import type { IGoalClassifier } from "../ports/goal-classifier.js";
+
+export interface PlannerPorts {
+  repo?: IContextRepository;
+  classifier?: IGoalClassifier;
+}
 
 type PlannerEntity = Epic | Task | Slice;
 
@@ -94,10 +102,11 @@ function validateSliceLinks(meta: ContextMeta, slice: Slice): void {
 async function mutatePlannerState(
   cwd: string,
   mutate: (meta: ContextMeta) => ContextMeta,
+  repo: IContextRepository = defaultContextRepository,
 ): Promise<ContextMeta> {
-  const { meta, body } = await readContext(cwd);
+  const { meta, body } = await repo.read(cwd);
   const next = mutate(meta);
-  await writeContext(cwd, next, body);
+  await repo.write(cwd, next, body);
   return next;
 }
 
@@ -322,7 +331,10 @@ export async function generatePlannerSlices(cwd: string): Promise<ContextMeta> {
 export async function startPlannerGoal(
   cwd: string,
   goal: string,
+  ports: PlannerPorts = {},
 ): Promise<ContextMeta> {
+  const classifier = ports.classifier ?? defaultGoalClassifier;
+  const repo = ports.repo ?? defaultContextRepository;
   return mutatePlannerState(cwd, (meta) => {
     const epicId = slugify(goal);
     if (meta.epics.some((epic) => epic.id === epicId)) {
@@ -337,7 +349,7 @@ export async function startPlannerGoal(
       labels: ["planner"],
     };
     const discoveryGroup = `${epicId}-discovery`;
-    const templates = getTaskTemplates(goal);
+    const templates = classifier.getTemplates(goal);
     const discoveryIds = templates
       .filter((t) => t.type !== "synthesis")
       .map((t) => `${epicId}-${t.suffix}`);
@@ -371,10 +383,13 @@ export async function startPlannerGoal(
       tasks: [...meta.tasks, ...tasks],
     };
     return syncFocus(nextMeta);
-  });
+  }, repo);
 }
 
-export async function markCurrentDone(cwd: string): Promise<ContextMeta> {
+export async function markCurrentDone(
+  cwd: string,
+  repo: IContextRepository = defaultContextRepository,
+): Promise<ContextMeta> {
   return mutatePlannerState(cwd, (meta) => {
     let nextMeta = meta;
     if (meta.current_slice) {
@@ -402,7 +417,7 @@ export async function markCurrentDone(cwd: string): Promise<ContextMeta> {
       throw new Error("No current task or slice is focused");
     }
     return syncFocus(nextMeta);
-  });
+  }, repo);
 }
 
 export async function advancePlanner(cwd: string): Promise<ContextMeta> {
@@ -587,7 +602,10 @@ export async function writePlannerPlanArtifact(
   await writeText(planPath, renderPlan(currentMeta));
 }
 
-export async function presentPlannerPlan(cwd: string): Promise<ContextMeta> {
+export async function presentPlannerPlan(
+  cwd: string,
+  repo: IContextRepository = defaultContextRepository,
+): Promise<ContextMeta> {
   const meta = await mutatePlannerState(cwd, (current) => {
     const next = transitionToAwaitingApproval(current);
     if (next.slices.length === 0) {
@@ -601,7 +619,7 @@ export async function presentPlannerPlan(cwd: string): Promise<ContextMeta> {
       current_task: null,
       current_slice: null,
     };
-  });
+  }, repo);
   await writePlannerPlanArtifact(cwd, meta);
   return meta;
 }
@@ -736,12 +754,17 @@ export const executePlan = executeApprovedPlan;
 export const approvePlannerExecution = approvePlannerPlan;
 export const rejectPlannerExecution = rejectPlannerPlan;
 
-export async function autoplanGoal(cwd: string, goal: string): Promise<ContextMeta> {
-  let meta = await startPlannerGoal(cwd, goal);
+export async function autoplanGoal(
+  cwd: string,
+  goal: string,
+  ports: PlannerPorts = {},
+): Promise<ContextMeta> {
+  const repo = ports.repo ?? defaultContextRepository;
+  let meta = await startPlannerGoal(cwd, goal, ports);
   while (meta.current_task) {
-    meta = await markCurrentDone(cwd);
+    meta = await markCurrentDone(cwd, repo);
   }
-  meta = await presentPlannerPlan(cwd);
+  meta = await presentPlannerPlan(cwd, repo);
   return meta;
 }
 

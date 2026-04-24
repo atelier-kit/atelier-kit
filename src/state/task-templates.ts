@@ -1,3 +1,5 @@
+import type { IGoalClassifier } from "../ports/goal-classifier.js";
+
 export type DomainKind =
   | "migration"
   | "new-feature"
@@ -355,3 +357,11 @@ export function classifyGoal(goal: string): DomainKind {
 export function getTaskTemplates(goal: string): TaskTemplate[] {
   return TEMPLATES[classifyGoal(goal)];
 }
+
+export class KeywordClassifier implements IGoalClassifier {
+  getTemplates(goal: string): TaskTemplate[] {
+    return getTaskTemplates(goal);
+  }
+}
+
+export const defaultGoalClassifier: IGoalClassifier = new KeywordClassifier();

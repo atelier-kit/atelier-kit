@@ -4,6 +4,10 @@ import { join } from "node:path";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { defaultContextMeta, readContext, writeContext } from "../src/state/context.js";
+import type { IContextRepository } from "../src/ports/context-repository.js";
+import type { IGoalClassifier } from "../src/ports/goal-classifier.js";
+import type { ContextMeta } from "../src/state/schema.js";
+import type { TaskTemplate } from "../src/state/task-templates.js";
 import {
   addEpic,
   addSlice,
@@ -372,5 +376,99 @@ describe("planner state helpers", () => {
     const { writeContext: wc } = await import("../src/state/context.js");
     await wc(dir, { ...meta, planner_state: "awaiting_approval", approval_status: "pending" }, body);
     await expect(approvePlan(dir)).rejects.toThrow("blocked");
+  });
+});
+
+class InMemoryContextRepository implements IContextRepository {
+  private store = new Map<string, { meta: ContextMeta; body: string }>();
+
+  async read(cwd: string): Promise<{ meta: ContextMeta; body: string }> {
+    const entry = this.store.get(cwd);
+    if (!entry) throw new Error(`No context for: ${cwd}`);
+    return { meta: { ...entry.meta }, body: entry.body };
+  }
+
+  async write(cwd: string, meta: ContextMeta, body = ""): Promise<void> {
+    this.store.set(cwd, { meta: { ...meta }, body });
+  }
+
+  default(partial?: Partial<ContextMeta>): ContextMeta {
+    return defaultContextMeta(partial);
+  }
+
+  seed(cwd: string, meta?: Partial<ContextMeta>): void {
+    const full = defaultContextMeta({ phase: "plan", gate_pending: null, ...meta });
+    this.store.set(cwd, { meta: full, body: "" });
+  }
+}
+
+class StubGoalClassifier implements IGoalClassifier {
+  constructor(private readonly templates: TaskTemplate[]) {}
+  getTemplates(_goal: string): TaskTemplate[] {
+    return this.templates;
+  }
+}
+
+describe("planner ports — in-memory", () => {
+  const CWD = "/fake/project";
+
+  test("startPlannerGoal uses injected classifier templates", async () => {
+    const repo = new InMemoryContextRepository();
+    repo.seed(CWD);
+
+    const stubTemplates: TaskTemplate[] = [
+      {
+        suffix: "repo",
+        type: "repo",
+        title: "Stub repo task",
+        summary: "stub",
+        acceptance: ["done"],
+        open_questions: [],
+      },
+      {
+        suffix: "synthesis",
+        type: "synthesis",
+        title: "Stub synthesis",
+        summary: "stub",
+        acceptance: [],
+        open_questions: [],
+      },
+    ];
+    const classifier = new StubGoalClassifier(stubTemplates);
+
+    const meta = await startPlannerGoal(CWD, "do something", { repo, classifier });
+
+    expect(meta.tasks).toHaveLength(2);
+    expect(meta.tasks[0].title).toBe("Stub repo task");
+    expect(meta.planner_state).toBe("planning");
+  });
+
+  test("autoplanGoal runs to awaiting_approval without writing files", async () => {
+    const repo = new InMemoryContextRepository();
+    repo.seed(CWD);
+
+    const stubTemplates: TaskTemplate[] = [
+      {
+        suffix: "repo",
+        type: "repo",
+        title: "Repo analysis",
+        summary: "s",
+        acceptance: [],
+        open_questions: [],
+      },
+      {
+        suffix: "synthesis",
+        type: "synthesis",
+        title: "Synthesis",
+        summary: "s",
+        acceptance: ["slices defined"],
+        open_questions: [],
+      },
+    ];
+    const classifier = new StubGoalClassifier(stubTemplates);
+
+    const meta = await autoplanGoal(CWD, "migrate something", { repo, classifier });
+    expect(meta.planner_state).toBe("awaiting_approval");
+    expect(meta.approval_status).toBe("pending");
   });
 });

@@ -3,6 +3,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ContextMetaSchema, type ContextMeta, type Phase } from "./schema.js";
 import { ATELIER_DIR, CONTEXT_FILE } from "../paths.js";
+import type { IContextRepository } from "../ports/context-repository.js";
 
 export function atelierPath(cwd: string, ...parts: string[]): string {
   return join(cwd, ATELIER_DIR, ...parts);
@@ -48,6 +49,23 @@ export function defaultContextMeta(
     ...partial,
   });
 }
+
+export class FileContextRepository implements IContextRepository {
+  async read(cwd: string): Promise<{ meta: ContextMeta; body: string }> {
+    return readContext(cwd);
+  }
+
+  async write(cwd: string, meta: ContextMeta, body = ""): Promise<void> {
+    return writeContext(cwd, meta, body);
+  }
+
+  default(partial?: Partial<ContextMeta>): ContextMeta {
+    return defaultContextMeta(partial);
+  }
+}
+
+export const defaultContextRepository: IContextRepository =
+  new FileContextRepository();
 
 export async function setPhase(cwd: string, phase: Phase): Promise<void> {
   const { meta, body } = await readContext(cwd);

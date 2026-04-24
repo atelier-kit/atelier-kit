@@ -471,4 +471,84 @@ describe("planner ports — in-memory", () => {
     expect(meta.planner_state).toBe("awaiting_approval");
     expect(meta.approval_status).toBe("pending");
   });
+
+  test("approvePlan, rejectPlan and executePlan work without disk", async () => {
+    const repo = new InMemoryContextRepository();
+    repo.seed(CWD);
+    const classifier = new StubGoalClassifier([
+      { suffix: "repo", type: "repo", title: "Repo", summary: "s", acceptance: [], open_questions: [] },
+      { suffix: "synthesis", type: "synthesis", title: "Synthesis", summary: "s", acceptance: ["done"], open_questions: [] },
+    ]);
+
+    await autoplanGoal(CWD, "ship it", { repo, classifier });
+
+    await expect(approvePlan(CWD, repo)).resolves.toMatchObject({
+      planner_state: "approved",
+      approval_status: "approved",
+    });
+
+    const execMeta = await executePlan(CWD, repo);
+    expect(execMeta.planner_state).toBe("executing");
+    expect(execMeta.current_slice).not.toBeNull();
+  });
+
+  test("rejectPlan cycles back to planning", async () => {
+    const repo = new InMemoryContextRepository();
+    repo.seed(CWD);
+    const classifier = new StubGoalClassifier([
+      { suffix: "repo", type: "repo", title: "Repo", summary: "s", acceptance: [], open_questions: [] },
+      { suffix: "synthesis", type: "synthesis", title: "Synthesis", summary: "s", acceptance: ["done"], open_questions: [] },
+    ]);
+
+    await autoplanGoal(CWD, "do something", { repo, classifier });
+
+    const meta = await rejectPlan(CWD, "scope too large", repo);
+    expect(meta.planner_state).toBe("planning");
+    expect(meta.approval_status).toBe("rejected");
+    expect(meta.approval_reason).toBe("scope too large");
+  });
+
+  test("addEpic, addTask, addSlice work without disk", async () => {
+    const repo = new InMemoryContextRepository();
+    repo.seed(CWD);
+
+    await addEpic(CWD, { id: "epic-1", title: "My Epic", status: "draft", labels: [] }, repo);
+    await addTask(CWD, {
+      id: "task-1",
+      epic_id: "epic-1",
+      title: "First task",
+      type: "repo",
+      status: "ready",
+      depends_on: [],
+      acceptance: [],
+      open_questions: [],
+      evidence_refs: [],
+    }, repo);
+
+    const { meta } = await repo.read(CWD);
+    expect(meta.epics).toHaveLength(1);
+    expect(meta.tasks).toHaveLength(1);
+    expect(meta.current_epic).toBe("epic-1");
+    expect(meta.current_task).toBe("task-1");
+  });
+
+  test("markCurrentDone advances through tasks without disk", async () => {
+    const repo = new InMemoryContextRepository();
+    repo.seed(CWD);
+    const classifier = new StubGoalClassifier([
+      { suffix: "repo", type: "repo", title: "Repo", summary: "s", acceptance: [], open_questions: [] },
+      { suffix: "tech", type: "tech", title: "Tech", summary: "s", acceptance: [], open_questions: [] },
+      { suffix: "synthesis", type: "synthesis", title: "Synthesis", summary: "s", acceptance: ["done"], open_questions: [] },
+    ]);
+
+    let meta = await startPlannerGoal(CWD, "build feature", { repo, classifier });
+    expect(meta.current_task).not.toBeNull();
+
+    while (meta.current_task) {
+      meta = await markCurrentDone(CWD, repo);
+    }
+
+    expect(meta.planner_state).toBe("awaiting_approval");
+    expect(meta.slices.length).toBeGreaterThan(0);
+  });
 });

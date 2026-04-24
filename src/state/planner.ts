@@ -1,6 +1,4 @@
 import {
-  readContext,
-  writeContext,
   defaultContextRepository,
 } from "./context.js";
 import { join } from "node:path";
@@ -16,7 +14,7 @@ import type {
   WorkStatus,
   Workflow,
 } from "./schema.js";
-import { getTaskTemplates, defaultGoalClassifier } from "./task-templates.js";
+import { defaultGoalClassifier } from "./task-templates.js";
 import type { IContextRepository } from "../ports/context-repository.js";
 import type { IGoalClassifier } from "../ports/goal-classifier.js";
 
@@ -110,16 +108,31 @@ async function mutatePlannerState(
   return next;
 }
 
+async function syncPlannerPhaseInline(
+  cwd: string,
+  meta: ContextMeta,
+  repo: IContextRepository = defaultContextRepository,
+): Promise<ContextMeta> {
+  const next = syncPhase(meta);
+  if (next.phase === meta.phase) {
+    return meta;
+  }
+  const { body } = await repo.read(cwd);
+  await repo.write(cwd, next, body);
+  return next;
+}
+
 export async function setWorkflow(
   cwd: string,
   workflow: Workflow,
+  repo: IContextRepository = defaultContextRepository,
 ): Promise<ContextMeta> {
   return mutatePlannerState(cwd, (meta) => ({
     ...meta,
     workflow,
     planner_state: workflow === "planner" ? meta.planner_state : "idle",
     approval_status: workflow === "planner" ? meta.approval_status : "none",
-  }));
+  }), repo);
 }
 
 function slugify(input: string): string {
@@ -320,12 +333,18 @@ function syncFocus(meta: ContextMeta): ContextMeta {
   return syncPhase(nextMeta);
 }
 
-export async function syncPlannerPhase(cwd: string): Promise<ContextMeta> {
-  return mutatePlannerState(cwd, (meta) => syncPhase(meta));
+export async function syncPlannerPhase(
+  cwd: string,
+  repo: IContextRepository = defaultContextRepository,
+): Promise<ContextMeta> {
+  return mutatePlannerState(cwd, (meta) => syncPhase(meta), repo);
 }
 
-export async function generatePlannerSlices(cwd: string): Promise<ContextMeta> {
-  return mutatePlannerState(cwd, (meta) => syncFocus(generateSlicesForSynthesis(meta)));
+export async function generatePlannerSlices(
+  cwd: string,
+  repo: IContextRepository = defaultContextRepository,
+): Promise<ContextMeta> {
+  return mutatePlannerState(cwd, (meta) => syncFocus(generateSlicesForSynthesis(meta)), repo);
 }
 
 export async function startPlannerGoal(
@@ -420,8 +439,11 @@ export async function markCurrentDone(
   }, repo);
 }
 
-export async function advancePlanner(cwd: string): Promise<ContextMeta> {
-  return mutatePlannerState(cwd, (meta) => syncFocus(generateSlicesForSynthesis(meta)));
+export async function advancePlanner(
+  cwd: string,
+  repo: IContextRepository = defaultContextRepository,
+): Promise<ContextMeta> {
+  return mutatePlannerState(cwd, (meta) => syncFocus(generateSlicesForSynthesis(meta)), repo);
 }
 
 function transitionToAwaitingApproval(meta: ContextMeta): ContextMeta {
@@ -472,7 +494,6 @@ function renderPlan(meta: ContextMeta): string {
   if (relevantTasks.length === 0) {
     lines.push("_No tasks_");
   } else {
-    // Group by parallel_group for display
     const groups = new Map<string, typeof relevantTasks>();
     const ungrouped: typeof relevantTasks = [];
     for (const task of relevantTasks) {
@@ -535,7 +556,6 @@ function renderPlan(meta: ContextMeta): string {
     }
   }
 
-  // Dependency map
   const slicesWithDeps = relevantSlices.filter((s) => s.depends_on.length > 0);
   if (slicesWithDeps.length > 0) {
     lines.push("## Dependency map", "");
@@ -547,7 +567,6 @@ function renderPlan(meta: ContextMeta): string {
     lines.push("");
   }
 
-  // Risk register
   const allRisks = relevantSlices.flatMap((s) =>
     s.risks.map((r) => ({ risk: r, sliceId: s.id })),
   );
@@ -559,7 +578,6 @@ function renderPlan(meta: ContextMeta): string {
     lines.push("");
   }
 
-  // Open questions
   const openQs = relevantTasks.flatMap((t) =>
     t.open_questions
       .filter((q) => q.trim() !== "")
@@ -596,8 +614,9 @@ function renderPlan(meta: ContextMeta): string {
 export async function writePlannerPlanArtifact(
   cwd: string,
   meta?: ContextMeta,
+  repo: IContextRepository = defaultContextRepository,
 ): Promise<void> {
-  const currentMeta = meta ?? (await readContext(cwd)).meta;
+  const currentMeta = meta ?? (await repo.read(cwd)).meta;
   const planPath = join(atelierDir(cwd), "artifacts", "plan.md");
   await writeText(planPath, renderPlan(currentMeta));
 }
@@ -620,7 +639,7 @@ export async function presentPlannerPlan(
       current_slice: null,
     };
   }, repo);
-  await writePlannerPlanArtifact(cwd, meta);
+  await writePlannerPlanArtifact(cwd, meta, repo);
   return meta;
 }
 
@@ -686,8 +705,11 @@ export function validatePlanBeforeApproval(meta: ContextMeta): PlanValidationRes
   return { warnings, blocks };
 }
 
-export async function approvePlannerPlan(cwd: string): Promise<ContextMeta> {
-  const { meta: current } = await readContext(cwd);
+export async function approvePlannerPlan(
+  cwd: string,
+  repo: IContextRepository = defaultContextRepository,
+): Promise<ContextMeta> {
+  const { meta: current } = await repo.read(cwd);
   if (current.planner_state !== "awaiting_approval") {
     throw new Error("Planner is not awaiting approval");
   }
@@ -707,14 +729,15 @@ export async function approvePlannerPlan(cwd: string): Promise<ContextMeta> {
     planner_state: "approved" as const,
     approval_status: "approved" as const,
     approval_reason: null,
-  }));
-  await writePlannerPlanArtifact(cwd, meta);
+  }), repo);
+  await writePlannerPlanArtifact(cwd, meta, repo);
   return meta;
 }
 
 export async function rejectPlannerPlan(
   cwd: string,
   reason: string,
+  repo: IContextRepository = defaultContextRepository,
 ): Promise<ContextMeta> {
   return mutatePlannerState(cwd, (current) => ({
     ...current,
@@ -724,10 +747,13 @@ export async function rejectPlannerPlan(
     gate_pending: reason,
     current_task: current.tasks.find((task) => task.type === "synthesis")?.id ?? current.current_task,
     current_slice: null,
-  }));
+  }), repo);
 }
 
-export async function executeApprovedPlan(cwd: string): Promise<ContextMeta> {
+export async function executeApprovedPlan(
+  cwd: string,
+  repo: IContextRepository = defaultContextRepository,
+): Promise<ContextMeta> {
   return mutatePlannerState(cwd, (current) => {
     if (current.approval_status !== "approved") {
       throw new Error("Cannot execute planner before approval");
@@ -744,7 +770,7 @@ export async function executeApprovedPlan(cwd: string): Promise<ContextMeta> {
       slices: executableSlices,
       gate_pending: null,
     });
-  });
+  }, repo);
 }
 
 export const presentPlan = presentPlannerPlan;
@@ -771,6 +797,7 @@ export async function autoplanGoal(
 export async function addEpic(
   cwd: string,
   epic: Epic,
+  repo: IContextRepository = defaultContextRepository,
 ): Promise<ContextMeta> {
   return mutatePlannerState(cwd, (meta) => {
     ensureUniqueId(meta.epics, epic.id, "Epic");
@@ -782,23 +809,25 @@ export async function addEpic(
       current_epic: meta.current_epic ?? epic.id,
       epics: [...meta.epics, epic],
     };
-  }).then((meta) => syncPlannerPhaseInline(cwd, meta));
+  }, repo).then((meta) => syncPlannerPhaseInline(cwd, meta, repo));
 }
 
 export async function updateEpic(
   cwd: string,
   id: string,
   patch: Partial<Epic>,
+  repo: IContextRepository = defaultContextRepository,
 ): Promise<ContextMeta> {
   return mutatePlannerState(cwd, (meta) => ({
     ...meta,
     epics: mergeById(meta.epics, id, patch, "Epic"),
-  })).then((meta) => syncPlannerPhaseInline(cwd, meta));
+  }), repo).then((meta) => syncPlannerPhaseInline(cwd, meta, repo));
 }
 
 export async function focusEpic(
   cwd: string,
   id: string,
+  repo: IContextRepository = defaultContextRepository,
 ): Promise<ContextMeta> {
   return mutatePlannerState(cwd, (meta) => {
     requireId(meta.epics, id, "Epic");
@@ -811,12 +840,13 @@ export async function focusEpic(
       current_task: firstTask?.id ?? meta.current_task,
       current_slice: firstSlice?.id ?? meta.current_slice,
     };
-  }).then((meta) => syncPlannerPhaseInline(cwd, meta));
+  }, repo).then((meta) => syncPlannerPhaseInline(cwd, meta, repo));
 }
 
 export async function addTask(
   cwd: string,
   task: Task,
+  repo: IContextRepository = defaultContextRepository,
 ): Promise<ContextMeta> {
   return mutatePlannerState(cwd, (meta) => {
     ensureUniqueId(meta.tasks, task.id, "Task");
@@ -830,13 +860,14 @@ export async function addTask(
       current_task: meta.current_task ?? task.id,
       tasks: [...meta.tasks, task],
     };
-  }).then((meta) => syncPlannerPhaseInline(cwd, meta));
+  }, repo).then((meta) => syncPlannerPhaseInline(cwd, meta, repo));
 }
 
 export async function updateTask(
   cwd: string,
   id: string,
   patch: Partial<Task>,
+  repo: IContextRepository = defaultContextRepository,
 ): Promise<ContextMeta> {
   return mutatePlannerState(cwd, (meta) => {
     const current = requireId(meta.tasks, id, "Task");
@@ -846,12 +877,13 @@ export async function updateTask(
       ...meta,
       tasks: meta.tasks.map((task) => (task.id === id ? nextTask : task)),
     };
-  }).then((meta) => syncPlannerPhaseInline(cwd, meta));
+  }, repo).then((meta) => syncPlannerPhaseInline(cwd, meta, repo));
 }
 
 export async function focusTask(
   cwd: string,
   id: string,
+  repo: IContextRepository = defaultContextRepository,
 ): Promise<ContextMeta> {
   return mutatePlannerState(cwd, (meta) => {
     const task = requireId(meta.tasks, id, "Task");
@@ -862,12 +894,13 @@ export async function focusTask(
       current_task: task.id,
       current_slice: task.slice_id ?? meta.current_slice,
     };
-  }).then((meta) => syncPlannerPhaseInline(cwd, meta));
+  }, repo).then((meta) => syncPlannerPhaseInline(cwd, meta, repo));
 }
 
 export async function addSlice(
   cwd: string,
   slice: Slice,
+  repo: IContextRepository = defaultContextRepository,
 ): Promise<ContextMeta> {
   return mutatePlannerState(cwd, (meta) => {
     ensureUniqueId(meta.slices, slice.id, "Slice");
@@ -881,13 +914,14 @@ export async function addSlice(
       current_slice: meta.current_slice ?? slice.id,
       slices: [...meta.slices, slice],
     };
-  }).then((meta) => syncPlannerPhaseInline(cwd, meta));
+  }, repo).then((meta) => syncPlannerPhaseInline(cwd, meta, repo));
 }
 
 export async function updateSlice(
   cwd: string,
   id: string,
   patch: Partial<Slice>,
+  repo: IContextRepository = defaultContextRepository,
 ): Promise<ContextMeta> {
   return mutatePlannerState(cwd, (meta) => {
     const current = requireId(meta.slices, id, "Slice");
@@ -897,12 +931,13 @@ export async function updateSlice(
       ...meta,
       slices: meta.slices.map((slice) => (slice.id === id ? nextSlice : slice)),
     };
-  }).then((meta) => syncPlannerPhaseInline(cwd, meta));
+  }, repo).then((meta) => syncPlannerPhaseInline(cwd, meta, repo));
 }
 
 export async function focusSlice(
   cwd: string,
   id: string,
+  repo: IContextRepository = defaultContextRepository,
 ): Promise<ContextMeta> {
   return mutatePlannerState(cwd, (meta) => {
     const slice = requireId(meta.slices, id, "Slice");
@@ -912,7 +947,7 @@ export async function focusSlice(
       current_epic: slice.epic_id,
       current_slice: slice.id,
     };
-  }).then((meta) => syncPlannerPhaseInline(cwd, meta));
+  }, repo).then((meta) => syncPlannerPhaseInline(cwd, meta, repo));
 }
 
 export function summarizePlannerCounts(meta: ContextMeta): string {
@@ -921,17 +956,4 @@ export function summarizePlannerCounts(meta: ContextMeta): string {
 
 export function normalizeWorkStatus(status?: WorkStatus): WorkStatus | undefined {
   return status;
-}
-
-async function syncPlannerPhaseInline(
-  cwd: string,
-  meta: ContextMeta,
-): Promise<ContextMeta> {
-  const next = syncPhase(meta);
-  if (next.phase === meta.phase) {
-    return meta;
-  }
-  const { body } = await readContext(cwd);
-  await writeContext(cwd, next, body);
-  return next;
 }

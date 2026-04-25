@@ -38,7 +38,7 @@ const program = new Command();
 program
   .name("atelier-kit")
   .description("Planner-first CLI for AI agent workflows")
-  .version("0.1.0");
+  .version("0.1.2");
 
 program
   .command("init")

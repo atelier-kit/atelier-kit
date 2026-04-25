@@ -104,10 +104,12 @@ Each template creates the same planning shape:
 | `tech` | `tech-analyst` | Gather external evidence: platform constraints, APIs, versions, tradeoffs, compatibility, security, or migration risks. |
 | `business` | `business-analyst` | Clarify rollout, stakeholder impact, acceptance criteria, operational risk, and decision constraints. |
 | `synthesis` | `planner` | Converge the discovery tracks into executable slices, dependencies, risks, and acceptance checks. |
+| `decision` | `designer` | Document architectural boundaries, design approach, patterns, and open decisions in `design.md`. |
 
 The `repo`, `tech`, and `business` tasks receive a shared `parallel_group`.
 That models them as parallel discovery tracks, even though the built-in
 `autoplan` command advances them sequentially.
+The `decision` task depends on synthesis and must be complete before approval.
 
 ## Task And Slice Boundary
 

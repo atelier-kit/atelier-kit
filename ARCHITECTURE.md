@@ -204,6 +204,8 @@ Examples:
 - `src/commands/init.ts`
 - `src/commands/install-adapter.ts`
 - `src/commands/phase.ts`
+- `src/commands/mode.ts`
+- `src/commands/return-cmd.ts`
 - `src/commands/validate.ts`
 - `src/commands/doctor.ts`
 
@@ -445,7 +447,7 @@ In other words:
 
 ---
 
-## 10. Current architectural strengths
+## 10. Current Runtime Properties
 
 - explicit persistent state
 - clear separation of runtime vs skill behavior
@@ -454,8 +456,7 @@ In other words:
 - domain-aware task generation (`src/state/task-templates.ts`)
 - parallel discovery tracks modeled in state (`parallel_group` on tasks)
 - approval gate with content validation before execution
-- rich plan artifact with risk register, dependency map, and open questions
-- planner docs and operating docs aligned
+- `plan.md` includes risk register, dependency map, open questions, and metadata
 
 ---
 
@@ -466,11 +467,9 @@ In other words:
 - domain classification uses keyword matching; complex goals may fall back to the default template
 - plan artifact dependency map is text-based, not a rendered graph
 
-These are normal evolution points, not architecture failures.
-
 ---
 
-## 12. Good contribution rules for maintainers
+## 12. Contribution Rules For Maintainers
 
 When evolving the architecture:
 

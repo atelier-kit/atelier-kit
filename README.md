@@ -51,16 +51,16 @@ This path:
 
 Planner documentation is organized by purpose:
 
-- [PLANNER.md](./PLANNER.md) — mental model, lifecycle, and planner philosophy
+- [PLANNER.md](./PLANNER.md) — planner lifecycle, state, and approval flow
 - [EXECUTION-FLOW.md](./EXECUTION-FLOW.md) — diagrammed execution flow from objective to researchers, plan, approval, and slices
 - [AGENT-USAGE.md](./AGENT-USAGE.md) — how to use the planner from Claude, Cursor, Codex, Windsurf, Cline, Kilo, Anti-GRAVITY, and generic agents
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — internal architecture, state model, runtime, adapters, and artifacts
 
 atelier-kit uses a planner-oriented runtime in `.atelier/context.md`.
 
-- The planner workflow is the product's operating model.
+- The planner workflow is the product's default flow.
 - Artifacts support the graph; they are not the only source of truth.
-- Internal runtime fields support routing and adapters; they are not part of the planner's public mental model.
+- Internal runtime fields support routing and adapters; they are not part of the public planner interface.
 
 Recommended relationship between entities:
 
@@ -81,7 +81,8 @@ The default planner shape is:
 objective
   -> repo researcher + tech researcher + business researcher
   -> synthesis / planner
-  -> plan.md
+  -> decision / designer
+  -> plan.md + design.md
   -> human approval
   -> approved execution slices
 ```
@@ -98,7 +99,7 @@ atelier-kit status
 
 The planner operates across two distinct moments:
 
-- **Autoplan**: run repo, tech, business, and synthesis tasks until a final plan is ready for human validation
+- **Autoplan**: run repo, tech, business, synthesis, and decision tasks until a final plan is ready for human validation
 - **Execution**: only begins after approval and focuses approved slices in implementer mode
 
 ### Approval flow
@@ -171,6 +172,8 @@ After every state-changing command, the agent is instructed to re-read `.atelier
 | `atelier-kit planner execute` | Enter execution mode and focus the first slice |
 | `atelier-kit planner next` | Advance focus to the next ready task or slice |
 | `atelier-kit planner done` | Mark the current task or slice done and advance |
+| `atelier-kit planner validate` | Report planner blockers and concrete next actions |
+| `atelier-kit planner validate --repair` | Reconcile planner state from valid artifacts where safe |
 
 ### Advanced planner commands
 
@@ -183,6 +186,8 @@ These exist for tighter control, debugging, or maintainers:
 - `atelier-kit planner task <add|update|focus>`
 - `atelier-kit planner slice <add|update|focus>`
 - `atelier-kit mode quick|standard|deep`
+- `atelier-kit validate <phase>`
+- `atelier-kit return <phase> --reason "..."`
 - `atelier-kit handoff`
 - `atelier-kit doctor`
 

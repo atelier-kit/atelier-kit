@@ -9,3 +9,6 @@ coverage/
 .picklejar/.picklejar.lock
 .picklejar/force-resume.json
 .github/hooks/logs/
+
+# graphify
+graphify-out/

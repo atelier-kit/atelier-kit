@@ -1,7 +1,7 @@
 {
   "name": "atelier-kit",
-  "version": "0.1.0",
-  "description": "Skills-first CLI for RPI/QRSPI-style agent workflows (.atelier/)",
+  "version": "0.1.2",
+  "description": "Planner-first CLI for agent workflows (.atelier/)",
   "type": "module",
   "license": "MIT",
   "author": "",
@@ -14,7 +14,7 @@
     "agents",
     "cursor",
     "claude",
-    "rpi",
+    "planner",
     "workflow"
   ],
   "bin": {

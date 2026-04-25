@@ -1,6 +1,7 @@
 import { cp } from "node:fs/promises";
 import { join } from "node:path";
 import { writeText } from "../fs-utils.js";
+import { plannerCommandProtocol, plannerStateReminder } from "./common.js";
 
 export async function applyClaude(cwd: string, atelier: string): Promise<void> {
   const skillsSrc = join(atelier, "skills");
@@ -9,11 +10,14 @@ export async function applyClaude(cwd: string, atelier: string): Promise<void> {
 
   const md = `# atelier-kit (Claude Code)
 
-Before any tool use or code change, read \`.atelier/context.md\` (frontmatter) to learn the current **phase**.
+Before any tool use or code change, read \`.atelier/context.md\` (frontmatter) to learn the current planner state.
 
-- Skills are vendored into \`.claude/skills/\` — follow the \`SKILL.md\` for the active phase (see \`.atelier/context.md → phase\`).
+- Skills are vendored into \`.claude/skills/\`.
+- Prefer the skill implied by \`.atelier/context.md → current_task\`, \`current_slice\`, and planner state.
+- ${plannerStateReminder()}
 - Full operating contract: \`.atelier/METHOD.md\`.
-- User may say \`/research\`, \`/design\`, etc. — treat those as explicit phase intent triggers.
+
+${plannerCommandProtocol()}
 
 **Not affiliated with HumanLayer.**
 `;

@@ -2,7 +2,7 @@ import matter from "gray-matter";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { z } from "zod";
-import type { Phase } from "./state/schema.js";
+import type { ContextMeta, Phase, TaskType } from "./state/schema.js";
 
 const FrontSchema = z.object({
   name: z.string(),
@@ -56,4 +56,37 @@ export function phaseToSkillFolder(phase: Phase): string | null {
     learn: "chronicler",
   };
   return map[phase] ?? null;
+}
+
+export function taskTypeToSkillFolder(taskType: TaskType): string {
+  const map: Record<TaskType, string> = {
+    repo: "repo-analyst",
+    tech: "tech-analyst",
+    business: "business-analyst",
+    synthesis: "planner",
+    implementation: "implementer",
+    decision: "designer",
+  };
+  return map[taskType];
+}
+
+export function activeSkillFolder(meta: ContextMeta): string | null {
+  if (meta.workflow === "planner" && meta.planner_state === "awaiting_approval") {
+    return "planner";
+  }
+  if (meta.workflow === "planner" && meta.current_task) {
+    const task = meta.tasks.find((entry) => entry.id === meta.current_task);
+    if (task) {
+      return taskTypeToSkillFolder(task.type);
+    }
+  }
+  if (
+    meta.workflow === "planner" &&
+    meta.current_slice &&
+    meta.phase === "implement" &&
+    meta.planner_state === "executing"
+  ) {
+    return "implementer";
+  }
+  return phaseToSkillFolder(meta.phase);
 }

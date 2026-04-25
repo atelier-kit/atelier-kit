@@ -5,6 +5,9 @@ import { applyCursor } from "./cursor.js";
 import { applyCodex } from "./codex.js";
 import { applyWindsurf } from "./windsurf.js";
 import { applyGeneric } from "./generic.js";
+import { applyCline } from "./cline.js";
+import { applyKilo } from "./kilo.js";
+import { applyAntigravity } from "./antigravity.js";
 import { readAtelierRc } from "../state/atelierrc.js";
 
 export async function installAdapter(
@@ -25,6 +28,15 @@ export async function installAdapter(
     case "windsurf":
       await applyWindsurf(cwd, base);
       break;
+    case "cline":
+      await applyCline(cwd, base);
+      break;
+    case "kilo":
+      await applyKilo(cwd, base);
+      break;
+    case "antigravity":
+      await applyAntigravity(cwd);
+      break;
     case "generic":
       await applyGeneric(cwd, base);
       break;
@@ -33,7 +45,7 @@ export async function installAdapter(
   }
 }
 
-/** Re-run fallback generators after phase change (codex/windsurf/generic read context). */
+/** Re-run fallback generators after phase or planner focus changes. */
 export async function refreshFallbackAdapters(cwd: string): Promise<void> {
   let adapter: AdapterName;
   try {
@@ -42,7 +54,14 @@ export async function refreshFallbackAdapters(cwd: string): Promise<void> {
   } catch {
     return;
   }
-  if (adapter === "generic" || adapter === "windsurf" || adapter === "codex") {
+  if (
+    adapter === "generic" ||
+    adapter === "windsurf" ||
+    adapter === "codex" ||
+    adapter === "cline" ||
+    adapter === "kilo" ||
+    adapter === "antigravity"
+  ) {
     await installAdapter(cwd, adapter);
   }
 }

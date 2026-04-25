@@ -1,8 +1,9 @@
 import matter from "gray-matter";
-import { readFile, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 import { ContextMetaSchema, type ContextMeta, type Phase } from "./schema.js";
 import { ATELIER_DIR, CONTEXT_FILE } from "../paths.js";
+import type { IContextRepository } from "../ports/context-repository.js";
 
 export function atelierPath(cwd: string, ...parts: string[]): string {
   return join(cwd, ATELIER_DIR, ...parts);
@@ -25,12 +26,24 @@ export async function writeContext(
   body = "",
 ): Promise<void> {
   const p = atelierPath(cwd, CONTEXT_FILE);
+  const dir = dirname(p);
   const yaml = {
     ...meta,
     updated_at: new Date().toISOString(),
   };
   const out = matter.stringify(body ? `${body}\n` : "\n", yaml);
-  await writeFile(p, out, "utf8");
+  const tmp = join(
+    dir,
+    `.${CONTEXT_FILE}.${process.pid}.${Date.now()}.${Math.random().toString(36).slice(2)}.tmp`,
+  );
+  await mkdir(dir, { recursive: true });
+  try {
+    await writeFile(tmp, out, "utf8");
+    await rename(tmp, p);
+  } catch (error) {
+    await rm(tmp, { force: true }).catch(() => {});
+    throw error;
+  }
 }
 
 export function defaultContextMeta(
@@ -38,12 +51,33 @@ export function defaultContextMeta(
 ): ContextMeta {
   return ContextMetaSchema.parse({
     atelier_context_version: 1,
-    phase: "brief",
+    workflow: "planner",
+    planner_mode: "autoplan",
+    planner_state: "idle",
+    approval_status: "none",
+    phase: "plan",
     updated_at: new Date().toISOString(),
     returns: [],
     ...partial,
   });
 }
+
+export class FileContextRepository implements IContextRepository {
+  async read(cwd: string): Promise<{ meta: ContextMeta; body: string }> {
+    return readContext(cwd);
+  }
+
+  async write(cwd: string, meta: ContextMeta, body = ""): Promise<void> {
+    return writeContext(cwd, meta, body);
+  }
+
+  default(partial?: Partial<ContextMeta>): ContextMeta {
+    return defaultContextMeta(partial);
+  }
+}
+
+export const defaultContextRepository: IContextRepository =
+  new FileContextRepository();
 
 export async function setPhase(cwd: string, phase: Phase): Promise<void> {
   const { meta, body } = await readContext(cwd);

@@ -3,6 +3,9 @@ export type AdapterName =
   | "cursor"
   | "codex"
   | "windsurf"
+  | "cline"
+  | "kilo"
+  | "antigravity"
   | "generic";
 
 export interface AdapterWrite {

@@ -170,18 +170,17 @@ export async function readAnyArtifactMarkdown(
   cwd: string,
   file: PlanArtifactFile,
 ): Promise<string | null> {
-  let meta: ContextMeta;
   try {
     const ctx = await readContext(cwd);
-    meta = ctx.meta;
-  } catch {
-    return null;
-  }
-  if (meta.current_epic) {
-    const inPlan = artifactPathForEpic(cwd, meta.current_epic, file);
-    if (await pathExists(inPlan)) {
-      return readFile(inPlan, "utf8");
+    const { meta } = ctx;
+    if (meta.current_epic) {
+      const inPlan = artifactPathForEpic(cwd, meta.current_epic, file);
+      if (await pathExists(inPlan)) {
+        return readFile(inPlan, "utf8");
+      }
     }
+  } catch {
+    // no context or per-epic file — fall through to legacy path
   }
   const legacy = join(atelierDir(cwd), "artifacts", file);
   if (await pathExists(legacy)) {
@@ -302,8 +301,6 @@ export async function writePlanBundle(
     `${JSON.stringify(manifest, null, 2)}\n`,
   );
   await writePlanContextSnapshot(cwd, dir);
-  // Mirror for adapters / legacy
-  await writeText(join(atelierDir(cwd), "artifacts", PLAN_REVIEW), planMarkdown);
 }
 
 /**

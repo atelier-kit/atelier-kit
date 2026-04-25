@@ -190,6 +190,11 @@ describe("planner state helpers", () => {
 
     await markCurrentDone(dir);
     state = await readContext(dir);
+    expect(state.meta.current_task).toBe("migrate-python-framework-to-php-decision");
+    expect(activeSkillFolder(state.meta)).toBe("designer");
+
+    await markCurrentDone(dir);
+    state = await readContext(dir);
     expect(state.meta.slices.length).toBeGreaterThan(0);
     expect(state.meta.current_slice).toBe(null);
     expect(state.meta.phase).toBe("plan");
@@ -256,11 +261,6 @@ describe("planner state helpers", () => {
       "plan.md",
     );
     const plan = await readFile(underPlan, "utf8");
-    const mirror = await readFile(
-      join(dir, ".atelier", "artifacts", "plan.md"),
-      "utf8",
-    );
-    expect(plan).toBe(mirror);
     expect(plan).toContain("# Plan");
     expect(plan).toContain("Evidence status");
     expect(plan).toContain("Approval");
@@ -347,13 +347,16 @@ describe("planner state helpers", () => {
   test("discovery tasks have parallel_group set", async () => {
     await startPlannerGoal(dir, "Migrate Python framework to PHP");
     const { meta } = await readContext(dir);
-    const discovery = meta.tasks.filter((t) => t.type !== "synthesis");
+    const discovery = meta.tasks.filter((t) => t.type !== "synthesis" && t.type !== "decision");
     for (const task of discovery) {
       expect(task.parallel_group).toBeDefined();
       expect(task.parallel_group).toContain("discovery");
     }
     const synthesis = meta.tasks.find((t) => t.type === "synthesis");
     expect(synthesis?.parallel_group).toBeUndefined();
+    const decision = meta.tasks.find((t) => t.type === "decision");
+    expect(decision?.parallel_group).toBeUndefined();
+    expect(decision?.depends_on).toContain("migrate-python-framework-to-php-synthesis");
   });
 
   test("a second start with the same goal gets a new epic id and does not clobber the first plan dir", async () => {

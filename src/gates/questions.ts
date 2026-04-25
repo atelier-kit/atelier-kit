@@ -26,20 +26,13 @@ export async function validateQuestionsGate(cwd: string): Promise<{
   const errors: string[] = [];
   const base = atelierDir(cwd);
   let brief = "";
-  let questions = "";
   try {
     brief = await readFile(join(base, "brief.md"), "utf8");
   } catch {
     return { ok: true, errors: [] };
   }
-  try {
-    questions =
-      (await readAnyArtifactMarkdown(cwd, "questions.md")) ??
-      (await readFile(join(base, "artifacts", "questions.md"), "utf8"));
-  } catch {
-    return { ok: true, errors: [] };
-  }
-  if (questions.includes("_TBD_") || questions.trim().length < 40) {
+  const questions = await readAnyArtifactMarkdown(cwd, "questions.md");
+  if (!questions || questions.includes("_TBD_") || questions.trim().length < 40) {
     return { ok: true, errors: [] };
   }
 

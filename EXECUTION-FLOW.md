@@ -27,7 +27,8 @@ flowchart LR
   T --> S
   U --> S
 
-  S --> P["Plan: .atelier/plan/<slug>/plan.md"]
+  S --> D2["Decision: designer task"]
+  D2 --> P["Plan: .atelier/plan/<slug>/plan.md + design.md"]
   P --> G{"Human gate: approve or reject"}
 
   G -->|"reject"| D
@@ -54,7 +55,7 @@ sequenceDiagram
   Planner->>Planner: classify goal and choose task template
   Planner->>State: create epic + repo/tech/business/synthesis tasks
 
-  loop discovery tasks
+  loop discovery tasks (repo, tech, business)
     Planner->>State: focus current_task
     State->>Skills: route task type to skill
     Skills-->>Planner: evidence and task completion
@@ -62,7 +63,12 @@ sequenceDiagram
   end
 
   Planner->>Planner: generateSlicesForSynthesis()
-  Planner->>Plan: write reviewable plan
+  Planner->>State: focus decision task
+  State->>Skills: route to designer skill
+  Skills-->>Planner: design.md filled with architectural decisions
+  Planner->>State: markCurrentDone()
+
+  Planner->>Plan: write reviewable plan.md + design.md
   Planner->>State: planner_state=awaiting_approval, approval_status=pending
 
   Human->>CLI: atelier-kit planner approve

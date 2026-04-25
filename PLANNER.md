@@ -36,7 +36,12 @@ In atelier-kit, the planner is built around a small set of primitives:
 - **Slice**: a vertical delivery unit to execute after planning converges
 
 The planner uses `.atelier/context.md` as the authoritative runtime state and
-`.atelier/plan/<slug-do-epico>/plan.md` as the durable human-readable plan artifact for each planning run (also mirrored to `.atelier/artifacts/plan.md` for compatibility).
+`.atelier/plan/<epic-id>/` as the per-epic artifact bundle, containing:
+- `plan.md` — human-readable execution plan
+- `design.md` — architectural decisions and boundaries
+- `context.md` — snapshot of planning context at the time
+- `manifest.json` — metadata and artifact pointers
+- plus research, questions, outline, and other discovery artifacts
 
 ## What the planner is not
 
@@ -68,8 +73,9 @@ The planner is easiest to understand as a staged path:
 objective
   -> questions
   -> repo / tech / business researchers
-  -> synthesis
-  -> plan
+  -> synthesis (generate initial slices)
+  -> design (document architectural decisions)
+  -> plan (render and review)
   -> human approval
   -> execution slices
 ```
@@ -89,17 +95,20 @@ shape is:
 - `tech`
 - `business`
 - `synthesis`
+- `decision`
 
 These tasks answer questions like:
 
 - What exists in the repo today?
 - What external technical constraints apply?
 - What business or rollout concerns matter?
-- What needs to be decided before implementation?
 - How should work be split into execution slices?
+- What architectural decisions and boundaries apply to those slices?
 
 The `repo`, `tech`, and `business` tasks are discovery tracks. The `synthesis`
-task depends on those tracks and converts the evidence into slices.
+task depends on those tracks and converts the evidence into initial slices. The `decision`
+task depends on synthesis and documents the architectural boundaries and patterns that apply
+to those slices (filling in `design.md`).
 
 ### 2. Approval layer
 
@@ -185,6 +194,7 @@ The researcher roles are implemented as skills and selected from the active task
 | `tech` | `tech-analyst` | Gathers external technical evidence: docs, specs, versions, APIs, compatibility, security, and tradeoffs. |
 | `business` | `business-analyst` | Clarifies rollout, stakeholders, operational risk, acceptance criteria, and decision constraints. |
 | `synthesis` | `planner` | Combines the researcher outputs into ordered slices, dependencies, risks, and acceptance checks. |
+| `decision` | `designer` | Documents architectural boundaries, ports, patterns, and design approach needed for the slices. Fills `design.md`. |
 
 This is why tasks are not implementation work. They exist to answer the questions
 needed before a safe plan can be approved.

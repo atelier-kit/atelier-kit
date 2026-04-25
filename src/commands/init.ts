@@ -1,9 +1,9 @@
 import prompts from "prompts";
 import pc from "picocolors";
-import { cp, mkdir, readFile, rm } from "node:fs/promises";
+import { cp, mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { getKitRoot } from "../paths.js";
-import { atelierDir, writeText } from "../fs-utils.js";
+import { atelierDir } from "../fs-utils.js";
 import { defaultAtelierRc, writeAtelierRc } from "../state/atelierrc.js";
 import { defaultContextMeta, writeContext } from "../state/context.js";
 import { installAdapter } from "../adapters/index.js";
@@ -59,36 +59,6 @@ export async function cmdInit(
   await cp(kit, dest, { recursive: true });
 
   await rm(join(dest, "brief.md"), { force: true }).catch(() => {});
-
-  const artFiles = [
-    "questions.md",
-    "research.md",
-    "design.md",
-    "outline.md",
-    "plan.md",
-    "impl-log.md",
-    "review.md",
-    "decision-log.md",
-  ];
-  for (const f of artFiles) {
-    if (f === "questions.md" || f === "research.md") {
-      await writeText(
-        join(dest, "artifacts", f),
-        `# ${f.replace(".md", "")}\n\n_Optional in planner-first mode._\n`,
-      );
-      continue;
-    }
-    const p = join(kit, "templates", f);
-    try {
-      const body = await readFile(p, "utf8");
-      await writeText(join(dest, "artifacts", f), body);
-    } catch {
-      await writeText(
-        join(dest, "artifacts", f),
-        `# ${f.replace(".md", "")}\n\n_TBD_\n`,
-      );
-    }
-  }
 
   await writeAtelierRc(
     cwd,

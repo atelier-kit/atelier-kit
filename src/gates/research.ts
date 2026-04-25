@@ -1,6 +1,3 @@
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
-import { atelierDir } from "../fs-utils.js";
 import type { ContextMeta, Task } from "../state/schema.js";
 import { readAnyArtifactMarkdown, readActiveArtifactContent } from "../state/plan-artifacts.js";
 
@@ -31,30 +28,14 @@ export async function validateResearchGate(cwd: string): Promise<{
   errors: string[];
 }> {
   const errors: string[] = [];
-  const base = atelierDir(cwd);
-  let questionsRaw = "";
-  let researchRaw = "";
-  try {
-    questionsRaw =
-      (await readAnyArtifactMarkdown(cwd, "questions.md")) ??
-      (await readFile(join(base, "artifacts", "questions.md"), "utf8"));
-  } catch {
-    return { ok: true, errors: [] };
-  }
-  if (questionsRaw.includes("_TBD_")) {
-    return { ok: true, errors: [] };
-  }
-  try {
-    researchRaw =
-      (await readAnyArtifactMarkdown(cwd, "research.md")) ??
-      (await readFile(join(base, "artifacts", "research.md"), "utf8"));
-  } catch {
+  const questionsRaw = await readAnyArtifactMarkdown(cwd, "questions.md");
+  if (!questionsRaw || questionsRaw.includes("_TBD_")) return { ok: true, errors: [] };
+  const researchRaw = await readAnyArtifactMarkdown(cwd, "research.md");
+  if (!researchRaw) {
     errors.push("research.md missing while questions.md exists");
     return { ok: false, errors };
   }
-  if (researchRaw.includes("_TBD_")) {
-    return { ok: true, errors: [] };
-  }
+  if (researchRaw.includes("_TBD_")) return { ok: true, errors: [] };
 
   const scopes = extractScopes(questionsRaw);
   const stages = extractStages(researchRaw);

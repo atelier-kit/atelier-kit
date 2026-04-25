@@ -415,10 +415,11 @@ export async function startPlannerGoal(
     const discoveryGroup = `${epicId}-discovery`;
     const templates = classifier.getTemplates(goal);
     const discoveryIds = templates
-      .filter((t) => t.type !== "synthesis")
+      .filter((t) => t.type !== "synthesis" && t.type !== "decision")
       .map((t) => `${epicId}-${t.suffix}`);
     const tasks: Task[] = templates.map((tpl) => {
       const isSynthesis = tpl.type === "synthesis";
+      const isDecision = tpl.type === "decision";
       const isRepo = tpl.type === "repo";
       const base: Task = {
         id: `${epicId}-${tpl.suffix}`,
@@ -426,13 +427,13 @@ export async function startPlannerGoal(
         title: tpl.title,
         type: tpl.type,
         summary: tpl.summary,
-        status: isRepo ? "researching" : isSynthesis ? "draft" : "ready",
-        depends_on: isSynthesis ? discoveryIds : [],
+        status: isRepo ? "researching" : (isSynthesis || isDecision) ? "draft" : "ready",
+        depends_on: isSynthesis ? discoveryIds : isDecision ? [`${epicId}-synthesis`] : [],
         acceptance: tpl.acceptance,
         open_questions: tpl.open_questions,
         evidence_refs: [],
       };
-      return isSynthesis ? base : { ...base, parallel_group: discoveryGroup };
+      return (isSynthesis || isDecision) ? base : { ...base, parallel_group: discoveryGroup };
     });
     const nextMeta: ContextMeta = {
       ...meta,
@@ -506,7 +507,11 @@ function transitionToAwaitingApproval(meta: ContextMeta): ContextMeta {
   const synthesisDone = relevantTasks.some(
     (task) => task.type === "synthesis" && task.status === "done",
   );
-  if (!synthesisDone || relevantSlices.length === 0) {
+  const decisionTasks = relevantTasks.filter((task) => task.type === "decision");
+  const decisionDone =
+    decisionTasks.length === 0 ||
+    decisionTasks.every((task) => task.status === "done" || task.status === "cancelled");
+  if (!synthesisDone || !decisionDone || relevantSlices.length === 0) {
     return meta;
   }
   return {
@@ -752,6 +757,14 @@ export function validatePlanBeforeApproval(meta: ContextMeta): PlanValidationRes
   );
   if (!synthesisDone) {
     blocks.push("Synthesis task is not done — discovery has not converged.");
+  }
+
+  const decisionTasks = relevantTasks.filter((t) => t.type === "decision");
+  const decisionDone =
+    decisionTasks.length === 0 ||
+    decisionTasks.every((t) => t.status === "done" || t.status === "cancelled");
+  if (!decisionDone) {
+    blocks.push("Design decision task is not done — architectural decisions must be documented before approval.");
   }
 
   const discoveryPending = relevantTasks.filter(

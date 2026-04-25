@@ -32,6 +32,7 @@ import {
   updateEpic,
   updateSlice,
   updateTask,
+  validatePlannerReadiness,
 } from "../state/planner.js";
 import { refreshFallbackAdapters } from "../adapters/index.js";
 
@@ -254,6 +255,45 @@ export async function cmdPlannerSyncPhase(cwd: string): Promise<void> {
         `Planner phase synced to ${meta.phase} (${summarizePlannerCounts(meta)})`,
       ),
     );
+  } catch (error) {
+    console.error(pc.red((error as Error).message));
+    process.exitCode = 1;
+  }
+}
+
+export async function cmdPlannerValidate(
+  cwd: string,
+  opts: { repair?: boolean } = {},
+): Promise<void> {
+  try {
+    const report = await validatePlannerReadiness(cwd, { repair: opts.repair });
+    if (report.repaired) {
+      await refreshFallbackAdapters(cwd);
+      console.log(pc.green("Planner state repaired from existing artifacts."));
+    }
+    console.log(report.ready ? pc.green("Planner readiness: ready") : pc.yellow("Planner readiness: blocked"));
+    if (report.blocks.length > 0) {
+      console.log("");
+      console.log(pc.red("Blockers"));
+      for (const block of report.blocks) {
+        console.log(`- ${block}`);
+      }
+    }
+    if (report.warnings.length > 0) {
+      console.log("");
+      console.log(pc.yellow("Warnings"));
+      for (const warning of report.warnings) {
+        console.log(`- ${warning}`);
+      }
+    }
+    console.log("");
+    console.log("Next actions");
+    for (const action of report.next_actions) {
+      console.log(`- ${action}`);
+    }
+    if (!report.ready) {
+      process.exitCode = 1;
+    }
   } catch (error) {
     console.error(pc.red((error as Error).message));
     process.exitCode = 1;

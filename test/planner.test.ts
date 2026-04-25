@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
-import { mkdir, rm } from "node:fs/promises";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -25,6 +25,7 @@ import {
   startPlannerGoal,
   updateTask,
   updateSlice,
+  validatePlannerReadiness,
   validatePlanBeforeApproval,
 } from "../src/state/planner.js";
 import { classifyGoal } from "../src/state/task-templates.js";
@@ -33,6 +34,60 @@ import { readFile } from "node:fs/promises";
 
 describe("planner state helpers", () => {
   let dir = "";
+
+  async function writeApprovalReadyArtifacts(epicId: string, sliceCount = 1) {
+    const bundle = join(dir, ".atelier", "plan", epicId);
+    await writeFile(
+      join(bundle, "design.md"),
+      [
+        "# Design",
+        "",
+        "## Current state",
+        "Repository evidence has been mapped for the active goal.",
+        "",
+        "## Desired state",
+        "The planned slices describe the target implementation path.",
+        "",
+        "## Patterns to follow",
+        "Keep implementation aligned with existing project structure.",
+        "",
+        "## Patterns to avoid",
+        "Avoid introducing scope outside the approved outline.",
+        "",
+        "## Open decisions",
+        "None blocking approval.",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+    await writeFile(
+      join(bundle, "outline.md"),
+      [
+        "# Outline",
+        "",
+        "## Vertical slices (in order)",
+        "",
+        ...Array.from({ length: sliceCount }, (_, i) => [
+          `### Slice ${i + 1} — Test slice ${i + 1}`,
+          "",
+          "- Entrypoints: test",
+          "- Tests: test",
+          "",
+        ].join("\n")),
+      ].join("\n"),
+      "utf8",
+    );
+  }
+
+  async function clearPlannerGate() {
+    const { meta, body } = await readContext(dir);
+    await writeContext(dir, {
+      ...meta,
+      planner_state: "planning",
+      approval_status: "none",
+      gate_pending: null,
+    }, body);
+  }
 
   beforeEach(async () => {
     dir = await mkdtemp(join(tmpdir(), "atk-planner-"));
@@ -240,15 +295,17 @@ describe("planner state helpers", () => {
     expect(manifest.paths.artifacts["review.md"]).toBe("review.md");
   });
 
-  test("autoplan runs to approval gate for plans without technical research track", async () => {
+  test("autoplan stops before approval when presentation artifacts are not ready", async () => {
     const classifier = new StubGoalClassifier([
       { suffix: "repo", type: "repo", title: "Repo", summary: "s", acceptance: [], open_questions: [] },
       { suffix: "synthesis", type: "synthesis", title: "Synthesis", summary: "s", acceptance: ["done"], open_questions: [] },
     ]);
 
     const meta = await autoplanGoal(dir, "Migrate Python framework to PHP", { classifier });
-    expect(meta.planner_state).toBe("awaiting_approval");
-    expect(meta.approval_status).toBe("pending");
+    expect(meta.planner_state).toBe("planning");
+    expect(meta.approval_status).toBe("none");
+    expect(meta.gate_pending).toContain("Plan presentation blocked:");
+    expect(meta.gate_pending).toContain("design.md is still a template stub");
     expect(meta.current_task).toBe(null);
     expect(meta.current_slice).toBe(null);
     expect(meta.slices[0]?.status).toBe("ready");
@@ -262,9 +319,7 @@ describe("planner state helpers", () => {
     );
     const plan = await readFile(underPlan, "utf8");
     expect(plan).toContain("# Plan");
-    expect(plan).toContain("Evidence status");
-    expect(plan).toContain("Approval");
-    expect(plan).toContain("Approve plan");
+    expect(plan).toContain("_TBD_");
     const manifest = JSON.parse(
       await readFile(
         join(dir, ".atelier", "plan", "migrate-python-framework-to-php", "manifest.json"),
@@ -273,18 +328,36 @@ describe("planner state helpers", () => {
     );
     expect(manifest.atelier_plan_manifest_version).toBe(1);
     expect(manifest.epic_id).toBe("migrate-python-framework-to-php");
-    const snap = await readFile(
-      join(
-        dir,
-        ".atelier",
-        "plan",
-        "migrate-python-framework-to-php",
-        "context.md",
-      ),
-      "utf8",
-    );
-    expect(snap).toMatch(/---\n[\s\S]*---/);
-    expect(snap).toContain("atelier: snapshot of .atelier/context.md for this plan folder");
+  });
+
+  test("validatePlannerReadiness reports blockers and next actions", async () => {
+    const classifier = new StubGoalClassifier([
+      { suffix: "repo", type: "repo", title: "Repo", summary: "s", acceptance: [], open_questions: [] },
+      { suffix: "synthesis", type: "synthesis", title: "Synthesis", summary: "s", acceptance: ["done"], open_questions: [] },
+    ]);
+    await autoplanGoal(dir, "Migrate Python framework to PHP", { classifier });
+
+    const report = await validatePlannerReadiness(dir);
+
+    expect(report.ready).toBe(false);
+    expect(report.blocks.join("\n")).toContain("design.md is still a template stub");
+    expect(report.next_actions.join("\n")).toContain("Fill design.md");
+  });
+
+  test("validatePlannerReadiness passes when approval artifacts match state", async () => {
+    const classifier = new StubGoalClassifier([
+      { suffix: "repo", type: "repo", title: "Repo", summary: "s", acceptance: [], open_questions: [] },
+      { suffix: "synthesis", type: "synthesis", title: "Synthesis", summary: "s", acceptance: ["done"], open_questions: [] },
+    ]);
+    await autoplanGoal(dir, "Migrate Python framework to PHP", { classifier });
+    await writeApprovalReadyArtifacts("migrate-python-framework-to-php", 1);
+    await clearPlannerGate();
+
+    const report = await validatePlannerReadiness(dir, { repair: true });
+
+    expect(report.ready).toBe(true);
+    expect(report.blocks).toHaveLength(0);
+    expect(report.next_actions).toContain("Run `atelier-kit planner present` to render the approval plan.");
   });
 
   test("reject and approve control execution gate", async () => {
@@ -293,11 +366,15 @@ describe("planner state helpers", () => {
       { suffix: "synthesis", type: "synthesis", title: "Synthesis", summary: "s", acceptance: ["done"], open_questions: [] },
     ]);
     await autoplanGoal(dir, "Migrate Python framework to PHP", { classifier });
+    await writeApprovalReadyArtifacts("migrate-python-framework-to-php", 1);
+    await clearPlannerGate();
+    await presentPlan(dir);
     await rejectPlan(dir, "Need clearer migration risks");
     let state = await readContext(dir);
     expect(state.meta.approval_status).toBe("rejected");
     expect(state.meta.planner_state).toBe("planning");
 
+    await clearPlannerGate();
     await presentPlan(dir);
     state = await readContext(dir);
     expect(state.meta.approval_status).toBe("pending");
@@ -365,6 +442,9 @@ describe("planner state helpers", () => {
       { suffix: "synthesis", type: "synthesis", title: "Synthesis", summary: "s", acceptance: ["done"], open_questions: [] },
     ]);
     await autoplanGoal(dir, "Same title twice", { classifier });
+    await writeApprovalReadyArtifacts("same-title-twice", 1);
+    await clearPlannerGate();
+    await presentPlan(dir);
     const p1 = join(dir, ".atelier", "plan", "same-title-twice", "plan.md");
     const firstPlan = await readFile(p1, "utf8");
     expect(firstPlan).toContain("# Plan");
@@ -383,6 +463,9 @@ describe("planner state helpers", () => {
       { suffix: "synthesis", type: "synthesis", title: "Synthesis", summary: "s", acceptance: ["done"], open_questions: [] },
     ]);
     await autoplanGoal(dir, "Migrate Python framework to PHP", { classifier });
+    await writeApprovalReadyArtifacts("migrate-python-framework-to-php", 1);
+    await clearPlannerGate();
+    await presentPlan(dir);
     const plan = await readFile(
       join(dir, ".atelier", "plan", "migrate-python-framework-to-php", "plan.md"),
       "utf8",
@@ -399,6 +482,9 @@ describe("planner state helpers", () => {
       { suffix: "synthesis", type: "synthesis", title: "Synthesis", summary: "s", acceptance: ["done"], open_questions: [] },
     ]);
     await autoplanGoal(dir, "Migrate Python framework to PHP", { classifier });
+    await writeApprovalReadyArtifacts("migrate-python-framework-to-php", 1);
+    await clearPlannerGate();
+    await presentPlan(dir);
     const plan = await readFile(
       join(dir, ".atelier", "plan", "migrate-python-framework-to-php", "plan.md"),
       "utf8",

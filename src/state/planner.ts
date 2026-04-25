@@ -4,6 +4,7 @@ import {
 import {
   allocateUniquePlanId,
   ensurePlanArtifactBundle,
+  readActiveArtifactContent,
   slugifyGoal,
   writePlanBundle,
 } from "./plan-artifacts.js";
@@ -497,6 +498,10 @@ export async function advancePlanner(
 }
 
 function transitionToAwaitingApproval(meta: ContextMeta): ContextMeta {
+  if (meta.gate_pending) {
+    return meta;
+  }
+
   const relevantTasks = meta.current_epic
     ? meta.tasks.filter((task) => task.epic_id === meta.current_epic)
     : meta.tasks;
@@ -711,33 +716,361 @@ export async function writePlannerPlanArtifact(
   await writePlanBundle(cwd, currentMeta, renderPlan(currentMeta));
 }
 
-export async function presentPlannerPlan(
-  cwd: string,
-  repo: IContextRepository = defaultContextRepository,
-): Promise<ContextMeta> {
-  const meta = await mutatePlannerState(cwd, (current) => {
-    const next = transitionToAwaitingApproval(current);
-    if (next.slices.length === 0) {
-      throw new Error("Cannot present a planner plan before slices exist");
-    }
-    return {
-      ...next,
-      planner_state: "awaiting_approval",
-      approval_status: "pending",
-      approval_reason: null,
-      current_task: null,
-      current_slice: null,
-    };
-  }, repo);
-  if (repo === defaultContextRepository) {
-    await writePlannerPlanArtifact(cwd, meta, repo);
-  }
-  return meta;
-}
-
 interface PlanValidationResult {
   warnings: string[];
   blocks: string[];
+}
+
+export interface PlannerReadinessReport extends PlanValidationResult {
+  ready: boolean;
+  repaired: boolean;
+  next_actions: string[];
+}
+
+const DESIGN_STUB_PATTERNS = [
+  /_TBD_:\s*replace this stub/i,
+  /What the codebase and market context show today/i,
+  /What must change to satisfy the brief/i,
+  /Project conventions the implementation must respect/i,
+];
+
+function extractOutlineSliceTitles(outlineRaw: string): string[] {
+  return extractOutlineSlices(outlineRaw).map((slice) => slice.title);
+}
+
+interface OutlineSliceDraft {
+  title: string;
+  goal: string;
+  summary: string;
+  acceptance: string[];
+}
+
+function extractOutlineSlices(outlineRaw: string): OutlineSliceDraft[] {
+  const headings: Array<{ title: string; start: number; end: number }> = [];
+  const re = /^###\s+Slice\s+\d+\s+[—-]\s+(.+?)\s*$/gim;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(outlineRaw)) !== null) {
+    headings.push({ title: match[1].trim(), start: match.index, end: re.lastIndex });
+  }
+  return headings.map((heading, index) => {
+    const next = headings[index + 1];
+    const rest = outlineRaw.slice(heading.end, next ? next.start : undefined);
+    const nextTopLevel = rest.search(/^##\s+/m);
+    const block = nextTopLevel >= 0 ? rest.slice(0, nextTopLevel) : rest;
+    const acceptance = extractBulletsAfterLabel(block, "Acceptance");
+    const summary = firstNonEmptyContentLine(block) ?? heading.title;
+    return {
+      title: heading.title,
+      goal: summary,
+      summary,
+      acceptance: acceptance.length > 0 ? acceptance : ["Slice behavior is demonstrated end-to-end"],
+    };
+  });
+}
+
+function extractBulletsAfterLabel(block: string, label: string): string[] {
+  const lines = block.split("\n");
+  const items: string[] = [];
+  let inSection = false;
+  for (const line of lines) {
+    if (new RegExp(`^\\s*(?:\\*\\*)?${label}(?:\\*\\*)?\\s*:`, "i").test(line)) {
+      inSection = true;
+      continue;
+    }
+    if (inSection && /^#{1,6}\s+|^\s*(?:\*\*)?[A-Z][^:\n]{1,40}(?:\*\*)?\s*:/.test(line)) {
+      break;
+    }
+    const bullet = line.match(/^\s*[-*]\s+(?:✅\s*)?(.+?)\s*$/);
+    if (inSection && bullet) {
+      items.push(bullet[1].trim());
+    }
+  }
+  return items;
+}
+
+function firstNonEmptyContentLine(block: string): string | null {
+  for (const line of block.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    if (trimmed === "---") continue;
+    if (trimmed.startsWith("```")) continue;
+    if (/^#+\s+/.test(trimmed)) continue;
+    if (/^\*\*[^*]+:\*\*/.test(trimmed)) continue;
+    if (/^[-*]\s+/.test(trimmed)) continue;
+    return trimmed;
+  }
+  return null;
+}
+
+function designLooksReady(designRaw: string): boolean {
+  if (DESIGN_STUB_PATTERNS.some((pattern) => pattern.test(designRaw))) {
+    return false;
+  }
+  return [
+    /##\s+Current state/i,
+    /##\s+Desired state/i,
+    /##\s+Patterns to follow/i,
+    /##\s+Patterns to avoid/i,
+  ].every((pattern) => pattern.test(designRaw));
+}
+
+async function validatePlanArtifactsBeforePresentation(
+  cwd: string,
+  meta: ContextMeta,
+): Promise<PlanValidationResult> {
+  const warnings: string[] = [];
+  const blocks: string[] = [];
+
+  try {
+    const designRaw = await readActiveArtifactContent(cwd, meta, "design.md");
+    if (!designLooksReady(designRaw)) {
+      blocks.push("design.md is still a template stub — fill architectural decisions before presenting the plan.");
+    }
+  } catch {
+    blocks.push("design.md is missing — design decisions must be documented before presenting the plan.");
+  }
+
+  try {
+    const outlineRaw = await readActiveArtifactContent(cwd, meta, "outline.md");
+    const outlineSlices = extractOutlineSliceTitles(outlineRaw);
+    const epicId = meta.current_epic;
+    const relevantSlices = epicId
+      ? meta.slices.filter((slice) => slice.epic_id === epicId)
+      : meta.slices;
+    if (outlineSlices.length > 0 && relevantSlices.length !== outlineSlices.length) {
+      blocks.push(
+        `Plan slices do not match outline.md — outline has ${outlineSlices.length}, state has ${relevantSlices.length}.`,
+      );
+    }
+  } catch {
+    warnings.push("outline.md is missing — cannot check slice parity before presentation.");
+  }
+
+  return { warnings, blocks };
+}
+
+function nextActionsForPlannerBlocks(blocks: string[]): string[] {
+  const actions = new Set<string>();
+  for (const block of blocks) {
+    if (/technical research/i.test(block)) {
+      actions.add("Fill research.md Stage 2 with source URL, checked date/version, and impact on plan; then run `atelier-kit planner validate --repair`.");
+    }
+    if (/design\.md|Design decision/i.test(block)) {
+      actions.add("Fill design.md with current state, desired state, patterns to follow/avoid, and open decisions; then mark the decision task done.");
+    }
+    if (/Plan slices do not match outline\.md/i.test(block)) {
+      actions.add("Regenerate or update planner slices so the state matches the vertical slices listed in outline.md.");
+    } else if (/outline\.md/i.test(block)) {
+      actions.add("Fill outline.md with the vertical slices that should be implemented, using `### Slice N — Title` headings.");
+    }
+    if (/Synthesis task is not done/i.test(block)) {
+      actions.add("Complete synthesis after research/design/outline are coherent, then run `atelier-kit planner done` or update the synthesis task to done.");
+    }
+    if (/No slices exist/i.test(block)) {
+      actions.add("Run `atelier-kit planner generate-slices` after synthesis is done, or add slices explicitly with `atelier-kit planner slice add`.");
+    }
+    if (/Gate is still pending/i.test(block) && !/technical research/i.test(block)) {
+      actions.add("Resolve the gate_pending reason in .atelier/context.md by completing the named artifact/task; do not approve until this validates cleanly.");
+    }
+  }
+  if (actions.size === 0 && blocks.length > 0) {
+    actions.add("Resolve the listed blockers, then rerun `atelier-kit planner validate`.");
+  }
+  if (blocks.length === 0) {
+    actions.add("Run `atelier-kit planner present` to render the approval plan.");
+  }
+  return [...actions];
+}
+
+async function reconcileTechnicalResearchEvidence(
+  cwd: string,
+  repo: IContextRepository,
+): Promise<ContextMeta> {
+  const { meta } = await repo.read(cwd);
+  if (repo !== defaultContextRepository) {
+    return meta;
+  }
+
+  const epicId = meta.current_epic;
+  const techTasks = meta.tasks.filter(
+    (task) =>
+      task.type === "tech" &&
+      (!epicId || task.epic_id === epicId) &&
+      (task.evidence_refs.length === 0 || task.status === "blocked"),
+  );
+  const stalePresentationGate = meta.gate_pending?.startsWith("Plan presentation blocked:");
+  if (techTasks.length === 0 && !stalePresentationGate) {
+    return meta;
+  }
+
+  const evidence = await validatePlannerTechnicalResearchGate(cwd, meta);
+  if (!evidence.ok) {
+    return stalePresentationGate
+      ? await mutatePlannerState(cwd, (state) => ({ ...state, gate_pending: null }), repo)
+      : meta;
+  }
+
+  const techTaskIds = new Set(techTasks.map((task) => task.id));
+  const evidenceRef = epicId
+    ? `.atelier/plan/${epicId}/research.md#stage-2-external-technical-research-tech`
+    : ".atelier/artifacts/research.md#stage-2-external-technical-research-tech";
+  return mutatePlannerState(cwd, (state) => ({
+    ...state,
+    gate_pending:
+      state.gate_pending?.includes("technical research") || stalePresentationGate
+        ? null
+        : state.gate_pending,
+    tasks: state.tasks.map((task) =>
+      techTaskIds.has(task.id)
+        ? {
+            ...task,
+            status: task.status === "blocked" ? "done" : task.status,
+            evidence_refs: [...new Set([...task.evidence_refs, evidenceRef])],
+          }
+        : task,
+    ),
+  }), repo);
+}
+
+async function reconcileDesignArtifact(
+  cwd: string,
+  repo: IContextRepository,
+): Promise<ContextMeta> {
+  const { meta } = await repo.read(cwd);
+  if (repo !== defaultContextRepository || !meta.current_epic) {
+    return meta;
+  }
+  let designRaw = "";
+  try {
+    designRaw = await readActiveArtifactContent(cwd, meta, "design.md");
+  } catch {
+    return meta;
+  }
+  if (!designLooksReady(designRaw)) {
+    return meta;
+  }
+  const epicId = meta.current_epic;
+  const evidenceRef = `.atelier/plan/${epicId}/design.md`;
+  return mutatePlannerState(cwd, (state) => ({
+    ...state,
+    tasks: state.tasks.map((task) =>
+      task.epic_id === epicId && task.type === "decision"
+        ? {
+            ...task,
+            status: "done",
+            open_questions: [],
+            evidence_refs: [...new Set([...task.evidence_refs, evidenceRef])],
+          }
+        : task,
+    ),
+  }), repo);
+}
+
+async function reconcileOutlineArtifact(
+  cwd: string,
+  repo: IContextRepository,
+): Promise<ContextMeta> {
+  const { meta } = await repo.read(cwd);
+  if (repo !== defaultContextRepository || !meta.current_epic) {
+    return meta;
+  }
+  let outlineRaw = "";
+  try {
+    outlineRaw = await readActiveArtifactContent(cwd, meta, "outline.md");
+  } catch {
+    return meta;
+  }
+  const drafts = extractOutlineSlices(outlineRaw);
+  if (drafts.length === 0) {
+    return meta;
+  }
+
+  const epicId = meta.current_epic;
+  const relevantTasks = meta.tasks.filter((task) => task.epic_id === epicId);
+  const synthesisTask = relevantTasks.find((task) => task.type === "synthesis");
+  const discoveryDone = relevantTasks
+    .filter((task) => task.type === "repo" || task.type === "tech" || task.type === "business")
+    .every((task) => task.status === "done" || task.status === "cancelled");
+  const sourceTaskIds = relevantTasks
+    .filter((task) => task.type === "repo" || task.type === "tech" || task.type === "business" || task.type === "synthesis")
+    .map((task) => task.id);
+  const slices: Slice[] = drafts.map((draft, index) => {
+    const id = `${epicId}-slice-${index + 1}`;
+    const existing = meta.slices.find((slice) => slice.id === id);
+    return {
+      id,
+      epic_id: epicId,
+      title: `Slice ${index + 1} - ${draft.title}`,
+      goal: draft.goal,
+      kind: "delivery",
+      summary: draft.summary,
+      status: existing?.status ?? "ready",
+      depends_on:
+        index === 0
+          ? synthesisTask ? [synthesisTask.id] : []
+          : [`${epicId}-slice-${index}`],
+      source_task_ids: existing?.source_task_ids.length ? existing.source_task_ids : index === 0 ? sourceTaskIds : [],
+      acceptance: draft.acceptance,
+      risks: existing?.risks ?? [],
+    };
+  });
+
+  return mutatePlannerState(cwd, (state) => ({
+    ...state,
+    tasks: state.tasks.map((task) =>
+      task.epic_id === epicId && task.type === "synthesis" && discoveryDone
+        ? {
+            ...task,
+            status: "done",
+            evidence_refs: [...new Set([...task.evidence_refs, `.atelier/plan/${epicId}/outline.md`])],
+            slice_id: slices[0]?.id ?? task.slice_id,
+          }
+        : task,
+    ),
+    slices: [
+      ...state.slices.filter((slice) => slice.epic_id !== epicId),
+      ...slices,
+    ],
+  }), repo);
+}
+
+async function repairPlannerFromArtifacts(
+  cwd: string,
+  repo: IContextRepository,
+): Promise<ContextMeta> {
+  let meta = await reconcileTechnicalResearchEvidence(cwd, repo);
+  meta = await reconcileDesignArtifact(cwd, repo);
+  meta = await reconcileOutlineArtifact(cwd, repo);
+  meta = await mutatePlannerState(cwd, (state) => {
+    const epicId = state.current_epic;
+    if (!epicId) return state;
+    const relevantTasks = state.tasks.filter((task) => task.epic_id === epicId);
+    const relevantSlices = state.slices.filter((slice) => slice.epic_id === epicId);
+    const blockers = validatePlanBeforeApproval({
+      ...state,
+      gate_pending: null,
+    }).blocks.filter((block) => !/Gate is still pending/i.test(block));
+    const hasTechnicalBlocker = blockers.some((block) => /Technical research/i.test(block));
+    const canClearGate =
+      !state.gate_pending ||
+      state.gate_pending.includes("technical research") && !hasTechnicalBlocker ||
+      blockers.length === 0;
+    const next = {
+      ...state,
+      gate_pending: canClearGate ? null : state.gate_pending,
+      current_task: chooseNextTask(state)?.id ?? null,
+      current_slice: null,
+    };
+    const synthesisDone = relevantTasks.some((task) => task.type === "synthesis" && task.status === "done");
+    const decisionDone = relevantTasks
+      .filter((task) => task.type === "decision")
+      .every((task) => task.status === "done" || task.status === "cancelled");
+    if (synthesisDone && decisionDone && relevantSlices.length > 0 && !next.gate_pending) {
+      return transitionToAwaitingApproval(next);
+    }
+    return syncPhase(next);
+  }, repo);
+  return meta;
 }
 
 export function validatePlanBeforeApproval(meta: ContextMeta): PlanValidationResult {
@@ -751,6 +1084,10 @@ export function validatePlanBeforeApproval(meta: ContextMeta): PlanValidationRes
   const relevantSlices = epicId
     ? meta.slices.filter((s) => s.epic_id === epicId)
     : meta.slices;
+
+  if (meta.gate_pending) {
+    blocks.push(`Gate is still pending: ${meta.gate_pending}`);
+  }
 
   const synthesisDone = relevantTasks.some(
     (t) => t.type === "synthesis" && t.status === "done",
@@ -821,15 +1158,89 @@ export function validatePlanBeforeApproval(meta: ContextMeta): PlanValidationRes
   return { warnings, blocks };
 }
 
+export async function validatePlannerReadiness(
+  cwd: string,
+  opts: { repair?: boolean } = {},
+  repo: IContextRepository = defaultContextRepository,
+): Promise<PlannerReadinessReport> {
+  const before = (await repo.read(cwd)).meta;
+  const current = opts.repair
+    ? await repairPlannerFromArtifacts(cwd, repo)
+    : before;
+  const candidate = transitionToAwaitingApproval(current);
+  const validation = validatePlanBeforeApproval(candidate);
+  if (repo === defaultContextRepository) {
+    const artifactValidation = await validatePlanArtifactsBeforePresentation(cwd, candidate);
+    validation.warnings.push(...artifactValidation.warnings);
+    validation.blocks.push(...artifactValidation.blocks);
+  }
+  return {
+    ...validation,
+    ready: validation.blocks.length === 0,
+    repaired: JSON.stringify(before) !== JSON.stringify(current),
+    next_actions: nextActionsForPlannerBlocks(validation.blocks),
+  };
+}
+
+export async function presentPlannerPlan(
+  cwd: string,
+  repo: IContextRepository = defaultContextRepository,
+): Promise<ContextMeta> {
+  const current = await repairPlannerFromArtifacts(cwd, repo);
+  const next = transitionToAwaitingApproval(current);
+  const validation = validatePlanBeforeApproval(next);
+  if (repo === defaultContextRepository) {
+    const artifactValidation = await validatePlanArtifactsBeforePresentation(cwd, next);
+    validation.warnings.push(...artifactValidation.warnings);
+    validation.blocks.push(...artifactValidation.blocks);
+  }
+  if (validation.blocks.length > 0) {
+    throw new Error(
+      `Plan presentation blocked:\n${validation.blocks.map((b) => `  - ${b}`).join("\n")}`,
+    );
+  }
+  for (const warning of validation.warnings) {
+    process.stderr.write(`[planner warn] ${warning}\n`);
+  }
+
+  const meta = await mutatePlannerState(cwd, (state) => {
+    const ready = transitionToAwaitingApproval(state);
+    const relevantSlices = ready.current_epic
+      ? ready.slices.filter((slice) => slice.epic_id === ready.current_epic)
+      : ready.slices;
+    if (relevantSlices.length === 0) {
+      throw new Error("Cannot present a planner plan before slices exist");
+    }
+    if (ready.planner_state !== "awaiting_approval") {
+      throw new Error("Cannot present a planner plan before all approval gates are satisfied");
+    }
+    return {
+      ...ready,
+      approval_reason: null,
+      current_task: null,
+      current_slice: null,
+    };
+  }, repo);
+  if (repo === defaultContextRepository) {
+    await writePlannerPlanArtifact(cwd, meta, repo);
+  }
+  return meta;
+}
+
 export async function approvePlannerPlan(
   cwd: string,
   repo: IContextRepository = defaultContextRepository,
 ): Promise<ContextMeta> {
-  const { meta: current } = await repo.read(cwd);
+  const current = await repairPlannerFromArtifacts(cwd, repo);
   if (current.planner_state !== "awaiting_approval") {
     throw new Error("Planner is not awaiting approval");
   }
   const { warnings, blocks } = validatePlanBeforeApproval(current);
+  if (repo === defaultContextRepository) {
+    const artifactValidation = await validatePlanArtifactsBeforePresentation(cwd, current);
+    warnings.push(...artifactValidation.warnings);
+    blocks.push(...artifactValidation.blocks);
+  }
   if (blocks.length > 0) {
     throw new Error(
       `Plan approval blocked:\n${blocks.map((b) => `  - ${b}`).join("\n")}`,
@@ -934,7 +1345,15 @@ export async function autoplanGoal(
     (task) => (!meta.current_epic || task.epic_id === meta.current_epic) && task.status === "blocked",
   );
   if (!blocked && meta.slices.length > 0) {
-    meta = await presentPlannerPlan(cwd, repo);
+    try {
+      meta = await presentPlannerPlan(cwd, repo);
+    } catch (error) {
+      const message = (error as Error).message;
+      if (!message.startsWith("Plan presentation blocked:")) {
+        throw error;
+      }
+      meta = await blockPlannerGate(cwd, message, repo);
+    }
   }
   return meta;
 }
@@ -1044,6 +1463,19 @@ async function blockCurrentTask(
       ),
     });
   }, repo);
+}
+
+async function blockPlannerGate(
+  cwd: string,
+  reason: string,
+  repo: IContextRepository = defaultContextRepository,
+): Promise<ContextMeta> {
+  return mutatePlannerState(cwd, (meta) => ({
+    ...meta,
+    planner_state: "planning",
+    approval_status: "none",
+    gate_pending: reason,
+  }), repo);
 }
 
 async function addCurrentTaskEvidenceRef(

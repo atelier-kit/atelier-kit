@@ -1,6 +1,6 @@
 import pc from "picocolors";
-import { join } from "node:path";
-import { atelierDir, readText } from "../fs-utils.js";
+import { readContext } from "../state/context.js";
+import { readPlanArtifactContent } from "../state/plan-artifacts.js";
 import {
   WorkStatusSchema,
   WorkflowSchema,
@@ -160,7 +160,10 @@ export async function cmdPlannerPresent(cwd: string): Promise<void> {
         `Planner presented (${summarizePlannerCounts(meta)}) approval=${meta.approval_status}`,
       ),
     );
-    console.log(await readText(join(atelierDir(cwd), "artifacts", "plan.md")));
+    {
+      const { meta } = await readContext(cwd);
+      console.log(await readPlanArtifactContent(cwd, meta));
+    }
   } catch (error) {
     console.error(pc.red((error as Error).message));
     process.exitCode = 1;

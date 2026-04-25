@@ -27,7 +27,7 @@ flowchart LR
   T --> S
   U --> S
 
-  S --> P["Plan artifact: plan.md"]
+  S --> P["Plan: .atelier/plan/<slug>/plan.md"]
   P --> G{"Human gate: approve or reject"}
 
   G -->|"reject"| D
@@ -47,7 +47,7 @@ sequenceDiagram
   participant Planner as Planner runtime
   participant State as .atelier/context.md
   participant Skills as Active skills
-  participant Plan as artifacts/plan.md
+  participant Plan as .atelier/plan/<slug>/plan.md
 
   Human->>CLI: atelier-kit planner autoplan "goal"
   CLI->>Planner: startPlannerGoal(goal)
@@ -195,7 +195,7 @@ flowchart TD
   A["presentPlannerPlan"] --> B["requires at least one slice"]
   B --> C["planner_state=awaiting_approval"]
   C --> D["approval_status=pending"]
-  D --> E["write artifacts/plan.md"]
+  D --> E["write .atelier/plan/<slug>/plan.md + mirror artifacts/plan.md"]
 
   E --> F["approvePlannerPlan"]
   F --> G["validatePlanBeforeApproval"]
@@ -243,7 +243,7 @@ the next focus.
 
 ## What `plan.md` Represents
 
-`plan.md` is a review projection, not the only source of truth.
+`plan.md` is a review projection, not the only source of truth. The canonical copy for each planning run lives under `.atelier/plan/<slug-do-epico>/plan.md` (with `context.md` and `manifest.json` alongside it). The same content is mirrored to `.atelier/artifacts/plan.md` for compatibility.
 
 It is generated from planner state and includes:
 

@@ -6,6 +6,7 @@ description: |
 phase: implement
 reads:
   - .atelier/artifacts/outline.md
+  - .atelier/plan/<slug>/plan.md
   - .atelier/artifacts/plan.md
 produces:
   - repository (source)

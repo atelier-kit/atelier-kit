@@ -1,8 +1,7 @@
 import {
   defaultContextRepository,
 } from "./context.js";
-import { join } from "node:path";
-import { atelierDir, writeText } from "../fs-utils.js";
+import { allocateUniquePlanId, slugifyGoal, writePlanBundle } from "./plan-artifacts.js";
 import { DependencyGraph } from "../domain/dependency-graph.js";
 import { validatePlannerTechnicalResearchGate } from "../gates/research.js";
 import type {
@@ -168,15 +167,6 @@ export async function setWorkflow(
   }), repo);
 }
 
-function slugify(input: string): string {
-  const base = input
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 48);
-  return base || "planner-epic";
-}
-
 function syncPhase(meta: ContextMeta): ContextMeta {
   let phase: Phase = meta.phase;
   if (meta.workflow !== "planner") {
@@ -282,7 +272,7 @@ function generateSlicesForSynthesis(meta: ContextMeta): ContextMeta {
     );
     const epic = nextMeta.epics.find((entry) => entry.id === task.epic_id);
     const seed = epic?.title ?? task.title;
-    const sliceId = `${slugify(seed)}-slice-1`;
+    const sliceId = `${slugifyGoal(seed)}-slice-1`;
     if (nextMeta.slices.some((slice) => slice.id === sliceId)) continue;
     const slice: Slice = {
       id: sliceId,
@@ -391,10 +381,23 @@ export async function startPlannerGoal(
 ): Promise<ContextMeta> {
   const classifier = ports.classifier ?? defaultGoalClassifier;
   const repo = ports.repo ?? defaultContextRepository;
+  const { meta: beforeMeta } = await repo.read(cwd);
+  const epicId =
+    repo === defaultContextRepository
+      ? await allocateUniquePlanId(cwd, goal, beforeMeta.epics)
+      : (() => {
+          const used = new Set(beforeMeta.epics.map((e) => e.id));
+          const base = slugifyGoal(goal);
+          let id = base;
+          let n = 2;
+          while (used.has(id)) {
+            id = `${base}-${n++}`;
+          }
+          return id;
+        })();
   return mutatePlannerState(cwd, (meta) => {
-    const epicId = slugify(goal);
     if (meta.epics.some((epic) => epic.id === epicId)) {
-      throw new Error(`Epic already exists for goal: ${epicId}`);
+      throw new Error(`Epic already exists: ${epicId}`);
     }
     const epic: Epic = {
       id: epicId,
@@ -687,9 +690,11 @@ export async function writePlannerPlanArtifact(
   meta?: ContextMeta,
   repo: IContextRepository = defaultContextRepository,
 ): Promise<void> {
+  if (repo !== defaultContextRepository) {
+    return;
+  }
   const currentMeta = meta ?? (await repo.read(cwd)).meta;
-  const planPath = join(atelierDir(cwd), "artifacts", "plan.md");
-  await writeText(planPath, renderPlan(currentMeta));
+  await writePlanBundle(cwd, currentMeta, renderPlan(currentMeta));
 }
 
 export async function presentPlannerPlan(

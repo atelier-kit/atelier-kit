@@ -54,6 +54,7 @@ export async function cmdInit(
   const dest = atelierDir(cwd);
   await mkdir(dest, { recursive: true });
   await mkdir(join(dest, "artifacts"), { recursive: true });
+  await mkdir(join(dest, "plan"), { recursive: true });
 
   await cp(kit, dest, { recursive: true });
 

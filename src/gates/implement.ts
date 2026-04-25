@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { atelierDir } from "../fs-utils.js";
+import { readAnyPlanMarkdown } from "../state/plan-artifacts.js";
 
 export async function validateImplementGate(cwd: string): Promise<{
   ok: boolean;
@@ -10,11 +11,11 @@ export async function validateImplementGate(cwd: string): Promise<{
   const base = atelierDir(cwd);
   let plan = "";
   let log = "";
-  try {
-    plan = await readFile(join(base, "artifacts", "plan.md"), "utf8");
-  } catch {
+  const fromPlan = await readAnyPlanMarkdown(cwd);
+  if (fromPlan == null) {
     return { ok: true, errors: [] };
   }
+  plan = fromPlan;
   try {
     log = await readFile(join(base, "artifacts", "impl-log.md"), "utf8");
   } catch {

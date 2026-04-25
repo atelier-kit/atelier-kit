@@ -245,11 +245,43 @@ describe("planner state helpers", () => {
       ".atelier/artifacts/research.md#stage-2-external-technical-research-tech",
     );
 
-    const plan = await readFile(join(dir, ".atelier", "artifacts", "plan.md"), "utf8");
+    const underPlan = join(
+      dir,
+      ".atelier",
+      "plan",
+      "migrate-python-framework-to-php",
+      "plan.md",
+    );
+    const plan = await readFile(underPlan, "utf8");
+    const mirror = await readFile(
+      join(dir, ".atelier", "artifacts", "plan.md"),
+      "utf8",
+    );
+    expect(plan).toBe(mirror);
     expect(plan).toContain("# Plan");
     expect(plan).toContain("Evidence status");
     expect(plan).toContain("Approval");
     expect(plan).toContain("Approve plan");
+    const manifest = JSON.parse(
+      await readFile(
+        join(dir, ".atelier", "plan", "migrate-python-framework-to-php", "manifest.json"),
+        "utf8",
+      ),
+    );
+    expect(manifest.atelier_plan_manifest_version).toBe(1);
+    expect(manifest.epic_id).toBe("migrate-python-framework-to-php");
+    const snap = await readFile(
+      join(
+        dir,
+        ".atelier",
+        "plan",
+        "migrate-python-framework-to-php",
+        "context.md",
+      ),
+      "utf8",
+    );
+    expect(snap).toMatch(/---\n[\s\S]*---/);
+    expect(snap).toContain("atelier: snapshot of .atelier/context.md for this plan folder");
   });
 
   test("reject and approve control execution gate", async () => {
@@ -321,10 +353,28 @@ describe("planner state helpers", () => {
     expect(synthesis?.parallel_group).toBeUndefined();
   });
 
+  test("a second start with the same goal gets a new epic id and does not clobber the first plan dir", async () => {
+    await seedVerifiableTechResearch();
+    await autoplanGoal(dir, "Same title twice");
+    const p1 = join(dir, ".atelier", "plan", "same-title-twice", "plan.md");
+    const firstPlan = await readFile(p1, "utf8");
+    expect(firstPlan).toContain("# Plan");
+    await startPlannerGoal(dir, "Same title twice");
+    const { meta } = await readContext(dir);
+    const ids = meta.epics.map((e) => e.id).sort();
+    expect(ids).toEqual(["same-title-twice", "same-title-twice-2"].sort());
+    const stillFirst = await readFile(p1, "utf8");
+    expect(stillFirst).toBe(firstPlan);
+    expect(meta.current_epic).toBe("same-title-twice-2");
+  });
+
   test("rendered plan includes parallel track and metadata header", async () => {
     await seedVerifiableTechResearch();
     await autoplanGoal(dir, "Migrate Python framework to PHP");
-    const plan = await readFile(join(dir, ".atelier", "artifacts", "plan.md"), "utf8");
+    const plan = await readFile(
+      join(dir, ".atelier", "plan", "migrate-python-framework-to-php", "plan.md"),
+      "utf8",
+    );
     expect(plan).toContain("Parallel track:");
     expect(plan).toContain("Generated:");
     expect(plan).toContain("Tasks:");
@@ -334,7 +384,10 @@ describe("planner state helpers", () => {
   test("rendered plan includes risk register when slices have risks", async () => {
     await seedVerifiableTechResearch();
     await autoplanGoal(dir, "Migrate Python framework to PHP");
-    const plan = await readFile(join(dir, ".atelier", "artifacts", "plan.md"), "utf8");
+    const plan = await readFile(
+      join(dir, ".atelier", "plan", "migrate-python-framework-to-php", "plan.md"),
+      "utf8",
+    );
     expect(plan).toContain("Risk register");
   });
 

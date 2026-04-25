@@ -9,6 +9,7 @@ reads:
   - .atelier/brief.md
   - .atelier/artifacts/research.md
 produces:
+  - .atelier/plan/<slug>/plan.md
   - .atelier/artifacts/plan.md
 ---
 

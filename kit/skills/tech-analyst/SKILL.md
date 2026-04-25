@@ -11,6 +11,7 @@ reads:
   - .atelier/artifacts/research.md
 produces:
   - .atelier/artifacts/research.md
+  - .atelier/plan/<slug>/plan.md
   - .atelier/artifacts/plan.md
 ---
 

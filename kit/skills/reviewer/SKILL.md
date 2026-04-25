@@ -6,6 +6,7 @@ description: |
 phase: review
 reads:
   - .atelier/artifacts/outline.md
+  - .atelier/plan/<slug>/plan.md
   - .atelier/artifacts/plan.md
   - .atelier/artifacts/impl-log.md
 produces:

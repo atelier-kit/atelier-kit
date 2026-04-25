@@ -36,7 +36,7 @@ In atelier-kit, the planner is built around a small set of primitives:
 - **Slice**: a vertical delivery unit to execute after planning converges
 
 The planner uses `.atelier/context.md` as the authoritative runtime state and
-`.atelier/artifacts/plan.md` as a human-readable plan artifact for review.
+`.atelier/plan/<slug-do-epico>/plan.md` as the durable human-readable plan artifact for each planning run (also mirrored to `.atelier/artifacts/plan.md` for compatibility).
 
 ## What the planner is not
 
@@ -291,9 +291,11 @@ This is the authoritative machine-readable state.
 
 ### 2. Human review artifact
 
-Stored in `.atelier/artifacts/plan.md`.
+Stored per plan in `.atelier/plan/<slug-do-epico>/plan.md`, with a snapshot of runtime state in `context.md` and a small `manifest.json` in the same folder. The same rendered plan is mirrored to `.atelier/artifacts/plan.md` for tools that still expect that path.
 
 This is a projection for humans to read and approve.
+
+If you start another plan with the same goal text, the runtime picks a new folder (e.g. `meu-plano-2`) so previous plan files are not overwritten.
 
 That means:
 

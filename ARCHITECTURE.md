@@ -335,15 +335,18 @@ Artifacts exist for humans and handoff, not as the only system of record.
 - `.atelier/artifacts/research.md`
 - `.atelier/artifacts/design.md`
 - `.atelier/artifacts/outline.md`
-- `.atelier/artifacts/plan.md`
 - `.atelier/artifacts/impl-log.md`
 - `.atelier/artifacts/review.md`
+- (legacy/compat) `.atelier/artifacts/plan.md` — mirror of the active plan
 
 ### Planner-specific artifact
 
-- `plan.md`
+- **Per-epic plan directory:** `.atelier/plan/<slug-do-epico>/`
+  - `plan.md` — review projection
+  - `context.md` — snapshot of `.atelier/context.md` for audit and retomada
+  - `manifest.json` — plan metadata and paths
 
-In planner mode, `plan.md` is a **review projection** generated from state.
+In planner mode, `plan.md` is a **review projection** generated from state. Each new epic (planning run) uses its own `slug` folder; repeating the same goal text appends a numeric suffix to the folder name (e.g. `meu-plano-2`) so old plans are preserved.
 
 That means:
 

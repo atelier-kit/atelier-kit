@@ -1,6 +1,6 @@
 # atelier-kit — operating method
 
-atelier-kit is a planner-first operating model for AI coding agents.
+atelier-kit is a planner-first workflow for coding agents.
 
 Its core job is to turn a raw goal into:
 
@@ -23,7 +23,7 @@ The planner-oriented state model is built around epics, tasks, and slices.
 7. **Vertical slices:** slices remain the delivery primitive. A slice is the end-to-end unit the implementer ships after planning tasks converge.
 8. **Human owns merge:** the agent assists review; the developer approves what ships.
 
-## Planner operating model
+## Planner Workflow
 
 The primary path is:
 

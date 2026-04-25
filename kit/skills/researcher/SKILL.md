@@ -2,14 +2,16 @@
 name: researcher
 description: |
   Use when context phase is `research`, or the user says /research. Answer
-  `.atelier/artifacts/questions.md` in three internal stages in a single artifact:
+  the active plan bundle's `questions.md` in three internal stages in a single artifact:
   repository mapping (`[repo]`), external technical research (`[tech]`), and
   market/UX benchmark (`[market]`). Never read the product goal capture document.
   No recommendations.
 phase: research
 reads:
+  - .atelier/plan/<slug>/questions.md
   - .atelier/artifacts/questions.md
 produces:
+  - .atelier/plan/<slug>/research.md
   - .atelier/artifacts/research.md
 ---
 
@@ -17,7 +19,7 @@ produces:
 
 ## Instructions
 
-1. Read `.atelier/artifacts/questions.md` completely before opening code or external sources.
+1. Read the active plan's `questions.md` completely before opening code or external sources; prefer `.atelier/plan/<slug>/questions.md`, otherwise `.atelier/artifacts/questions.md`.
 2. Do **not** read the goal capture document for this task (intentional isolation from product intent).
 3. Work read-only on this repository: no writes to source or config except the research artifact.
 4. Group questions by scope tag (`[repo]`, `[tech]`, `[market]`) and plan stages in that order.
@@ -43,5 +45,5 @@ produces:
 24. Do not run destructive commands (rm, git reset, deploy scripts).
 25. If tooling or network is unavailable, document the blockage factually per answer.
 26. Do not mix stages: a `[repo]` answer must not contain external URLs as primary evidence.
-27. Do not edit other phase artifacts; write only to `.atelier/artifacts/research.md`.
+27. Do not edit other phase artifacts; write only to the active plan's `research.md`.
 28. Finish with a short "Open" list only for unanswered questions.

@@ -6,8 +6,10 @@ description: |
 phase: learn
 reads:
   - .atelier/context.md
+  - .atelier/plan/<slug>/
   - .atelier/artifacts/
 produces:
+  - .atelier/plan/<slug>/decision-log.md
   - .atelier/artifacts/decision-log.md
 ---
 
@@ -17,7 +19,7 @@ produces:
 
 1. Read `.atelier/context.md` for phase history and returns metadata.
 2. Skim final `review.md` and `impl-log.md` for decisions worth keeping.
-3. Append dated sections to `.atelier/artifacts/decision-log.md` only.
+3. Append dated sections to the active plan's `decision-log.md` only.
 4. Capture what changed, why, and pointers to code areas—not huge diffs.
 5. Record adopted patterns and rejected alternatives briefly.
 6. Note follow-up tasks discovered late in review.

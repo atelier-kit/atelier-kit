@@ -8,8 +8,10 @@ phase: plan
 reads:
   - .atelier/context.md
   - .atelier/brief.md
+  - .atelier/plan/<slug>/
   - .atelier/artifacts/
 produces:
+  - .atelier/plan/<slug>/research.md
   - .atelier/artifacts/research.md
 ---
 
@@ -28,6 +30,6 @@ produces:
 9. Keep outputs factual; do not recommend a final implementation path unless the task explicitly asks for decision support.
 10. Prefer concise bullet findings over long prose.
 11. If the repo state conflicts with prior planning artifacts, flag the contradiction explicitly.
-12. Write findings into the planning artifact stream expected by the session, not into source code.
+12. Write findings into the active plan bundle when present, not into source code.
 13. Do not edit application code in this skill.
 14. Stop once the active repo task has enough evidence for synthesis or is clearly blocked.

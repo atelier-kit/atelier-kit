@@ -1,7 +1,12 @@
 import {
   defaultContextRepository,
 } from "./context.js";
-import { allocateUniquePlanId, slugifyGoal, writePlanBundle } from "./plan-artifacts.js";
+import {
+  allocateUniquePlanId,
+  ensurePlanArtifactBundle,
+  slugifyGoal,
+  writePlanBundle,
+} from "./plan-artifacts.js";
 import { DependencyGraph } from "../domain/dependency-graph.js";
 import { validatePlannerTechnicalResearchGate } from "../gates/research.js";
 import type {
@@ -395,7 +400,7 @@ export async function startPlannerGoal(
           }
           return id;
         })();
-  return mutatePlannerState(cwd, (meta) => {
+  const next = await mutatePlannerState(cwd, (meta) => {
     if (meta.epics.some((epic) => epic.id === epicId)) {
       throw new Error(`Epic already exists: ${epicId}`);
     }
@@ -443,6 +448,10 @@ export async function startPlannerGoal(
     };
     return syncFocus(nextMeta);
   }, repo);
+  if (repo === defaultContextRepository) {
+    await ensurePlanArtifactBundle(cwd, next);
+  }
+  return next;
 }
 
 export async function markCurrentDone(
@@ -901,7 +910,7 @@ export async function autoplanGoal(
       if (repo === defaultContextRepository) {
         meta = await addCurrentTaskEvidenceRef(
           cwd,
-          ".atelier/artifacts/research.md#stage-2-external-technical-research-tech",
+          `.atelier/plan/${currentTask.epic_id}/research.md#stage-2-external-technical-research-tech`,
           repo,
         );
       }

@@ -2,7 +2,13 @@ import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { readContext } from "../state/context.js";
 import { atelierDir } from "../fs-utils.js";
-import { readAnyPlanMarkdown, plansRoot, PLANS_SUBDIR } from "../state/plan-artifacts.js";
+import {
+  readAnyArtifactMarkdown,
+  readAnyPlanMarkdown,
+  plansRoot,
+  PLANS_SUBDIR,
+} from "../state/plan-artifacts.js";
+import type { PlanArtifactFile } from "../state/plan-artifacts.js";
 
 export async function cmdHandoff(cwd: string): Promise<void> {
   const { meta, body } = await readContext(cwd);
@@ -79,7 +85,10 @@ export async function cmdHandoff(cwd: string): Promise<void> {
         }
         continue;
       }
-      const t = await readFile(join(base, "artifacts", f), "utf8");
+      const artifact = f as PlanArtifactFile;
+      const t =
+        (await readAnyArtifactMarkdown(cwd, artifact)) ??
+        (await readFile(join(base, "artifacts", f), "utf8"));
       console.log(`## ${f}\n\n`, t.slice(0, 2000), t.length > 2000 ? "\n…(truncated)\n" : "\n");
     } catch {
       // skip

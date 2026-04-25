@@ -7,9 +7,12 @@ description: |
 phase: plan
 reads:
   - .atelier/context.md
+  - .atelier/plan/<slug>/questions.md
+  - .atelier/plan/<slug>/research.md
   - .atelier/artifacts/questions.md
   - .atelier/artifacts/research.md
 produces:
+  - .atelier/plan/<slug>/research.md
   - .atelier/artifacts/research.md
   - .atelier/plan/<slug>/plan.md
   - .atelier/artifacts/plan.md
@@ -35,5 +38,5 @@ produces:
 14. Convert findings into follow-up tasks or slice prerequisites when needed.
 15. If a dependency is unknown, record it as an open question instead of guessing.
 16. Keep scope narrow enough for a single planner iteration.
-17. Write only planning artifacts or updates requested by the active task.
+17. Write only active plan bundle artifacts or updates requested by the active task.
 18. Stop when the active task has enough verifiable evidence to become `done`, or enough explicit blockage to become `blocked`.

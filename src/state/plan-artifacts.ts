@@ -5,11 +5,24 @@ import { atelierDir, writeText } from "../fs-utils.js";
 import { readContext } from "./context.js";
 import type { ContextMeta, Epic } from "./schema.js";
 import { ContextMetaSchema } from "./schema.js";
+import { getKitRoot } from "../paths.js";
 
 export const PLANS_SUBDIR = "plan";
 export const PLAN_MANIFEST = "manifest.json";
 export const PLAN_SNAPSHOT = "context.md";
 export const PLAN_REVIEW = "plan.md";
+export const PLAN_ARTIFACT_FILES = [
+  "questions.md",
+  "research.md",
+  "design.md",
+  "outline.md",
+  PLAN_REVIEW,
+  "impl-log.md",
+  "review.md",
+  "decision-log.md",
+] as const;
+
+export type PlanArtifactFile = typeof PLAN_ARTIFACT_FILES[number];
 
 const MANIFEST_VERSION = 1 as const;
 
@@ -22,6 +35,7 @@ export type PlanManifestV1 = {
   paths: {
     plan: string;
     context_snapshot: string;
+    artifacts?: Record<PlanArtifactFile, string>;
   };
 };
 
@@ -55,6 +69,14 @@ export function plansRoot(cwd: string): string {
 /** `.atelier/plan/<epicId>` */
 export function planDirForEpic(cwd: string, epicId: string): string {
   return join(plansRoot(cwd), epicId);
+}
+
+export function artifactPathForEpic(
+  cwd: string,
+  epicId: string,
+  file: PlanArtifactFile,
+): string {
+  return join(planDirForEpic(cwd, epicId), file);
 }
 
 /**
@@ -99,16 +121,21 @@ export async function resolveActivePlanPath(
   cwd: string,
   meta: ContextMeta,
 ): Promise<string> {
+  return resolveActiveArtifactPath(cwd, meta, PLAN_REVIEW);
+}
+
+export async function resolveActiveArtifactPath(
+  cwd: string,
+  meta: ContextMeta,
+  file: PlanArtifactFile,
+): Promise<string> {
   if (meta.current_epic) {
-    const underPlan = join(
-      planDirForEpic(cwd, meta.current_epic),
-      PLAN_REVIEW,
-    );
+    const underPlan = artifactPathForEpic(cwd, meta.current_epic, file);
     if (await pathExists(underPlan)) {
       return underPlan;
     }
   }
-  return join(atelierDir(cwd), "artifacts", PLAN_REVIEW);
+  return join(atelierDir(cwd), "artifacts", file);
 }
 
 /**
@@ -122,11 +149,27 @@ export async function readPlanArtifactContent(
   return readFile(p, "utf8");
 }
 
+export async function readActiveArtifactContent(
+  cwd: string,
+  meta: ContextMeta,
+  file: PlanArtifactFile,
+): Promise<string> {
+  const p = await resolveActiveArtifactPath(cwd, meta, file);
+  return readFile(p, "utf8");
+}
+
 /**
  * Tries per-epic plan (when `current_epic` is set) then always `.atelier/artifacts/plan.md`.
  * Returns `null` if neither file exists.
  */
 export async function readAnyPlanMarkdown(cwd: string): Promise<string | null> {
+  return readAnyArtifactMarkdown(cwd, PLAN_REVIEW);
+}
+
+export async function readAnyArtifactMarkdown(
+  cwd: string,
+  file: PlanArtifactFile,
+): Promise<string | null> {
   let meta: ContextMeta;
   try {
     const ctx = await readContext(cwd);
@@ -135,15 +178,12 @@ export async function readAnyPlanMarkdown(cwd: string): Promise<string | null> {
     return null;
   }
   if (meta.current_epic) {
-    const inPlan = join(
-      planDirForEpic(cwd, meta.current_epic),
-      PLAN_REVIEW,
-    );
+    const inPlan = artifactPathForEpic(cwd, meta.current_epic, file);
     if (await pathExists(inPlan)) {
       return readFile(inPlan, "utf8");
     }
   }
-  const legacy = join(atelierDir(cwd), "artifacts", PLAN_REVIEW);
+  const legacy = join(atelierDir(cwd), "artifacts", file);
   if (await pathExists(legacy)) {
     return readFile(legacy, "utf8");
   }
@@ -178,8 +218,54 @@ async function readOrCreateManifest(
     paths: {
       plan: PLAN_REVIEW,
       context_snapshot: PLAN_SNAPSHOT,
+      artifacts: Object.fromEntries(
+        PLAN_ARTIFACT_FILES.map((file) => [file, file]),
+      ) as Record<PlanArtifactFile, string>,
     },
   };
+}
+
+export async function ensurePlanArtifactBundle(
+  cwd: string,
+  meta: ContextMeta,
+): Promise<void> {
+  const epicId = meta.current_epic;
+  if (!epicId) return;
+  const dir = planDirForEpic(cwd, epicId);
+  await mkdir(dir, { recursive: true });
+  const now = new Date().toISOString();
+  const epic = meta.epics.find((e) => e.id === epicId);
+  const goal = epic?.goal ?? epic?.title ?? epicId;
+  const manifest = await readOrCreateManifest(dir, epicId, goal, now);
+  manifest.updated_at = now;
+  manifest.goal = goal;
+  manifest.paths.artifacts = Object.fromEntries(
+    PLAN_ARTIFACT_FILES.map((file) => [file, file]),
+  ) as Record<PlanArtifactFile, string>;
+
+  for (const file of PLAN_ARTIFACT_FILES) {
+    const p = artifactPathForEpic(cwd, epicId, file);
+    if (await pathExists(p)) continue;
+    await writeText(p, await defaultArtifactBody(file));
+  }
+  await writeText(
+    join(dir, PLAN_MANIFEST),
+    `${JSON.stringify(manifest, null, 2)}\n`,
+  );
+}
+
+async function defaultArtifactBody(file: PlanArtifactFile): Promise<string> {
+  if (file === "questions.md" || file === "research.md") {
+    return `# ${file.replace(".md", "")}\n\n_Optional in planner-first mode._\n`;
+  }
+  if (file === PLAN_REVIEW) {
+    return "# Plan\n\n_TBD_\n";
+  }
+  try {
+    return await readFile(join(getKitRoot(), "templates", file), "utf8");
+  } catch {
+    return `# ${file.replace(".md", "")}\n\n_TBD_\n`;
+  }
 }
 
 /**
@@ -199,7 +285,7 @@ export async function writePlanBundle(
   }
 
   const dir = planDirForEpic(cwd, epicId);
-  await mkdir(dir, { recursive: true });
+  await ensurePlanArtifactBundle(cwd, meta);
   const now = new Date().toISOString();
   const epic = meta.epics.find((e) => e.id === epicId);
   const goal = epic?.goal ?? epic?.title ?? epicId;

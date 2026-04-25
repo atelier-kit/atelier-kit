@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { atelierDir } from "../fs-utils.js";
+import { readAnyArtifactMarkdown } from "../state/plan-artifacts.js";
 
 const SECTIONS = [
   "## Current state",
@@ -18,7 +19,7 @@ export async function validateDesignGate(cwd: string): Promise<{
   const p = join(atelierDir(cwd), "artifacts", "design.md");
   let raw = "";
   try {
-    raw = await readFile(p, "utf8");
+    raw = (await readAnyArtifactMarkdown(cwd, "design.md")) ?? (await readFile(p, "utf8"));
   } catch {
     return { ok: true, errors: [] };
   }

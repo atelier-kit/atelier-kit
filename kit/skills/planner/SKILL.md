@@ -2,10 +2,13 @@
 name: planner
 description: |
   Use when phase is `plan`, or user says /plan. In planner-first mode the runtime writes
-  `.atelier/plan/<slug>/plan.md` (and mirrors `artifacts/plan.md`). For phased workflows, derive
+  all active artifacts under `.atelier/plan/<slug>/` and writes `plan.md` there
+  (with a legacy mirror for `artifacts/plan.md`). For phased workflows, derive
   `plan.md` strictly from approved `outline.md` and `design.md`. No new architecture.
 phase: plan
 reads:
+  - .atelier/plan/<slug>/design.md
+  - .atelier/plan/<slug>/outline.md
   - .atelier/artifacts/design.md
   - .atelier/artifacts/outline.md
 produces:

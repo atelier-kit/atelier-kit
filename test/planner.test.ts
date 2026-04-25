@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -33,27 +33,6 @@ import { readFile } from "node:fs/promises";
 
 describe("planner state helpers", () => {
   let dir = "";
-
-  async function seedVerifiableTechResearch(): Promise<void> {
-    await mkdir(join(dir, ".atelier", "artifacts"), { recursive: true });
-    await writeFile(
-      join(dir, ".atelier", "artifacts", "research.md"),
-      [
-        "# Research",
-        "",
-        "## Stage 2 — External technical research (`[tech]`)",
-        "",
-        "### Answer: 1",
-        "Status: verified",
-        "Finding: Target platform migration constraints are documented.",
-        "Source: https://example.com/docs/migration",
-        "Checked at: 2026-04-25",
-        "Impact on plan: Migration slices can proceed after compatibility checks.",
-        "",
-      ].join("\n"),
-      "utf8",
-    );
-  }
 
   beforeEach(async () => {
     dir = await mkdtemp(join(tmpdir(), "atk-planner-"));
@@ -232,18 +211,42 @@ describe("planner state helpers", () => {
     expect(meta.slices).toHaveLength(0);
   });
 
-  test("autoplan runs to approval gate when technical research is verifiable", async () => {
-    await seedVerifiableTechResearch();
+  test("startPlannerGoal creates a clean artifact bundle for the new plan", async () => {
+    await startPlannerGoal(dir, "Migrate Python framework to PHP");
+    const bundle = join(dir, ".atelier", "plan", "migrate-python-framework-to-php");
+    for (const file of [
+      "questions.md",
+      "research.md",
+      "design.md",
+      "outline.md",
+      "plan.md",
+      "impl-log.md",
+      "review.md",
+      "decision-log.md",
+      "manifest.json",
+    ]) {
+      const content = await readFile(join(bundle, file), "utf8");
+      expect(content.length).toBeGreaterThan(0);
+    }
+    const research = await readFile(join(bundle, "research.md"), "utf8");
+    expect(research).toContain("_Optional in planner-first mode._");
+    const manifest = JSON.parse(await readFile(join(bundle, "manifest.json"), "utf8"));
+    expect(manifest.paths.artifacts["research.md"]).toBe("research.md");
+    expect(manifest.paths.artifacts["review.md"]).toBe("review.md");
+  });
 
-    const meta = await autoplanGoal(dir, "Migrate Python framework to PHP");
+  test("autoplan runs to approval gate for plans without technical research track", async () => {
+    const classifier = new StubGoalClassifier([
+      { suffix: "repo", type: "repo", title: "Repo", summary: "s", acceptance: [], open_questions: [] },
+      { suffix: "synthesis", type: "synthesis", title: "Synthesis", summary: "s", acceptance: ["done"], open_questions: [] },
+    ]);
+
+    const meta = await autoplanGoal(dir, "Migrate Python framework to PHP", { classifier });
     expect(meta.planner_state).toBe("awaiting_approval");
     expect(meta.approval_status).toBe("pending");
     expect(meta.current_task).toBe(null);
     expect(meta.current_slice).toBe(null);
     expect(meta.slices[0]?.status).toBe("ready");
-    expect(meta.tasks.find((task) => task.type === "tech")?.evidence_refs).toContain(
-      ".atelier/artifacts/research.md#stage-2-external-technical-research-tech",
-    );
 
     const underPlan = join(
       dir,
@@ -354,8 +357,11 @@ describe("planner state helpers", () => {
   });
 
   test("a second start with the same goal gets a new epic id and does not clobber the first plan dir", async () => {
-    await seedVerifiableTechResearch();
-    await autoplanGoal(dir, "Same title twice");
+    const classifier = new StubGoalClassifier([
+      { suffix: "repo", type: "repo", title: "Repo", summary: "s", acceptance: [], open_questions: [] },
+      { suffix: "synthesis", type: "synthesis", title: "Synthesis", summary: "s", acceptance: ["done"], open_questions: [] },
+    ]);
+    await autoplanGoal(dir, "Same title twice", { classifier });
     const p1 = join(dir, ".atelier", "plan", "same-title-twice", "plan.md");
     const firstPlan = await readFile(p1, "utf8");
     expect(firstPlan).toContain("# Plan");
@@ -369,8 +375,11 @@ describe("planner state helpers", () => {
   });
 
   test("rendered plan includes parallel track and metadata header", async () => {
-    await seedVerifiableTechResearch();
-    await autoplanGoal(dir, "Migrate Python framework to PHP");
+    const classifier = new StubGoalClassifier([
+      { suffix: "repo", type: "repo", title: "Repo", summary: "s", acceptance: [], open_questions: [] },
+      { suffix: "synthesis", type: "synthesis", title: "Synthesis", summary: "s", acceptance: ["done"], open_questions: [] },
+    ]);
+    await autoplanGoal(dir, "Migrate Python framework to PHP", { classifier });
     const plan = await readFile(
       join(dir, ".atelier", "plan", "migrate-python-framework-to-php", "plan.md"),
       "utf8",
@@ -382,8 +391,11 @@ describe("planner state helpers", () => {
   });
 
   test("rendered plan includes risk register when slices have risks", async () => {
-    await seedVerifiableTechResearch();
-    await autoplanGoal(dir, "Migrate Python framework to PHP");
+    const classifier = new StubGoalClassifier([
+      { suffix: "repo", type: "repo", title: "Repo", summary: "s", acceptance: [], open_questions: [] },
+      { suffix: "synthesis", type: "synthesis", title: "Synthesis", summary: "s", acceptance: ["done"], open_questions: [] },
+    ]);
+    await autoplanGoal(dir, "Migrate Python framework to PHP", { classifier });
     const plan = await readFile(
       join(dir, ".atelier", "plan", "migrate-python-framework-to-php", "plan.md"),
       "utf8",

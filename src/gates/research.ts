@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { atelierDir } from "../fs-utils.js";
 import type { ContextMeta, Task } from "../state/schema.js";
+import { readAnyArtifactMarkdown, readActiveArtifactContent } from "../state/plan-artifacts.js";
 
 const CODE_REF = /[`][^`]+[`]|\.(?:ts|tsx|js|jsx|go|rs|py)|\/[\w.-]+\//;
 const URL_REF = /https?:\/\/[^\s)]+/i;
@@ -34,7 +35,9 @@ export async function validateResearchGate(cwd: string): Promise<{
   let questionsRaw = "";
   let researchRaw = "";
   try {
-    questionsRaw = await readFile(join(base, "artifacts", "questions.md"), "utf8");
+    questionsRaw =
+      (await readAnyArtifactMarkdown(cwd, "questions.md")) ??
+      (await readFile(join(base, "artifacts", "questions.md"), "utf8"));
   } catch {
     return { ok: true, errors: [] };
   }
@@ -42,7 +45,9 @@ export async function validateResearchGate(cwd: string): Promise<{
     return { ok: true, errors: [] };
   }
   try {
-    researchRaw = await readFile(join(base, "artifacts", "research.md"), "utf8");
+    researchRaw =
+      (await readAnyArtifactMarkdown(cwd, "research.md")) ??
+      (await readFile(join(base, "artifacts", "research.md"), "utf8"));
   } catch {
     errors.push("research.md missing while questions.md exists");
     return { ok: false, errors };
@@ -112,7 +117,7 @@ export async function validatePlannerTechnicalResearchGate(
 
   let researchRaw = "";
   try {
-    researchRaw = await readFile(join(atelierDir(cwd), "artifacts", "research.md"), "utf8");
+    researchRaw = await readActiveArtifactContent(cwd, meta, "research.md");
   } catch {
     for (const task of techTasks) {
       if (task.evidence_refs.length === 0) {

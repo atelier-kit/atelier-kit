@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { atelierDir } from "../fs-utils.js";
-import { readAnyPlanMarkdown } from "../state/plan-artifacts.js";
+import { readAnyArtifactMarkdown, readAnyPlanMarkdown } from "../state/plan-artifacts.js";
 
 export async function validateImplementGate(cwd: string): Promise<{
   ok: boolean;
@@ -17,7 +17,9 @@ export async function validateImplementGate(cwd: string): Promise<{
   }
   plan = fromPlan;
   try {
-    log = await readFile(join(base, "artifacts", "impl-log.md"), "utf8");
+    log =
+      (await readAnyArtifactMarkdown(cwd, "impl-log.md")) ??
+      (await readFile(join(base, "artifacts", "impl-log.md"), "utf8"));
   } catch {
     errors.push("impl-log.md missing while plan.md exists");
     return { ok: false, errors };

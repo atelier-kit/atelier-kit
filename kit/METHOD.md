@@ -15,12 +15,13 @@ The planner-oriented state model is built around epics, tasks, and slices.
 ## Principles
 
 1. **Instruction budget:** keep each skill’s `## Instructions` short (≤40 items). Never load every skill at once.
-2. **Isolation in research:** the researcher must not read `.atelier/brief.md` — only `.atelier/artifacts/questions.md`.
-3. **Unified research in stages:** a single `research.md` with three stages — repository mapping (`[repo]`), external technical research (`[tech]`), and market/UX benchmark (`[market]`). Questions are classified upstream so the researcher knows which evidence each answer needs.
-4. **Layered planning:** `design.md` (why/what) → `outline.md` (structure) → `plan.md` (tasks). In planner mode these artifacts become projections of the task graph rather than the only source of truth.
-5. **Tasks before slices:** use tasks to investigate, de-risk, and synthesize. Tasks can be parallel and may cover repository, technical, business, or decision work.
-6. **Vertical slices:** slices remain the delivery primitive. A slice is the end-to-end unit the implementer ships after planning tasks converge.
-7. **Human owns merge:** the agent assists review; the developer approves what ships.
+2. **Plan-bundle isolation:** each new planner goal gets a clean `.atelier/plan/<slug>/` bundle containing `questions.md`, `research.md`, `design.md`, `outline.md`, `plan.md`, logs, and review artifacts. Legacy `.atelier/artifacts/` is fallback only.
+3. **Isolation in research:** the researcher must not read `.atelier/brief.md` — only the active plan bundle's `questions.md`.
+4. **Unified research in stages:** a single `research.md` with three stages — repository mapping (`[repo]`), external technical research (`[tech]`), and market/UX benchmark (`[market]`). Questions are classified upstream so the researcher knows which evidence each answer needs.
+5. **Layered planning:** `design.md` (why/what) → `outline.md` (structure) → `plan.md` (tasks). In planner mode these artifacts become projections of the task graph rather than the only source of truth.
+6. **Tasks before slices:** use tasks to investigate, de-risk, and synthesize. Tasks can be parallel and may cover repository, technical, business, or decision work.
+7. **Vertical slices:** slices remain the delivery primitive. A slice is the end-to-end unit the implementer ships after planning tasks converge.
+8. **Human owns merge:** the agent assists review; the developer approves what ships.
 
 ## Planner operating model
 

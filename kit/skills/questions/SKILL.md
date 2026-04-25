@@ -2,13 +2,15 @@
 name: questions
 description: |
   Use when context phase is `questions`, or the user says /questions. Read `.atelier/brief.md`
-  and emit technical mapping questions only in `.atelier/artifacts/questions.md`. Do not leak
+  and emit technical mapping questions only in the active plan bundle's `questions.md`.
+  Do not leak
   prescriptive solutions; ask neutral questions about structure, technical facts, or market
   facts. Classify every question by scope: `repo`, `tech`, or `market`.
 phase: questions
 reads:
   - .atelier/brief.md
 produces:
+  - .atelier/plan/<slug>/questions.md
   - .atelier/artifacts/questions.md
 ---
 
@@ -39,7 +41,7 @@ produces:
 21. Never restate the product objective verbatim as a question.
 22. Flag unclear brief areas as explicit `[repo]` or `[tech]` questions to the human.
 23. Write in the repository's documentation language.
-24. Save output only to `.atelier/artifacts/questions.md`.
+24. Save output only to the active plan's `questions.md`: prefer `.atelier/plan/<slug>/questions.md`; otherwise `.atelier/artifacts/questions.md`.
 25. Do not edit application source files in this phase.
 26. Do not draft design or outline content yet.
 27. Stop when every question is objectively verifiable and tagged with a scope.

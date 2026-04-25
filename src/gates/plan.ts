@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { atelierDir } from "../fs-utils.js";
-import { readAnyPlanMarkdown } from "../state/plan-artifacts.js";
+import { readAnyArtifactMarkdown, readAnyPlanMarkdown } from "../state/plan-artifacts.js";
 
 export async function validatePlanGate(cwd: string): Promise<{
   ok: boolean;
@@ -12,7 +12,9 @@ export async function validatePlanGate(cwd: string): Promise<{
   let outline = "";
   let plan = "";
   try {
-    outline = await readFile(join(base, "artifacts", "outline.md"), "utf8");
+    outline =
+      (await readAnyArtifactMarkdown(cwd, "outline.md")) ??
+      (await readFile(join(base, "artifacts", "outline.md"), "utf8"));
   } catch {
     return { ok: true, errors: [] };
   }

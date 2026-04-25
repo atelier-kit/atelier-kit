@@ -32,6 +32,53 @@ export interface PlannerPorts {
 
 type PlannerEntity = Epic | Task | Slice;
 
+function isolatePlannerMetaForEpic(
+  meta: ContextMeta,
+  epic: Epic,
+  tasks: Task[],
+  slices: Slice[] = [],
+): ContextMeta {
+  return {
+    ...meta,
+    workflow: "planner",
+    phase: "plan",
+    planner_state: "planning",
+    approval_status: "none",
+    approval_reason: null,
+    gate_pending: null,
+    current_epic: epic.id,
+    current_task: tasks.find((task) => task.type === "repo")?.id ?? tasks[0]?.id ?? null,
+    current_slice: null,
+    epics: [epic],
+    tasks,
+    slices,
+  };
+}
+
+function isolatePlannerMetaToCurrentEpic(meta: ContextMeta): ContextMeta {
+  if (!meta.current_epic) {
+    return meta;
+  }
+  const activeEpic = meta.epics.find((epic) => epic.id === meta.current_epic);
+  if (!activeEpic) {
+    return meta;
+  }
+  return {
+    ...meta,
+    epics: [activeEpic],
+    tasks: meta.tasks.filter((task) => task.epic_id === activeEpic.id),
+    slices: meta.slices.filter((slice) => slice.epic_id === activeEpic.id),
+    current_task:
+      meta.current_task && meta.tasks.some((task) => task.id === meta.current_task && task.epic_id === activeEpic.id)
+        ? meta.current_task
+        : null,
+    current_slice:
+      meta.current_slice && meta.slices.some((slice) => slice.id === meta.current_slice && slice.epic_id === activeEpic.id)
+        ? meta.current_slice
+        : null,
+  };
+}
+
 function requireId<T extends PlannerEntity>(
   items: T[],
   id: string,
@@ -402,9 +449,6 @@ export async function startPlannerGoal(
           return id;
         })();
   const next = await mutatePlannerState(cwd, (meta) => {
-    if (meta.epics.some((epic) => epic.id === epicId)) {
-      throw new Error(`Epic already exists: ${epicId}`);
-    }
     const epic: Epic = {
       id: epicId,
       title: goal,
@@ -436,18 +480,7 @@ export async function startPlannerGoal(
       };
       return (isSynthesis || isDecision) ? base : { ...base, parallel_group: discoveryGroup };
     });
-    const nextMeta: ContextMeta = {
-      ...meta,
-      workflow: "planner",
-      phase: "plan",
-      planner_state: "planning",
-      approval_status: "none",
-      current_epic: epicId,
-      current_task: `${epicId}-repo`,
-      current_slice: null,
-      epics: [...meta.epics, epic],
-      tasks: [...meta.tasks, ...tasks],
-    };
+    const nextMeta = isolatePlannerMetaForEpic(meta, epic, tasks);
     return syncFocus(nextMeta);
   }, repo);
   if (repo === defaultContextRepository) {
@@ -1055,12 +1088,12 @@ async function repairPlannerFromArtifacts(
       !state.gate_pending ||
       state.gate_pending.includes("technical research") && !hasTechnicalBlocker ||
       blockers.length === 0;
-    const next = {
+    const next = isolatePlannerMetaToCurrentEpic({
       ...state,
       gate_pending: canClearGate ? null : state.gate_pending,
       current_task: chooseNextTask(state)?.id ?? null,
       current_slice: null,
-    };
+    });
     const synthesisDone = relevantTasks.some((task) => task.type === "synthesis" && task.status === "done");
     const decisionDone = relevantTasks
       .filter((task) => task.type === "decision")

@@ -360,6 +360,24 @@ describe("planner state helpers", () => {
     expect(report.next_actions).toContain("Run `atelier-kit planner present` to render the approval plan.");
   });
 
+  test("validatePlannerReadiness repair isolates context to the active epic", async () => {
+    const classifier = new StubGoalClassifier([
+      { suffix: "repo", type: "repo", title: "Repo", summary: "s", acceptance: [], open_questions: [] },
+      { suffix: "synthesis", type: "synthesis", title: "Synthesis", summary: "s", acceptance: ["done"], open_questions: [] },
+    ]);
+    await autoplanGoal(dir, "First goal", { classifier });
+    await startPlannerGoal(dir, "Second goal", { classifier });
+    await writeApprovalReadyArtifacts("second-goal", 1);
+
+    await validatePlannerReadiness(dir, { repair: true });
+    const { meta } = await readContext(dir);
+
+    expect(meta.current_epic).toBe("second-goal");
+    expect(meta.epics.map((epic) => epic.id)).toEqual(["second-goal"]);
+    expect(meta.tasks.every((task) => task.epic_id === "second-goal")).toBe(true);
+    expect(meta.slices.every((slice) => slice.epic_id === "second-goal")).toBe(true);
+  });
+
   test("reject and approve control execution gate", async () => {
     const classifier = new StubGoalClassifier([
       { suffix: "repo", type: "repo", title: "Repo", summary: "s", acceptance: [], open_questions: [] },
@@ -436,7 +454,7 @@ describe("planner state helpers", () => {
     expect(decision?.depends_on).toContain("migrate-python-framework-to-php-synthesis");
   });
 
-  test("a second start with the same goal gets a new epic id and does not clobber the first plan dir", async () => {
+  test("a second start with the same goal isolates active context and does not clobber the first plan dir", async () => {
     const classifier = new StubGoalClassifier([
       { suffix: "repo", type: "repo", title: "Repo", summary: "s", acceptance: [], open_questions: [] },
       { suffix: "synthesis", type: "synthesis", title: "Synthesis", summary: "s", acceptance: ["done"], open_questions: [] },
@@ -450,8 +468,9 @@ describe("planner state helpers", () => {
     expect(firstPlan).toContain("# Plan");
     await startPlannerGoal(dir, "Same title twice");
     const { meta } = await readContext(dir);
-    const ids = meta.epics.map((e) => e.id).sort();
-    expect(ids).toEqual(["same-title-twice", "same-title-twice-2"].sort());
+    expect(meta.epics.map((e) => e.id)).toEqual(["same-title-twice-2"]);
+    expect(meta.tasks.every((task) => task.epic_id === "same-title-twice-2")).toBe(true);
+    expect(meta.slices.every((slice) => slice.epic_id === "same-title-twice-2")).toBe(true);
     const stillFirst = await readFile(p1, "utf8");
     expect(stillFirst).toBe(firstPlan);
     expect(meta.current_epic).toBe("same-title-twice-2");

@@ -8,9 +8,27 @@ export type DomainKind =
   | "research"
   | "default";
 
+const DECISION_TASK: TaskTemplate = {
+  suffix: "decision",
+  type: "decision",
+  title: "Document architectural decisions and design approach",
+  summary:
+    "Define boundaries, ports, adapters, and patterns for the implementation slices derived from synthesis.",
+  acceptance: [
+    "Current state of the relevant architecture is documented in design.md",
+    "Desired state and architectural boundaries are defined",
+    "Patterns to follow and avoid are specified",
+    "Open architectural decisions are listed",
+  ],
+  open_questions: [
+    "Which new ports or interfaces need to be defined?",
+    "Which layers are affected and how do boundaries change?",
+  ],
+};
+
 export interface TaskTemplate {
   suffix: string;
-  type: "repo" | "tech" | "business" | "synthesis";
+  type: "repo" | "tech" | "business" | "synthesis" | "decision";
   title: string;
   summary: string;
   acceptance: string[];
@@ -45,8 +63,10 @@ const TEMPLATES: Record<DomainKind, TaskTemplate[]> = {
         "Migration order risks are identified",
       ],
       open_questions: [
-        "Does the target platform support all required runtime behaviors?",
-        "What migration tooling or shims exist for the transition?",
+        "Which source-system behaviors must be preserved exactly during migration?",
+        "Which target-platform constraints require current external evidence before implementation?",
+        "Which data, authentication, encryption, integration, deployment, or testing risks could block migration?",
+        "Which migration assumptions are inferred rather than verified?",
       ],
     },
     {
@@ -76,6 +96,7 @@ const TEMPLATES: Record<DomainKind, TaskTemplate[]> = {
       ],
       open_questions: [],
     },
+    DECISION_TASK,
   ],
 
   "new-feature": [
@@ -136,6 +157,7 @@ const TEMPLATES: Record<DomainKind, TaskTemplate[]> = {
       ],
       open_questions: [],
     },
+    DECISION_TASK,
   ],
 
   refactor: [
@@ -193,6 +215,7 @@ const TEMPLATES: Record<DomainKind, TaskTemplate[]> = {
       ],
       open_questions: [],
     },
+    DECISION_TASK,
   ],
 
   infrastructure: [
@@ -253,6 +276,7 @@ const TEMPLATES: Record<DomainKind, TaskTemplate[]> = {
       ],
       open_questions: [],
     },
+    DECISION_TASK,
   ],
 
   research: [
@@ -300,6 +324,7 @@ const TEMPLATES: Record<DomainKind, TaskTemplate[]> = {
       ],
       open_questions: [],
     },
+    DECISION_TASK,
   ],
 
   default: [
@@ -335,6 +360,7 @@ const TEMPLATES: Record<DomainKind, TaskTemplate[]> = {
       acceptance: ["Execution slices are proposed with dependencies and acceptance checks"],
       open_questions: [],
     },
+    DECISION_TASK,
   ],
 };
 

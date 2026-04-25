@@ -5,10 +5,14 @@ description: |
   log issues in review.md. Do not rewrite code directly—send fixes to implementer.
 phase: review
 reads:
+  - .atelier/plan/<slug>/outline.md
   - .atelier/artifacts/outline.md
+  - .atelier/plan/<slug>/plan.md
   - .atelier/artifacts/plan.md
+  - .atelier/plan/<slug>/impl-log.md
   - .atelier/artifacts/impl-log.md
 produces:
+  - .atelier/plan/<slug>/review.md
   - .atelier/artifacts/review.md
 ---
 
@@ -19,7 +23,7 @@ produces:
 1. Read outline, plan, and implementation log completely.
 2. Inspect diffs against outline contracts and planned tasks.
 3. Verify tests claimed passing are coherent with changes shown.
-4. Log defects with file/line pointers in `.atelier/artifacts/review.md`.
+4. Log defects with file/line pointers in the active plan's `review.md`.
 5. Classify issues as implementation vs specification problems.
 6. For implementation issues, write precise repro or failing test evidence.
 7. For specification issues, point to outline/design conflict and stop merges.

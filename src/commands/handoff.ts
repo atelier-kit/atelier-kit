@@ -1,11 +1,15 @@
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { readdir } from "node:fs/promises";
 import { readContext } from "../state/context.js";
-import { atelierDir } from "../fs-utils.js";
+import {
+  readAnyArtifactMarkdown,
+  readAnyPlanMarkdown,
+  plansRoot,
+  PLANS_SUBDIR,
+} from "../state/plan-artifacts.js";
+import type { PlanArtifactFile } from "../state/plan-artifacts.js";
 
 export async function cmdHandoff(cwd: string): Promise<void> {
   const { meta, body } = await readContext(cwd);
-  const base = atelierDir(cwd);
   const arts = [
     "questions.md",
     "research.md",
@@ -67,10 +71,38 @@ export async function cmdHandoff(cwd: string): Promise<void> {
   }
   for (const f of arts) {
     try {
-      const t = await readFile(join(base, "artifacts", f), "utf8");
+      if (f === "plan.md") {
+        const t = (await readAnyPlanMarkdown(cwd)) ?? "";
+        if (t) {
+          console.log(
+            `## plan.md (active, may live under .atelier/${PLANS_SUBDIR}/<epic-id>/)\n\n`,
+            t.slice(0, 2000),
+            t.length > 2000 ? "\n…(truncated)\n" : "\n",
+          );
+        }
+        continue;
+      }
+      const artifact = f as PlanArtifactFile;
+      const t = await readAnyArtifactMarkdown(cwd, artifact);
+      if (!t) continue;
       console.log(`## ${f}\n\n`, t.slice(0, 2000), t.length > 2000 ? "\n…(truncated)\n" : "\n");
     } catch {
       // skip
     }
+  }
+  try {
+    const subdirs = await readdir(plansRoot(cwd), { withFileTypes: true });
+    const planDirs = subdirs
+      .filter((d) => d.isDirectory())
+      .map((d) => d.name);
+    if (planDirs.length) {
+      console.log(`## Stored plans (.atelier/${PLANS_SUBDIR}/)\n\n`);
+      for (const name of planDirs) {
+        console.log(`- ${name}/`);
+      }
+      console.log("");
+    }
+  } catch {
+    // .atelier/plan may not exist
   }
 }

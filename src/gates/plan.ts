@@ -1,23 +1,14 @@
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
-import { atelierDir } from "../fs-utils.js";
+import { readAnyArtifactMarkdown, readAnyPlanMarkdown } from "../state/plan-artifacts.js";
 
 export async function validatePlanGate(cwd: string): Promise<{
   ok: boolean;
   errors: string[];
 }> {
   const errors: string[] = [];
-  const base = atelierDir(cwd);
-  let outline = "";
-  let plan = "";
-  try {
-    outline = await readFile(join(base, "artifacts", "outline.md"), "utf8");
-  } catch {
-    return { ok: true, errors: [] };
-  }
-  try {
-    plan = await readFile(join(base, "artifacts", "plan.md"), "utf8");
-  } catch {
+  const outline = await readAnyArtifactMarkdown(cwd, "outline.md");
+  if (!outline) return { ok: true, errors: [] };
+  const plan = await readAnyPlanMarkdown(cwd);
+  if (plan === null) {
     errors.push("plan.md missing while outline.md exists");
     return { ok: false, errors };
   }

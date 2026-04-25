@@ -3,7 +3,11 @@ import { mkdir, writeFile, rm, mkdtemp } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { validateQuestionsGate } from "../src/gates/questions.js";
-import { validateResearchGate } from "../src/gates/research.js";
+import {
+  validatePlannerTechnicalResearchGate,
+  validateResearchGate,
+} from "../src/gates/research.js";
+import { defaultContextMeta } from "../src/state/context.js";
 
 let dir = "";
 
@@ -172,5 +176,69 @@ describe("validateResearchGate — evidence and stage placement", () => {
     expect(res.errors.join("\n")).toMatch(
       /Question 2 \[tech\]: expected answer block with at least one source URL/,
     );
+  });
+
+  test("planner tech task fails on optional empty research", async () => {
+    await seed({
+      "artifacts/research.md": "# research\n\n_Optional in planner-first mode._\n",
+    });
+    const meta = {
+      ...defaultContextMeta({ workflow: "planner", phase: "plan" }),
+      tasks: [
+        {
+          id: "migration-tech",
+          epic_id: "migration",
+          title: "Research target platform constraints",
+          type: "tech" as const,
+          status: "ready" as const,
+          depends_on: [],
+          acceptance: [],
+          open_questions: ["Which target-platform constraints require current external evidence?"],
+          evidence_refs: [],
+        },
+      ],
+    };
+
+    const res = await validatePlannerTechnicalResearchGate(dir, meta);
+    expect(res.ok).toBe(false);
+    expect(res.errors.join("\n")).toMatch(/missing Stage 2 technical research evidence/);
+  });
+
+  test("planner tech task accepts source, checked metadata, and plan impact", async () => {
+    await seed({
+      "artifacts/research.md": [
+        "# Research",
+        "",
+        "## Stage 2 — External technical research (`[tech]`)",
+        "",
+        "### Answer: 1",
+        "Status: verified",
+        "Finding: Route handlers support standard Request and Response.",
+        "Source: https://nextjs.org/docs/app/building-your-application/routing/route-handlers",
+        "Checked at: 2026-04-25",
+        "Impact on plan: API endpoints can be modeled as route handlers.",
+        "",
+      ].join("\n"),
+    });
+    const meta = {
+      ...defaultContextMeta({ workflow: "planner", phase: "plan" }),
+      tasks: [
+        {
+          id: "migration-tech",
+          epic_id: "migration",
+          title: "Research target platform constraints",
+          type: "tech" as const,
+          status: "ready" as const,
+          depends_on: [],
+          acceptance: [],
+          open_questions: ["Which target-platform constraints require current external evidence?"],
+          evidence_refs: [],
+        },
+      ],
+    };
+
+    const res = await validatePlannerTechnicalResearchGate(dir, meta);
+    expect(res.errors, res.errors.join("\n")).toHaveLength(0);
+    expect(res.ok).toBe(true);
   });
 });

@@ -44,7 +44,7 @@ This path:
 1. creates planner state in `.atelier/context.md`
 2. turns the objective into repo, tech, and business research tasks
 3. synthesizes those tracks into executable slices
-4. generates `.atelier/artifacts/plan.md`
+4. generates the review plan at `.atelier/plan/<slug-do-plano>/plan.md` (and mirrors it to `.atelier/artifacts/plan.md` for compatibility)
 5. stops for approval before implementation
 
 ## Planning model
@@ -105,7 +105,7 @@ The planner operates across two distinct moments:
 
 When autoplan completes, the planner:
 
-- generates `.atelier/artifacts/plan.md`
+- writes the plan under `.atelier/plan/<slug-do-plano>/` (plus a snapshot and manifest) and mirrors `plan.md` to `.atelier/artifacts/`
 - sets `planner_state=awaiting_approval`
 - sets `approval_status=pending`
 - clears active task/slice focus so the plan can be reviewed

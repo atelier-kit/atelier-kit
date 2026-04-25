@@ -7,8 +7,11 @@ description: |
 phase: design
 reads:
   - .atelier/brief.md
+  - .atelier/plan/<slug>/research.md
   - .atelier/artifacts/research.md
 produces:
+  - .atelier/plan/<slug>/design.md
+  - .atelier/plan/<slug>/outline.md
   - .atelier/artifacts/design.md
   - .atelier/artifacts/outline.md
 ---
@@ -17,7 +20,7 @@ produces:
 
 ## Instructions
 
-1. Read `.atelier/brief.md` and `.atelier/artifacts/research.md` fully first; research covers repo, tech, and market stages.
+1. Read `.atelier/brief.md` and the active plan's `research.md` fully first; research covers repo, tech, and market stages.
 2. Build `design.md` using the template sections; keep 150–300 lines.
 3. Anchor "Current state" strictly in research facts.
 4. Express "Desired state" as testable behavior changes.

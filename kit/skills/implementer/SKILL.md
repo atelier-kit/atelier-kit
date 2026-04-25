@@ -5,10 +5,13 @@ description: |
   tests for slice N pass before slice N+1. Record deviations in `impl-log.md`.
 phase: implement
 reads:
+  - .atelier/plan/<slug>/outline.md
   - .atelier/artifacts/outline.md
+  - .atelier/plan/<slug>/plan.md
   - .atelier/artifacts/plan.md
 produces:
   - repository (source)
+  - .atelier/plan/<slug>/impl-log.md
   - .atelier/artifacts/impl-log.md
 ---
 
@@ -19,7 +22,7 @@ produces:
 1. Load outline and plan; pick the first incomplete slice.
 2. Implement that slice across all layers needed for end-to-end behavior.
 3. Run the slice's tests before moving on; fix failures in-place.
-4. Record slice status and deviations inside `.atelier/artifacts/impl-log.md`.
+4. Record slice status and deviations inside the active plan's `impl-log.md`.
 5. Do not start slice N+1 until slice N is green.
 6. If outline is infeasible, stop and document the concrete blocker.
 7. Do not expand public surface area beyond outline without human approval.

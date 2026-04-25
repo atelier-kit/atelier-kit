@@ -171,9 +171,9 @@ The goal classifier currently maps raw goals into these domain templates:
 - `research`
 - `default`
 
-Each template produces the same structural pattern: three discovery tracks plus one
-synthesis task. Discovery tracks share a `parallel_group`; synthesis depends on
-the discovery tasks.
+Each template produces the same structural pattern: three discovery tracks, one
+synthesis task, and one decision task. Discovery tracks share a `parallel_group`;
+synthesis depends on the discovery tasks; decision depends on synthesis.
 
 ---
 
@@ -329,28 +329,32 @@ This mapping is implemented in `src/skill-loader.ts`.
 
 Artifacts exist for humans and handoff, not as the only system of record.
 
-### Primary artifacts
+### Per-epic artifact bundle
 
-- `.atelier/artifacts/questions.md`
-- `.atelier/artifacts/research.md`
-- `.atelier/artifacts/design.md`
-- `.atelier/artifacts/outline.md`
-- `.atelier/artifacts/plan.md`
-- `.atelier/artifacts/impl-log.md`
-- `.atelier/artifacts/review.md`
+In planner mode, artifacts are organized per-epic under `.atelier/plan/<epic-id>/`:
 
-### Planner-specific artifact
+- `plan.md` — review projection (generated from state)
+- `design.md` — architectural decisions and boundaries (filled by decision task)
+- `context.md` — snapshot of `.atelier/context.md` for audit trail
+- `manifest.json` — plan metadata, versions, and artifact pointers
+- `questions.md` — questions formulation
+- `research.md` — technical research evidence
+- `outline.md` — implementation outline
+- `impl-log.md` — implementation progress (during execution)
+- `review.md` — human review notes
+- `decision-log.md` — decision trail
 
-- `plan.md`
+Each new epic (planning run) uses its own folder with a slug-based name. Repeating the same goal
+text appends a numeric suffix (e.g. `my-goal-2`) so old plans are preserved.
 
-In planner mode, `plan.md` is a **review projection** generated from state.
+### Artifact philosophy
 
-That means:
+- the **task/slice graph** in `.atelier/context.md` is the runtime truth
+- the **plan artifacts** in `.atelier/plan/<epic-id>/` are human-facing summaries and audit trails
+- no legacy `.atelier/artifacts/` directory is required for planner operation
 
-- the task/slice graph is the runtime truth
-- `plan.md` is the human-facing summary
-
-This architecture prevents the system from depending entirely on free-form prose.
+This architecture prevents the system from depending entirely on free-form prose while keeping
+all discovery and architectural decisions attached to their specific planning runs.
 
 ---
 
@@ -375,12 +379,13 @@ The planner progresses:
 - tech
 - business
 - synthesis
+- decision (document architectural boundaries and patterns, fills `design.md`)
 
 ### Step 3 — slice generation
 
-After synthesis:
+After synthesis and decision:
 
-- slices are created
+- slices are created (from synthesis output)
 - `plan.md` is generated or refreshed
 
 ### Step 4 — approval

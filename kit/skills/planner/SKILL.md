@@ -1,13 +1,18 @@
 ---
 name: planner
 description: |
-  Use when phase is `plan`, or user says /plan. Derive `.atelier/artifacts/plan.md` strictly from
-  approved `outline.md` and `design.md`. No new architecture.
+  Use when phase is `plan`, or user says /plan. In planner-first mode the runtime writes
+  all active artifacts under `.atelier/plan/<slug>/` and writes `plan.md` there
+  (with a legacy mirror for `artifacts/plan.md`). For phased workflows, derive
+  `plan.md` strictly from approved `outline.md` and `design.md`. No new architecture.
 phase: plan
 reads:
+  - .atelier/plan/<slug>/design.md
+  - .atelier/plan/<slug>/outline.md
   - .atelier/artifacts/design.md
   - .atelier/artifacts/outline.md
 produces:
+  - .atelier/plan/<slug>/plan.md
   - .atelier/artifacts/plan.md
 ---
 
@@ -30,7 +35,7 @@ produces:
 13. If outline references symbols, echo symbol names in tasks.
 14. Avoid duplicating design prose; point to it instead.
 15. Stop when each outline slice maps to a plan section.
-16. Write only to `.atelier/artifacts/plan.md`.
+16. Write only to the active plan file: prefer `.atelier/plan/<slug>/plan.md` when present; otherwise `.atelier/artifacts/plan.md`.
 17. Do not edit source code files while planning.
 18. When mode is quick, still keep slice integrity—do not collapse vertical cuts.
 19. Escalate if outline contradicts design; do not silently reconcile.

@@ -7,8 +7,10 @@ phase: plan
 reads:
   - .atelier/context.md
   - .atelier/brief.md
+  - .atelier/plan/<slug>/research.md
   - .atelier/artifacts/research.md
 produces:
+  - .atelier/plan/<slug>/plan.md
   - .atelier/artifacts/plan.md
 ---
 
@@ -28,6 +30,6 @@ produces:
 10. Do not propose source-code level architecture here.
 11. Do not mutate source files or unrelated artifacts.
 12. If evidence is missing, record the gap and what decision it blocks.
-13. Write only the planning sections relevant to the active task.
+13. Write only the active plan bundle sections relevant to the active task.
 14. Keep terminology consistent with the brief and current epic title.
 15. Stop after the planner has enough business context to synthesize slices.

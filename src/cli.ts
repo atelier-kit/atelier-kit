@@ -22,6 +22,7 @@ import {
   cmdPlannerReject,
   cmdPlannerExecute,
   cmdPlannerSyncPhase,
+  cmdPlannerValidate,
   cmdEpicAdd,
   cmdEpicFocus,
   cmdEpicUpdate,
@@ -184,6 +185,14 @@ planner
   .description("Sync the internal execution lens")
   .action(async () => {
     await cmdPlannerSyncPhase(processCwd());
+  });
+
+planner
+  .command("validate")
+  .description("Report planner blockers and concrete next actions without presenting")
+  .option("--repair", "Reconcile planner state from valid artifacts where safe")
+  .action(async (opts: { repair?: boolean }) => {
+    await cmdPlannerValidate(processCwd(), opts);
   });
 
 const epic = planner

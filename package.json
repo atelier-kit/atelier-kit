@@ -1,5 +1,5 @@
 {
-  "name": "atelier-kit",
+  "name": "@atelier-kit/atelier-kit",
   "version": "0.1.2",
   "description": "Planner-first CLI for agent workflows (.atelier/)",
   "type": "module",
@@ -8,6 +8,9 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/atelier-kit/atelier-kit.git"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "keywords": [
     "ai",

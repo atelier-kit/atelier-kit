@@ -19,9 +19,9 @@ In planner workflow, the key primitives are:
 ## Install
 
 ```bash
-pnpm add -D atelier-kit
+pnpm add -D @atelier-kit/atelier-kit
 # or
-npx atelier-kit@latest init
+npx @atelier-kit/atelier-kit@latest init
 ```
 
 ## Quickstart

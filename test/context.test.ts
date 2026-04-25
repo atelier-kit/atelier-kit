@@ -1,6 +1,6 @@
 import { describe, expect, test, beforeEach, afterEach } from "vitest";
 import { writeContext, readContext, defaultContextMeta } from "../src/state/context.js";
-import { mkdtemp, mkdir, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, readdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
@@ -8,6 +8,7 @@ import {
   defaultAtelierRc,
   readAtelierRc,
 } from "../src/state/atelierrc.js";
+import { ContextMetaSchema } from "../src/state/schema.js";
 
 describe("context + atelierrc", () => {
   let dir = "";
@@ -92,5 +93,34 @@ describe("context + atelierrc", () => {
     const rc = await readAtelierRc(dir);
     expect(rc.adapter).toBe("cursor");
     expect(rc.mode).toBe("deep");
+  });
+
+  test("writeContext creates context atomically without leaving temp files", async () => {
+    await rm(join(dir, ".atelier"), { recursive: true, force: true });
+
+    await writeContext(dir, defaultContextMeta({ phase: "plan" }), "note");
+
+    const files = await readdir(join(dir, ".atelier"));
+    expect(files).toContain("context.md");
+    expect(files.filter((file) => file.endsWith(".tmp"))).toEqual([]);
+  });
+
+  test("context schema rejects empty planner identifiers", () => {
+    expect(() =>
+      ContextMetaSchema.parse({
+        atelier_context_version: 1,
+        workflow: "planner",
+        planner_mode: "manual",
+        planner_state: "planning",
+        approval_status: "none",
+        phase: "plan",
+        current_epic: "",
+        epics: [{ id: "", title: "Epic", status: "draft", labels: [] }],
+        tasks: [],
+        slices: [],
+        updated_at: new Date().toISOString(),
+        returns: [],
+      }),
+    ).toThrow();
   });
 });

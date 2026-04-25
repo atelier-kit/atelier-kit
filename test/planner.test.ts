@@ -24,6 +24,7 @@ import {
   setWorkflow,
   startPlannerGoal,
   updateTask,
+  updateSlice,
   validatePlanBeforeApproval,
 } from "../src/state/planner.js";
 import { classifyGoal } from "../src/state/task-templates.js";
@@ -376,6 +377,215 @@ describe("planner state helpers", () => {
     const { writeContext: wc } = await import("../src/state/context.js");
     await wc(dir, { ...meta, planner_state: "awaiting_approval", approval_status: "pending" }, body);
     await expect(approvePlan(dir)).rejects.toThrow("blocked");
+  });
+
+  test("blocked tasks are not selected as the next planner focus", async () => {
+    await writeContext(
+      dir,
+      defaultContextMeta({
+        workflow: "planner",
+        planner_state: "planning",
+        current_epic: "e1",
+        current_task: null,
+        epics: [{ id: "e1", title: "Epic", status: "researching", labels: [] }],
+        tasks: [
+          {
+            id: "e1-tech",
+            epic_id: "e1",
+            title: "Blocked tech task",
+            type: "tech",
+            status: "blocked",
+            depends_on: [],
+            acceptance: [],
+            open_questions: [],
+            evidence_refs: [],
+          },
+          {
+            id: "e1-business",
+            epic_id: "e1",
+            title: "Ready business task",
+            type: "business",
+            status: "ready",
+            depends_on: [],
+            acceptance: [],
+            open_questions: [],
+            evidence_refs: [],
+          },
+        ],
+        slices: [],
+      }),
+    );
+
+    const meta = await advancePlanner(dir);
+    expect(meta.current_task).toBe("e1-business");
+  });
+
+  test("planner focus and approval transition stay within current epic", async () => {
+    await writeContext(
+      dir,
+      defaultContextMeta({
+        workflow: "planner",
+        planner_state: "planning",
+        current_epic: "e1",
+        current_task: "e1-repo",
+        current_slice: null,
+        epics: [
+          { id: "e1", title: "Epic 1", status: "researching", labels: [] },
+          { id: "e2", title: "Epic 2", status: "ready", labels: [] },
+        ],
+        tasks: [
+          {
+            id: "e1-repo",
+            epic_id: "e1",
+            title: "Repo task",
+            type: "repo",
+            status: "researching",
+            depends_on: [],
+            acceptance: [],
+            open_questions: [],
+            evidence_refs: [],
+          },
+          {
+            id: "e2-synthesis",
+            epic_id: "e2",
+            title: "Synthesis",
+            type: "synthesis",
+            status: "done",
+            depends_on: [],
+            acceptance: [],
+            open_questions: [],
+            evidence_refs: [],
+          },
+        ],
+        slices: [
+          {
+            id: "e2-slice",
+            epic_id: "e2",
+            title: "Other epic slice",
+            goal: "Ship other epic",
+            kind: "delivery",
+            status: "ready",
+            depends_on: ["e2-synthesis"],
+            source_task_ids: ["e2-synthesis"],
+            acceptance: ["Done"],
+            risks: [],
+          },
+        ],
+      }),
+    );
+
+    const meta = await markCurrentDone(dir);
+    expect(meta.planner_state).toBe("planning");
+    expect(meta.current_epic).toBe("e1");
+    expect(meta.current_slice).toBe(null);
+  });
+
+  test("executePlan only starts slices from the approved current epic", async () => {
+    await writeContext(
+      dir,
+      defaultContextMeta({
+        workflow: "planner",
+        planner_state: "approved",
+        approval_status: "approved",
+        current_epic: "e1",
+        current_task: null,
+        current_slice: null,
+        epics: [
+          { id: "e1", title: "Epic 1", status: "ready", labels: [] },
+          { id: "e2", title: "Epic 2", status: "ready", labels: [] },
+        ],
+        tasks: [],
+        slices: [
+          {
+            id: "e1-slice",
+            epic_id: "e1",
+            title: "Current epic slice",
+            goal: "Ship current epic",
+            kind: "delivery",
+            status: "ready",
+            depends_on: [],
+            source_task_ids: [],
+            acceptance: ["Done"],
+            risks: [],
+          },
+          {
+            id: "e2-slice",
+            epic_id: "e2",
+            title: "Other epic slice",
+            goal: "Ship other epic",
+            kind: "delivery",
+            status: "ready",
+            depends_on: [],
+            source_task_ids: [],
+            acceptance: ["Done"],
+            risks: [],
+          },
+        ],
+      }),
+    );
+
+    const meta = await executePlan(dir);
+    expect(meta.current_slice).toBe("e1-slice");
+    expect(meta.slices.find((slice) => slice.id === "e1-slice")?.status).toBe("executing");
+    expect(meta.slices.find((slice) => slice.id === "e2-slice")?.status).toBe("ready");
+  });
+
+  test("task dependency cycles are rejected", async () => {
+    await addEpic(dir, { id: "e1", title: "Epic", status: "draft", labels: [] });
+    await addTask(dir, {
+      id: "task-a",
+      epic_id: "e1",
+      title: "Task A",
+      type: "repo",
+      status: "ready",
+      depends_on: [],
+      acceptance: [],
+      open_questions: [],
+      evidence_refs: [],
+    });
+    await addTask(dir, {
+      id: "task-b",
+      epic_id: "e1",
+      title: "Task B",
+      type: "tech",
+      status: "ready",
+      depends_on: ["task-a"],
+      acceptance: [],
+      open_questions: [],
+      evidence_refs: [],
+    });
+
+    await expect(updateTask(dir, "task-a", { depends_on: ["task-b"] })).rejects.toThrow("cycle");
+  });
+
+  test("slice dependency cycles are rejected", async () => {
+    await addEpic(dir, { id: "e1", title: "Epic", status: "draft", labels: [] });
+    await addSlice(dir, {
+      id: "slice-a",
+      epic_id: "e1",
+      title: "Slice A",
+      goal: "Ship A",
+      kind: "delivery",
+      status: "ready",
+      depends_on: [],
+      source_task_ids: [],
+      acceptance: [],
+      risks: [],
+    });
+    await addSlice(dir, {
+      id: "slice-b",
+      epic_id: "e1",
+      title: "Slice B",
+      goal: "Ship B",
+      kind: "delivery",
+      status: "ready",
+      depends_on: ["slice-a"],
+      source_task_ids: [],
+      acceptance: [],
+      risks: [],
+    });
+
+    await expect(updateSlice(dir, "slice-a", { depends_on: ["slice-b"] })).rejects.toThrow("cycle");
   });
 });
 

@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+const NonEmptyString = z.string().trim().min(1);
+
 export const AdapterSchema = z.enum([
   "claude",
   "cursor",
@@ -53,8 +55,8 @@ export type AtelierRc = z.infer<typeof AtelierRcSchema>;
 export const ReturnEntrySchema = z.object({
   from: PhaseSchema,
   to: PhaseSchema,
-  reason: z.string(),
-  at: z.string(),
+  reason: NonEmptyString,
+  at: NonEmptyString,
 });
 
 export const WorkStatusSchema = z.enum([
@@ -79,42 +81,42 @@ export const TaskTypeSchema = z.enum([
 export const SliceKindSchema = z.enum(["discovery", "delivery"]);
 
 export const EpicSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  goal: z.string().optional(),
+  id: NonEmptyString,
+  title: NonEmptyString,
+  goal: NonEmptyString.optional(),
   summary: z.string().optional(),
   status: WorkStatusSchema.default("draft"),
-  sprint_id: z.string().optional(),
-  labels: z.array(z.string()).default([]),
+  sprint_id: NonEmptyString.optional(),
+  labels: z.array(NonEmptyString).default([]),
 });
 
 export const TaskSchema = z.object({
-  id: z.string(),
-  epic_id: z.string(),
-  title: z.string(),
+  id: NonEmptyString,
+  epic_id: NonEmptyString,
+  title: NonEmptyString,
   type: TaskTypeSchema,
   summary: z.string().optional(),
   status: WorkStatusSchema.default("draft"),
-  depends_on: z.array(z.string()).default([]),
-  acceptance: z.array(z.string()).default([]),
-  open_questions: z.array(z.string()).default([]),
-  evidence_refs: z.array(z.string()).default([]),
-  slice_id: z.string().optional(),
-  parallel_group: z.string().optional(),
+  depends_on: z.array(NonEmptyString).default([]),
+  acceptance: z.array(NonEmptyString).default([]),
+  open_questions: z.array(NonEmptyString).default([]),
+  evidence_refs: z.array(NonEmptyString).default([]),
+  slice_id: NonEmptyString.optional(),
+  parallel_group: NonEmptyString.optional(),
 });
 
 export const SliceSchema = z.object({
-  id: z.string(),
-  epic_id: z.string(),
-  title: z.string(),
-  goal: z.string(),
+  id: NonEmptyString,
+  epic_id: NonEmptyString,
+  title: NonEmptyString,
+  goal: NonEmptyString,
   kind: SliceKindSchema.default("delivery"),
   summary: z.string().optional(),
   status: WorkStatusSchema.default("draft"),
-  depends_on: z.array(z.string()).default([]),
-  source_task_ids: z.array(z.string()).default([]),
-  acceptance: z.array(z.string()).default([]),
-  risks: z.array(z.string()).default([]),
+  depends_on: z.array(NonEmptyString).default([]),
+  source_task_ids: z.array(NonEmptyString).default([]),
+  acceptance: z.array(NonEmptyString).default([]),
+  risks: z.array(NonEmptyString).default([]),
 });
 
 export const ContextMetaSchema = z.object({
@@ -123,18 +125,18 @@ export const ContextMetaSchema = z.object({
   planner_mode: PlannerModeSchema.default("manual"),
   planner_state: PlannerStateSchema.default("idle"),
   approval_status: ApprovalStatusSchema.default("none"),
-  approval_reason: z.string().nullable().default(null),
+  approval_reason: NonEmptyString.nullable().default(null),
   phase: PhaseSchema.default("brief"),
   mode: ModeSchema.optional(),
   adapter: AdapterSchema.optional(),
-  gate_pending: z.string().nullable().optional(),
-  current_epic: z.string().nullable().default(null),
-  current_task: z.string().nullable().default(null),
-  current_slice: z.string().nullable().default(null),
+  gate_pending: NonEmptyString.nullable().optional(),
+  current_epic: NonEmptyString.nullable().default(null),
+  current_task: NonEmptyString.nullable().default(null),
+  current_slice: NonEmptyString.nullable().default(null),
   epics: z.array(EpicSchema).default([]),
   tasks: z.array(TaskSchema).default([]),
   slices: z.array(SliceSchema).default([]),
-  updated_at: z.string(),
+  updated_at: NonEmptyString,
   returns: z.array(ReturnEntrySchema).default([]),
 });
 

@@ -3,6 +3,7 @@ import {
 } from "./context.js";
 import { join } from "node:path";
 import { atelierDir, writeText } from "../fs-utils.js";
+import { DependencyGraph } from "../domain/dependency-graph.js";
 import type {
   ApprovalStatus,
   ContextMeta,
@@ -68,7 +69,12 @@ function mergeById<T extends PlannerEntity>(
 function validateTaskLinks(meta: ContextMeta, task: Task): void {
   requireId(meta.epics, task.epic_id, "Epic");
   for (const dep of task.depends_on) {
-    requireId(meta.tasks, dep, "Task dependency");
+    const dependency = requireId(meta.tasks, dep, "Task dependency");
+    if (dependency.epic_id !== task.epic_id) {
+      throw new Error(
+        `Task ${task.id} depends on task ${dependency.id} from a different epic`,
+      );
+    }
   }
   if (task.slice_id) {
     const slice = requireId(meta.slices, task.slice_id, "Slice");
@@ -83,8 +89,20 @@ function validateTaskLinks(meta: ContextMeta, task: Task): void {
 function validateSliceLinks(meta: ContextMeta, slice: Slice): void {
   requireId(meta.epics, slice.epic_id, "Epic");
   for (const dep of slice.depends_on) {
-    if (!meta.tasks.some((task) => task.id === dep) && !meta.slices.some((item) => item.id === dep)) {
+    const task = meta.tasks.find((candidate) => candidate.id === dep);
+    const priorSlice = meta.slices.find((item) => item.id === dep);
+    if (!task && !priorSlice) {
       throw new Error(`Slice dependency not found: ${dep}`);
+    }
+    if (task && task.epic_id !== slice.epic_id) {
+      throw new Error(
+        `Slice ${slice.id} depends on task ${task.id} from a different epic`,
+      );
+    }
+    if (priorSlice && priorSlice.epic_id !== slice.epic_id) {
+      throw new Error(
+        `Slice ${slice.id} depends on slice ${priorSlice.id} from a different epic`,
+      );
     }
   }
   for (const taskId of slice.source_task_ids) {
@@ -94,6 +112,20 @@ function validateSliceLinks(meta: ContextMeta, slice: Slice): void {
         `Slice ${slice.id} references task ${task.id} from a different epic`,
       );
     }
+  }
+}
+
+function assertAcyclicTasks(tasks: Task[]): void {
+  const graph = DependencyGraph.fromEntries(tasks);
+  if (graph.hasCycle()) {
+    throw new Error("Task dependencies contain a cycle");
+  }
+}
+
+function assertAcyclicSlices(slices: Slice[]): void {
+  const graph = DependencyGraph.fromEntries(slices);
+  if (graph.hasCycle()) {
+    throw new Error("Slice dependencies contain a cycle");
   }
 }
 
@@ -198,9 +230,12 @@ function isTaskReady(meta: ContextMeta, task: Task): boolean {
 }
 
 function chooseNextTask(meta: ContextMeta): Task | null {
-  const activeStatuses: WorkStatus[] = ["researching", "ready", "executing", "draft", "blocked"];
+  const activeStatuses: WorkStatus[] = ["researching", "ready", "executing", "draft"];
   const candidates = meta.tasks.filter(
-    (task) => task.status !== "done" && task.status !== "cancelled",
+    (task) =>
+      task.status !== "done" &&
+      task.status !== "cancelled" &&
+      (!meta.current_epic || task.epic_id === meta.current_epic),
   );
   const ordered = [...candidates].sort((a, b) => {
     const aReady = isTaskReady(meta, a) ? 0 : 1;
@@ -216,6 +251,7 @@ function chooseNextSlice(meta: ContextMeta): Slice | null {
     (slice) =>
       slice.status !== "done" &&
       slice.status !== "cancelled" &&
+      (!meta.current_epic || slice.epic_id === meta.current_epic) &&
       (meta.planner_state === "executing"
         ? slice.status === "ready" || slice.status === "executing"
         : slice.status === "ready"),
@@ -447,10 +483,17 @@ export async function advancePlanner(
 }
 
 function transitionToAwaitingApproval(meta: ContextMeta): ContextMeta {
-  const synthesisDone = meta.tasks.some(
+  const relevantTasks = meta.current_epic
+    ? meta.tasks.filter((task) => task.epic_id === meta.current_epic)
+    : meta.tasks;
+  const relevantSlices = meta.current_epic
+    ? meta.slices.filter((slice) => slice.epic_id === meta.current_epic)
+    : meta.slices;
+
+  const synthesisDone = relevantTasks.some(
     (task) => task.type === "synthesis" && task.status === "done",
   );
-  if (!synthesisDone || meta.slices.length === 0) {
+  if (!synthesisDone || relevantSlices.length === 0) {
     return meta;
   }
   return {
@@ -639,7 +682,9 @@ export async function presentPlannerPlan(
       current_slice: null,
     };
   }, repo);
-  await writePlannerPlanArtifact(cwd, meta, repo);
+  if (repo === defaultContextRepository) {
+    await writePlannerPlanArtifact(cwd, meta, repo);
+  }
   return meta;
 }
 
@@ -730,7 +775,9 @@ export async function approvePlannerPlan(
     approval_status: "approved" as const,
     approval_reason: null,
   }), repo);
-  await writePlannerPlanArtifact(cwd, meta, repo);
+  if (repo === defaultContextRepository) {
+    await writePlannerPlanArtifact(cwd, meta, repo);
+  }
   return meta;
 }
 
@@ -758,10 +805,15 @@ export async function executeApprovedPlan(
     if (current.approval_status !== "approved") {
       throw new Error("Cannot execute planner before approval");
     }
+    const epicId = current.current_epic;
     const executableSlices: Slice[] = current.slices.map((slice) =>
-      slice.status === "ready" ? { ...slice, status: "executing" } : slice,
+      slice.status === "ready" && (!epicId || slice.epic_id === epicId)
+        ? { ...slice, status: "executing" }
+        : slice,
     );
-    const firstSlice = executableSlices.find((slice) => slice.status === "executing");
+    const firstSlice = executableSlices.find(
+      (slice) => slice.status === "executing" && (!epicId || slice.epic_id === epicId),
+    );
     return syncPhase({
       ...current,
       planner_state: "executing",
@@ -851,6 +903,8 @@ export async function addTask(
   return mutatePlannerState(cwd, (meta) => {
     ensureUniqueId(meta.tasks, task.id, "Task");
     validateTaskLinks(meta, task);
+    const tasks = [...meta.tasks, task];
+    assertAcyclicTasks(tasks);
     return {
       ...meta,
       workflow: "planner",
@@ -858,7 +912,7 @@ export async function addTask(
       approval_status: nextApprovalStatus(meta.planner_state),
       current_epic: meta.current_epic ?? task.epic_id,
       current_task: meta.current_task ?? task.id,
-      tasks: [...meta.tasks, task],
+      tasks,
     };
   }, repo).then((meta) => syncPlannerPhaseInline(cwd, meta, repo));
 }
@@ -873,9 +927,11 @@ export async function updateTask(
     const current = requireId(meta.tasks, id, "Task");
     const nextTask = { ...current, ...patch };
     validateTaskLinks(meta, nextTask);
+    const tasks = meta.tasks.map((task) => (task.id === id ? nextTask : task));
+    assertAcyclicTasks(tasks);
     return {
       ...meta,
-      tasks: meta.tasks.map((task) => (task.id === id ? nextTask : task)),
+      tasks,
     };
   }, repo).then((meta) => syncPlannerPhaseInline(cwd, meta, repo));
 }
@@ -905,6 +961,8 @@ export async function addSlice(
   return mutatePlannerState(cwd, (meta) => {
     ensureUniqueId(meta.slices, slice.id, "Slice");
     validateSliceLinks(meta, slice);
+    const slices = [...meta.slices, slice];
+    assertAcyclicSlices(slices);
     return {
       ...meta,
       workflow: "planner",
@@ -912,7 +970,7 @@ export async function addSlice(
       approval_status: nextApprovalStatus(meta.planner_state),
       current_epic: meta.current_epic ?? slice.epic_id,
       current_slice: meta.current_slice ?? slice.id,
-      slices: [...meta.slices, slice],
+      slices,
     };
   }, repo).then((meta) => syncPlannerPhaseInline(cwd, meta, repo));
 }
@@ -927,9 +985,11 @@ export async function updateSlice(
     const current = requireId(meta.slices, id, "Slice");
     const nextSlice = { ...current, ...patch };
     validateSliceLinks(meta, nextSlice);
+    const slices = meta.slices.map((slice) => (slice.id === id ? nextSlice : slice));
+    assertAcyclicSlices(slices);
     return {
       ...meta,
-      slices: meta.slices.map((slice) => (slice.id === id ? nextSlice : slice)),
+      slices,
     };
   }, repo).then((meta) => syncPlannerPhaseInline(cwd, meta, repo));
 }

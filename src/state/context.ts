@@ -1,6 +1,6 @@
 import matter from "gray-matter";
-import { readFile, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 import { ContextMetaSchema, type ContextMeta, type Phase } from "./schema.js";
 import { ATELIER_DIR, CONTEXT_FILE } from "../paths.js";
 import type { IContextRepository } from "../ports/context-repository.js";
@@ -26,12 +26,24 @@ export async function writeContext(
   body = "",
 ): Promise<void> {
   const p = atelierPath(cwd, CONTEXT_FILE);
+  const dir = dirname(p);
   const yaml = {
     ...meta,
     updated_at: new Date().toISOString(),
   };
   const out = matter.stringify(body ? `${body}\n` : "\n", yaml);
-  await writeFile(p, out, "utf8");
+  const tmp = join(
+    dir,
+    `.${CONTEXT_FILE}.${process.pid}.${Date.now()}.${Math.random().toString(36).slice(2)}.tmp`,
+  );
+  await mkdir(dir, { recursive: true });
+  try {
+    await writeFile(tmp, out, "utf8");
+    await rename(tmp, p);
+  } catch (error) {
+    await rm(tmp, { force: true }).catch(() => {});
+    throw error;
+  }
 }
 
 export function defaultContextMeta(

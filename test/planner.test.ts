@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
-import { mkdir, rm } from "node:fs/promises";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -33,6 +33,27 @@ import { readFile } from "node:fs/promises";
 
 describe("planner state helpers", () => {
   let dir = "";
+
+  async function seedVerifiableTechResearch(): Promise<void> {
+    await mkdir(join(dir, ".atelier", "artifacts"), { recursive: true });
+    await writeFile(
+      join(dir, ".atelier", "artifacts", "research.md"),
+      [
+        "# Research",
+        "",
+        "## Stage 2 — External technical research (`[tech]`)",
+        "",
+        "### Answer: 1",
+        "Status: verified",
+        "Finding: Target platform migration constraints are documented.",
+        "Source: https://example.com/docs/migration",
+        "Checked at: 2026-04-25",
+        "Impact on plan: Migration slices can proceed after compatibility checks.",
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+  }
 
   beforeEach(async () => {
     dir = await mkdtemp(join(tmpdir(), "atk-planner-"));
@@ -202,22 +223,41 @@ describe("planner state helpers", () => {
     expect(state.meta.planner_state).toBe("awaiting_approval");
   });
 
-  test("autoplan runs to approval gate and writes plan artifact", async () => {
+  test("autoplan blocks migration approval when technical research is empty", async () => {
+    const meta = await autoplanGoal(dir, "Migrate Python framework to PHP");
+    expect(meta.planner_state).toBe("planning");
+    expect(meta.approval_status).toBe("none");
+    expect(meta.gate_pending).toMatch(/technical research evidence|technical research/);
+    expect(meta.tasks.find((task) => task.type === "tech")?.status).toBe("blocked");
+    expect(meta.slices).toHaveLength(0);
+  });
+
+  test("autoplan runs to approval gate when technical research is verifiable", async () => {
+    await seedVerifiableTechResearch();
+
     const meta = await autoplanGoal(dir, "Migrate Python framework to PHP");
     expect(meta.planner_state).toBe("awaiting_approval");
     expect(meta.approval_status).toBe("pending");
     expect(meta.current_task).toBe(null);
     expect(meta.current_slice).toBe(null);
     expect(meta.slices[0]?.status).toBe("ready");
+    expect(meta.tasks.find((task) => task.type === "tech")?.evidence_refs).toContain(
+      ".atelier/artifacts/research.md#stage-2-external-technical-research-tech",
+    );
 
     const plan = await readFile(join(dir, ".atelier", "artifacts", "plan.md"), "utf8");
     expect(plan).toContain("# Plan");
+    expect(plan).toContain("Evidence status");
     expect(plan).toContain("Approval");
     expect(plan).toContain("Approve plan");
   });
 
   test("reject and approve control execution gate", async () => {
-    await autoplanGoal(dir, "Migrate Python framework to PHP");
+    const classifier = new StubGoalClassifier([
+      { suffix: "repo", type: "repo", title: "Repo", summary: "s", acceptance: [], open_questions: [] },
+      { suffix: "synthesis", type: "synthesis", title: "Synthesis", summary: "s", acceptance: ["done"], open_questions: [] },
+    ]);
+    await autoplanGoal(dir, "Migrate Python framework to PHP", { classifier });
     await rejectPlan(dir, "Need clearer migration risks");
     let state = await readContext(dir);
     expect(state.meta.approval_status).toBe("rejected");
@@ -282,6 +322,7 @@ describe("planner state helpers", () => {
   });
 
   test("rendered plan includes parallel track and metadata header", async () => {
+    await seedVerifiableTechResearch();
     await autoplanGoal(dir, "Migrate Python framework to PHP");
     const plan = await readFile(join(dir, ".atelier", "artifacts", "plan.md"), "utf8");
     expect(plan).toContain("Parallel track:");
@@ -291,6 +332,7 @@ describe("planner state helpers", () => {
   });
 
   test("rendered plan includes risk register when slices have risks", async () => {
+    await seedVerifiableTechResearch();
     await autoplanGoal(dir, "Migrate Python framework to PHP");
     const plan = await readFile(join(dir, ".atelier", "artifacts", "plan.md"), "utf8");
     expect(plan).toContain("Risk register");

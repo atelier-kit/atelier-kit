@@ -118,11 +118,18 @@ export async function cmdPlannerAutoplan(cwd: string, goal: string): Promise<voi
   try {
     const meta = await autoplanGoal(cwd, goal);
     await refreshFallbackAdapters(cwd);
+    const blocked = meta.tasks.some((task) => task.status === "blocked");
+    const label = blocked || meta.approval_status !== "pending"
+      ? "Planner autoplan stopped"
+      : "Planner autoplan complete";
     console.log(
-      pc.green(
-        `Planner autoplan complete for "${goal}" (${summarizePlannerCounts(meta)}) approval=${meta.approval_status}`,
+      (blocked ? pc.yellow : pc.green)(
+        `${label} for "${goal}" (${summarizePlannerCounts(meta)}) approval=${meta.approval_status}`,
       ),
     );
+    if (meta.gate_pending) {
+      console.log(pc.yellow(`Gate pending: ${meta.gate_pending}`));
+    }
   } catch (error) {
     console.error(pc.red((error as Error).message));
     process.exitCode = 1;

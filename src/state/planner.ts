@@ -4,6 +4,7 @@ import {
 import { join } from "node:path";
 import { atelierDir, writeText } from "../fs-utils.js";
 import { DependencyGraph } from "../domain/dependency-graph.js";
+import { validatePlannerTechnicalResearchGate } from "../gates/research.js";
 import type {
   ApprovalStatus,
   ContextMeta,
@@ -621,6 +622,33 @@ function renderPlan(meta: ContextMeta): string {
     lines.push("");
   }
 
+  const repoTasks = relevantTasks.filter((t) => t.type === "repo");
+  const techTasks = relevantTasks.filter((t) => t.type === "tech");
+  const businessTasks = relevantTasks.filter((t) => t.type === "business");
+  const evidenceStatus = (tasks: typeof relevantTasks, fallback: string): string => {
+    if (tasks.length === 0) return "not applicable";
+    if (tasks.some((t) => t.status === "blocked")) return "blocked";
+    if (tasks.every((t) => t.evidence_refs.length > 0)) return "verified";
+    if (tasks.every((t) => t.status === "done")) return fallback;
+    return "pending";
+  };
+  const unverifiedTasks = relevantTasks.filter(
+    (t) => t.type === "tech" && t.status === "done" && t.evidence_refs.length === 0,
+  );
+  lines.push(
+    "## Evidence status",
+    "",
+    `- Repo facts: ${evidenceStatus(repoTasks, "inferred")}`,
+    `- Technical sources: ${evidenceStatus(techTasks, "unverified")}`,
+    `- Business assumptions: ${evidenceStatus(businessTasks, "pending")}`,
+  );
+  if (unverifiedTasks.length > 0) {
+    lines.push(
+      `- Unverified assumptions: ${unverifiedTasks.map((t) => t.id).join(", ")}`,
+    );
+  }
+  lines.push("");
+
   const openQs = relevantTasks.flatMap((t) =>
     t.open_questions
       .filter((q) => q.trim() !== "")
@@ -747,6 +775,22 @@ export function validatePlanBeforeApproval(meta: ContextMeta): PlanValidationRes
     warnings.push(`Tasks have open questions without evidence: ${ids}`);
   }
 
+  const unverifiedDoneTechTasks = relevantTasks.filter(
+    (t) => t.type === "tech" && t.status === "done" && t.evidence_refs.length === 0,
+  );
+  if (unverifiedDoneTechTasks.length > 0) {
+    const ids = unverifiedDoneTechTasks.map((t) => t.id).join(", ");
+    blocks.push(`Technical research tasks are done without evidence refs: ${ids}`);
+  }
+
+  const blockedTechTasks = relevantTasks.filter(
+    (t) => t.type === "tech" && t.status === "blocked",
+  );
+  if (blockedTechTasks.length > 0) {
+    const ids = blockedTechTasks.map((t) => t.id).join(", ");
+    blocks.push(`Technical research is blocked: ${ids}`);
+  }
+
   return { warnings, blocks };
 }
 
@@ -840,9 +884,31 @@ export async function autoplanGoal(
   const repo = ports.repo ?? defaultContextRepository;
   let meta = await startPlannerGoal(cwd, goal, ports);
   while (meta.current_task) {
+    const currentTask = meta.tasks.find((task) => task.id === meta.current_task);
+    if (currentTask?.type === "tech" && currentTask.evidence_refs.length === 0) {
+      const evidence = repo === defaultContextRepository
+        ? await validatePlannerTechnicalResearchGate(cwd, meta)
+        : { ok: true, errors: [] };
+      if (!evidence.ok) {
+        meta = await blockCurrentTask(cwd, evidence.errors.join("; "), repo);
+        return meta;
+      }
+      if (repo === defaultContextRepository) {
+        meta = await addCurrentTaskEvidenceRef(
+          cwd,
+          ".atelier/artifacts/research.md#stage-2-external-technical-research-tech",
+          repo,
+        );
+      }
+    }
     meta = await markCurrentDone(cwd, repo);
   }
-  meta = await presentPlannerPlan(cwd, repo);
+  const blocked = meta.tasks.some(
+    (task) => (!meta.current_epic || task.epic_id === meta.current_epic) && task.status === "blocked",
+  );
+  if (!blocked && meta.slices.length > 0) {
+    meta = await presentPlannerPlan(cwd, repo);
+  }
   return meta;
 }
 
@@ -934,6 +1000,41 @@ export async function updateTask(
       tasks,
     };
   }, repo).then((meta) => syncPlannerPhaseInline(cwd, meta, repo));
+}
+
+async function blockCurrentTask(
+  cwd: string,
+  reason: string,
+  repo: IContextRepository = defaultContextRepository,
+): Promise<ContextMeta> {
+  return mutatePlannerState(cwd, (meta) => {
+    if (!meta.current_task) return meta;
+    return syncFocus({
+      ...meta,
+      gate_pending: reason,
+      tasks: meta.tasks.map((task) =>
+        task.id === meta.current_task ? { ...task, status: "blocked" } : task
+      ),
+    });
+  }, repo);
+}
+
+async function addCurrentTaskEvidenceRef(
+  cwd: string,
+  evidenceRef: string,
+  repo: IContextRepository = defaultContextRepository,
+): Promise<ContextMeta> {
+  return mutatePlannerState(cwd, (meta) => {
+    if (!meta.current_task) return meta;
+    return {
+      ...meta,
+      tasks: meta.tasks.map((task) =>
+        task.id === meta.current_task
+          ? { ...task, evidence_refs: [...new Set([...task.evidence_refs, evidenceRef])] }
+          : task
+      ),
+    };
+  }, repo);
 }
 
 export async function focusTask(

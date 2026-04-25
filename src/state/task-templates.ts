@@ -45,8 +45,10 @@ const TEMPLATES: Record<DomainKind, TaskTemplate[]> = {
         "Migration order risks are identified",
       ],
       open_questions: [
-        "Does the target platform support all required runtime behaviors?",
-        "What migration tooling or shims exist for the transition?",
+        "Which source-system behaviors must be preserved exactly during migration?",
+        "Which target-platform constraints require current external evidence before implementation?",
+        "Which data, authentication, encryption, integration, deployment, or testing risks could block migration?",
+        "Which migration assumptions are inferred rather than verified?",
       ],
     },
     {

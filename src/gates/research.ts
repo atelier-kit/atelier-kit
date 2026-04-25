@@ -1,9 +1,13 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { atelierDir } from "../fs-utils.js";
+import type { ContextMeta, Task } from "../state/schema.js";
 
 const CODE_REF = /[`][^`]+[`]|\.(?:ts|tsx|js|jsx|go|rs|py)|\/[\w.-]+\//;
 const URL_REF = /https?:\/\/[^\s)]+/i;
+const CHECKED_REF = /(?:checked\s+at|checked|version|date|data|vers[aã]o|fecha)\s*:/i;
+const IMPACT_REF = /(?:impact\s+on\s+plan|impact|impacto\s+no\s+plano|impacto|impacto\s+en\s+el\s+plan)\s*:/i;
+const BLOCKED_REF = /status\s*:\s*blocked|blocked|bloquead[oa]|bloqueado|bloqueada/i;
 const SCOPE_TAG = /^\s*[-*]\s+\[(repo|tech|market)\]\s+/i;
 const BULLET = /^\s*[-*]\s+/;
 const STAGE_HEADING = /^##\s+Stage\s+\d+[^\n]*?\[(repo|tech|market)\]/gim;
@@ -93,6 +97,67 @@ export async function validateResearchGate(cwd: string): Promise<{
   return { ok: errors.length === 0, errors };
 }
 
+export async function validatePlannerTechnicalResearchGate(
+  cwd: string,
+  meta: ContextMeta,
+): Promise<{
+  ok: boolean;
+  errors: string[];
+}> {
+  const errors: string[] = [];
+  const techTasks = meta.tasks.filter((task) => task.type === "tech");
+  if (techTasks.length === 0) {
+    return { ok: true, errors };
+  }
+
+  let researchRaw = "";
+  try {
+    researchRaw = await readFile(join(atelierDir(cwd), "artifacts", "research.md"), "utf8");
+  } catch {
+    for (const task of techTasks) {
+      if (task.evidence_refs.length === 0) {
+        errors.push(`${task.id}: technical research evidence is missing`);
+      }
+    }
+    return { ok: errors.length === 0, errors };
+  }
+
+  const techStage = extractStageBlock(researchRaw, "tech");
+  const optionalTemplate = /_Optional in planner-first mode\._/i.test(researchRaw);
+  for (const task of techTasks) {
+    if (task.evidence_refs.length > 0) continue;
+    if (!techStage || optionalTemplate) {
+      errors.push(`${task.id}: missing Stage 2 technical research evidence`);
+      continue;
+    }
+    const stageErrors = validateTechEvidenceBlock(techStage, task);
+    errors.push(...stageErrors.map((err) => `${task.id}: ${err}`));
+  }
+
+  return { ok: errors.length === 0, errors };
+}
+
+export function validateTechEvidenceBlock(block: string, task?: Task): string[] {
+  const errors: string[] = [];
+  if (block.trim().length === 0) {
+    return ["technical research block is empty"];
+  }
+  const blocked = BLOCKED_REF.test(block);
+  if (!blocked && !URL_REF.test(block)) {
+    errors.push("expected at least one source URL or explicit blocked status");
+  }
+  if (!CHECKED_REF.test(block)) {
+    errors.push("expected checked date or version metadata");
+  }
+  if (!IMPACT_REF.test(block)) {
+    errors.push("expected impact on plan");
+  }
+  if (task?.open_questions.length && !/answer:\s*\d+/i.test(block) && !/finding\s*:/i.test(block)) {
+    errors.push("expected answer or finding entries for technical open questions");
+  }
+  return errors;
+}
+
 function extractScopes(questionsRaw: string): Scope[] {
   const scopes: Scope[] = [];
   const lines = questionsRaw.split("\n");
@@ -113,6 +178,14 @@ function extractStages(researchRaw: string): StageMarker[] {
     markers.push({ scope: m[1].toLowerCase() as Scope, start: m.index });
   }
   return markers;
+}
+
+function extractStageBlock(researchRaw: string, scope: Scope): string | null {
+  const stages = extractStages(researchRaw);
+  const current = stages.find((stage) => stage.scope === scope);
+  if (!current) return null;
+  const next = stages.find((stage) => stage.start > current.start);
+  return researchRaw.slice(current.start, next ? next.start : undefined);
 }
 
 function extractAnswers(researchRaw: string): AnswerMarker[] {

@@ -42,15 +42,17 @@ atelier-kit planner execute
 This path:
 
 1. creates planner state in `.atelier/context.md`
-2. runs discovery and synthesis
-3. generates `.atelier/artifacts/plan.md`
-4. stops for approval before implementation
+2. turns the objective into repo, tech, and business research tasks
+3. synthesizes those tracks into executable slices
+4. generates `.atelier/artifacts/plan.md`
+5. stops for approval before implementation
 
 ## Planning model
 
 Planner documentation is organized by purpose:
 
 - [PLANNER.md](./PLANNER.md) — mental model, lifecycle, and planner philosophy
+- [EXECUTION-FLOW.md](./EXECUTION-FLOW.md) — diagrammed execution flow from objective to researchers, plan, approval, and slices
 - [AGENT-USAGE.md](./AGENT-USAGE.md) — how to use the planner from Claude, Cursor, Codex, Windsurf, Cline, Kilo, Anti-GRAVITY, and generic agents
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — internal architecture, state model, runtime, adapters, and artifacts
 
@@ -68,8 +70,21 @@ Recommended relationship between entities:
 
 In this model:
 
+- the objective creates questions
+- questions become role-specific researcher tasks
 - tasks answer **what needs to be discovered or decided**
 - slices answer **what can be delivered end-to-end next**
+
+The default planner shape is:
+
+```text
+objective
+  -> repo researcher + tech researcher + business researcher
+  -> synthesis / planner
+  -> plan.md
+  -> human approval
+  -> approved execution slices
+```
 
 ### Planner workflow example
 
@@ -83,7 +98,7 @@ atelier-kit status
 
 The planner operates across two distinct moments:
 
-- **Autoplan**: run discovery and synthesis automatically until a final plan is ready for human validation
+- **Autoplan**: run repo, tech, business, and synthesis tasks until a final plan is ready for human validation
 - **Execution**: only begins after approval and focuses approved slices in implementer mode
 
 ### Approval flow

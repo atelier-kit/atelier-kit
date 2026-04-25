@@ -10,6 +10,7 @@ It is meant for maintainers and contributors who want to understand:
 - how adapters, skills, and artifacts fit together
 
 For the conceptual explanation of the planner, read [PLANNER.md](./PLANNER.md).  
+For the diagrammed objective-to-execution flow, read [EXECUTION-FLOW.md](./EXECUTION-FLOW.md).  
 For day-to-day usage by host agents, read [AGENT-USAGE.md](./AGENT-USAGE.md).
 
 ## Architectural summary
@@ -107,6 +108,8 @@ The planner runtime is implemented in:
 It is responsible for:
 
 - creating planning structures from a goal
+- classifying the goal into a domain-aware task template
+- creating repo, tech, business, and synthesis tasks
 - progressing tasks
 - generating slices
 - moving to approval
@@ -141,6 +144,36 @@ Its job is to:
 - keep planning and execution separated
 
 The reasoning itself remains delegated to skills and the host agent.
+
+### Runtime task shape
+
+The runtime's default mental model is:
+
+```text
+objective
+  -> repo researcher
+  -> tech researcher
+  -> business researcher
+  -> synthesis / planner
+  -> plan.md
+  -> approval
+  -> execution slices
+```
+
+The task templates live in `src/state/task-templates.ts`.
+
+The goal classifier currently maps raw goals into these domain templates:
+
+- `migration`
+- `new-feature`
+- `refactor`
+- `infrastructure`
+- `research`
+- `default`
+
+Each template produces the same structural pattern: three discovery tracks plus one
+synthesis task. Discovery tracks share a `parallel_group`; synthesis depends on
+the discovery tasks.
 
 ---
 
@@ -276,6 +309,19 @@ In planner mode:
 - execution with a current slice routes to implementer
 
 This keeps the runtime and the cognitive behavior aligned.
+
+### Planner task type to skill mapping
+
+| Task type | Skill folder |
+|-----------|--------------|
+| `repo` | `repo-analyst` |
+| `tech` | `tech-analyst` |
+| `business` | `business-analyst` |
+| `synthesis` | `planner` |
+| `decision` | `designer` |
+| `implementation` | `implementer` |
+
+This mapping is implemented in `src/skill-loader.ts`.
 
 ---
 
@@ -445,4 +491,3 @@ When evolving the architecture:
 If you need to explain the implementation in one sentence:
 
 > atelier-kit is a CLI-driven planner runtime with persistent state, agent adapters, role-based skills, and approval-gated slice execution.
-

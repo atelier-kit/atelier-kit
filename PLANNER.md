@@ -13,6 +13,7 @@ The goal is to describe the **mental model** behind the framework, not only the 
 Related documents:
 
 - [README.md](./README.md) — entry point and feature summary
+- [EXECUTION-FLOW.md](./EXECUTION-FLOW.md) — diagrammed flow from objective to researchers, plan, approval, and slices
 - [AGENT-USAGE.md](./AGENT-USAGE.md) — how to use the planner inside Claude, Cursor, Codex, Windsurf, Cline, Kilo, Anti-GRAVITY, and generic agent setups
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — internal design of state, runtime, adapters, skills, and artifacts
 
@@ -61,18 +62,32 @@ The detailed reasoning still happens inside the specialized agent skills.
 
 ## The core mental model
 
-The planner is easiest to understand if you separate three layers.
+The planner is easiest to understand as a staged path:
+
+```text
+objective
+  -> questions
+  -> repo / tech / business researchers
+  -> synthesis
+  -> plan
+  -> human approval
+  -> execution slices
+```
+
+The diagrammed version of this path lives in [EXECUTION-FLOW.md](./EXECUTION-FLOW.md).
+
+You can also separate the model into three layers.
 
 ### 1. Planning layer
 
 This is where the framework tries to understand the problem.
 
-Typical tasks here:
+The runtime creates domain-aware task templates from the objective. The default
+shape is:
 
 - `repo`
 - `tech`
 - `business`
-- `decision`
 - `synthesis`
 
 These tasks answer questions like:
@@ -82,6 +97,9 @@ These tasks answer questions like:
 - What business or rollout concerns matter?
 - What needs to be decided before implementation?
 - How should work be split into execution slices?
+
+The `repo`, `tech`, and `business` tasks are discovery tracks. The `synthesis`
+task depends on those tracks and converts the evidence into slices.
 
 ### 2. Approval layer
 
@@ -156,6 +174,20 @@ In practice:
 - the `plan.md` artifact renders parallel tracks as a labeled group for clarity
 
 The synthesis task has no `parallel_group` — it is sequentially dependent on all three discovery tracks completing first.
+
+## Researcher roles
+
+The researcher roles are implemented as skills and selected from the active task type.
+
+| Task type | Skill | What it does |
+|-----------|-------|--------------|
+| `repo` | `repo-analyst` | Reads the repository and records concrete code, test, dependency, persistence, and operational facts. |
+| `tech` | `tech-analyst` | Gathers external technical evidence: docs, specs, versions, APIs, compatibility, security, and tradeoffs. |
+| `business` | `business-analyst` | Clarifies rollout, stakeholders, operational risk, acceptance criteria, and decision constraints. |
+| `synthesis` | `planner` | Combines the researcher outputs into ordered slices, dependencies, risks, and acceptance checks. |
+
+This is why tasks are not implementation work. They exist to answer the questions
+needed before a safe plan can be approved.
 
 ## Why `phase` exists internally
 
@@ -236,13 +268,14 @@ Use this when you want the planner to run discovery and synthesis automatically 
 reaches a reviewable final plan.
 
 1. `planner autoplan "<goal>"`
-2. planner runs discovery tasks
-3. planner runs synthesis
-4. planner generates slices
-5. planner writes `plan.md`
-6. planner stops in `awaiting_approval`
-7. human approves or rejects
-8. if approved: `planner execute`
+2. planner classifies the goal and creates task templates
+3. planner runs repo, tech, and business researcher tasks
+4. planner runs synthesis
+5. planner generates slices
+6. planner writes `plan.md`
+7. planner stops in `awaiting_approval`
+8. human approves or rejects
+9. if approved: `planner execute`
 
 This is the default high-level experience.
 

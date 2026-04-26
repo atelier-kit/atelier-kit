@@ -28,7 +28,11 @@ import {
   validatePlannerReadiness,
   validatePlanBeforeApproval,
 } from "../src/state/planner.js";
-import { classifyGoal } from "../src/state/task-templates.js";
+import {
+  classifyGoal,
+  getTaskTemplates,
+  shouldIncludeBusinessFlow,
+} from "../src/state/task-templates.js";
 import { activeSkillFolder } from "../src/skill-loader.js";
 import { readFile } from "node:fs/promises";
 
@@ -230,6 +234,7 @@ describe("planner state helpers", () => {
     let state = await readContext(dir);
     expect(state.meta.workflow).toBe("planner");
     expect(state.meta.current_task).toBe("migrate-python-framework-to-php-repo");
+    expect(state.meta.tasks.some((task) => task.type === "business")).toBe(false);
     expect(activeSkillFolder(state.meta)).toBe("repo-analyst");
 
     await markCurrentDone(dir);
@@ -237,7 +242,6 @@ describe("planner state helpers", () => {
     expect(state.meta.current_task).toBe("migrate-python-framework-to-php-tech");
     expect(activeSkillFolder(state.meta)).toBe("tech-analyst");
 
-    await markCurrentDone(dir);
     await markCurrentDone(dir);
     state = await readContext(dir);
     expect(state.meta.current_task).toBe("migrate-python-framework-to-php-synthesis");
@@ -422,6 +426,23 @@ describe("planner state helpers", () => {
     expect(classifyGoal("Evaluate authentication libraries")).toBe("research");
     expect(classifyGoal("Implement dark mode")).toBe("new-feature");
     expect(classifyGoal("something completely generic")).toBe("default");
+  });
+
+  test("business flow is only included for market research intent", async () => {
+    expect(shouldIncludeBusinessFlow("Implement dark mode")).toBe(false);
+    expect(getTaskTemplates("Implement dark mode").some((t) => t.type === "business")).toBe(false);
+
+    expect(shouldIncludeBusinessFlow("Faça uma pesquisa de mercado sobre pricing")).toBe(true);
+    expect(getTaskTemplates("Faça uma pesquisa de mercado sobre pricing").some((t) => t.type === "business")).toBe(true);
+    expect(shouldIncludeBusinessFlow("Comparar preço dos concorrentes")).toBe(true);
+
+    await startPlannerGoal(dir, "Add user authentication feature");
+    let state = await readContext(dir);
+    expect(state.meta.tasks.some((t) => t.type === "business")).toBe(false);
+
+    await startPlannerGoal(dir, "Benchmark concorrentes para definir pricing");
+    state = await readContext(dir);
+    expect(state.meta.tasks.some((t) => t.type === "business")).toBe(true);
   });
 
   test("domain-aware task templates produce migration-specific titles", async () => {

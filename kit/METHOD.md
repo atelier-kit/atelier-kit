@@ -30,7 +30,7 @@ The primary path is:
 1. receive a goal
 2. classify domain (migration, new-feature, refactor, infrastructure, research, or default)
 3. create domain-aware discovery tasks with tailored titles, acceptance criteria, and open questions
-4. run discovery tracks (repo, tech, business) — modeled as parallel in state
+4. run discovery tracks (repo, tech, optional business for market research) — modeled as parallel in state
 5. synthesize slices
 6. generate `plan.md` — includes risk register, dependency map, and open questions
 7. stop for approval (validated: synthesis done, slices with goals and acceptance)
@@ -50,7 +50,7 @@ The kit distinguishes four planning concepts:
 Recommended relationship:
 
 1. User goal opens or updates an **epic**.
-2. Planner creates parallel **tasks** to answer repo, tech, and business questions.
+2. Planner creates parallel **tasks** to answer repo, tech, and optional market/business questions.
 3. Planner synthesizes those tasks into executable **slices**.
 4. Implementer ships one slice at a time.
 

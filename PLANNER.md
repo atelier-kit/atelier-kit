@@ -62,7 +62,7 @@ Planner mode follows this path:
 ```text
 objective
   -> questions
-  -> repo / tech / business researchers
+  -> repo / tech researchers (+ business when market research is implied)
   -> synthesis (generate initial slices)
   -> design (document architectural decisions)
   -> plan (render and review)
@@ -79,7 +79,7 @@ shape is:
 
 - `repo`
 - `tech`
-- `business`
+- `business` only when the objective implies market research, competitor benchmarking, pricing, regional, or regulatory discovery
 - `synthesis`
 - `decision`
 
@@ -87,11 +87,11 @@ These tasks answer questions like:
 
 - What exists in the repo today?
 - What external technical constraints apply?
-- What business or rollout concerns matter?
+- What market, business, or rollout concerns matter when the objective asks for that discovery?
 - How should work be split into execution slices?
 - What architectural decisions and boundaries apply to those slices?
 
-The `repo`, `tech`, and `business` tasks are discovery tracks. The `synthesis`
+The `repo`, `tech`, and optional `business` tasks are discovery tracks. The `synthesis`
 task depends on those tracks and converts the evidence into initial slices. The `decision`
 task depends on synthesis and documents the architectural boundaries and patterns that apply
 to those slices (filling in `design.md`).
@@ -155,7 +155,7 @@ Slices are used to **deliver vertical value**.
 
 ## Parallel discovery tracks
 
-Discovery tasks (repo, tech, business) are modeled as a parallel group in the planner state.
+Discovery tasks (repo, tech, and optional business) are modeled as a parallel group in the planner state.
 Each of these tasks carries a `parallel_group` identifier that links them as concurrent tracks.
 
 In practice:
@@ -163,7 +163,7 @@ In practice:
 - an agent that supports parallel tool use can run them simultaneously
 - the `plan.md` artifact renders parallel tracks as a labeled group for clarity
 
-The synthesis task has no `parallel_group` — it is sequentially dependent on all three discovery tracks completing first.
+The synthesis task has no `parallel_group` — it is sequentially dependent on the discovery tracks that were created for the goal.
 
 ## Researcher roles
 
@@ -260,7 +260,7 @@ reaches a reviewable final plan.
 
 1. `planner autoplan "<goal>"`
 2. planner classifies the goal and creates task templates
-3. planner runs repo, tech, and business researcher tasks
+3. planner runs repo, tech, and optional business researcher tasks
 4. planner runs synthesis
 5. planner generates slices
 6. planner writes `plan.md`

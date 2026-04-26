@@ -369,6 +369,20 @@ const NEW_FEATURE_KEYWORDS = ["add", "implement", "build", "create", "introduce"
 const REFACTOR_KEYWORDS = ["refactor", "restructur", "reorganiz", "clean", "simplif", "extract"];
 const INFRA_KEYWORDS = ["deploy", "infrastructure", "infra", "ci", "cd", "pipeline", "cloud", "kubernetes", "docker", "terraform", "provision"];
 const RESEARCH_KEYWORDS = ["research", "evaluat", "compare", "analyz", "investigat", "assess", "audit", "spike"];
+const MARKET_RESEARCH_PATTERNS = [
+  /\bmarket research\b/,
+  /\bmarket\b/,
+  /\bmercado\b/,
+  /\bpesquisa\s+de\s+mercado\b/,
+  /\bbenchmarks?\b/,
+  /\bcompetitors?\b/,
+  /\bconcorrentes?\b/,
+  /\bpricing\b/,
+  /\bprecos?\b/,
+  /\bregional\b/,
+  /\bregulatory\b/,
+  /\bregulatorio\b/,
+];
 
 export function classifyGoal(goal: string): DomainKind {
   const lower = goal.toLowerCase();
@@ -380,8 +394,18 @@ export function classifyGoal(goal: string): DomainKind {
   return "default";
 }
 
+export function shouldIncludeBusinessFlow(goal: string): boolean {
+  const normalized = goal
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  return MARKET_RESEARCH_PATTERNS.some((pattern) => pattern.test(normalized));
+}
+
 export function getTaskTemplates(goal: string): TaskTemplate[] {
-  return TEMPLATES[classifyGoal(goal)];
+  const templates = TEMPLATES[classifyGoal(goal)];
+  if (shouldIncludeBusinessFlow(goal)) return templates;
+  return templates.filter((template) => template.type !== "business");
 }
 
 export class KeywordClassifier implements IGoalClassifier {

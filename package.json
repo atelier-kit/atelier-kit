@@ -1,6 +1,6 @@
 {
   "name": "@atelier-kit/atelier-kit",
-  "version": "0.1.2.01",
+  "version": "0.1.2.1",
   "description": "Planner-first CLI for agent workflows (.atelier/)",
   "type": "module",
   "license": "MIT",

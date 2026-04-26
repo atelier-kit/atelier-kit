@@ -130,4 +130,4 @@ CLI: `atelier-kit status`, `atelier-kit return`, `atelier-kit handoff`, planner 
 
 ## CLI reference
 
-See `npx atelier-kit --help`.
+See `atelier-kit --help`.

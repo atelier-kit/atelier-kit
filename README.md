@@ -19,10 +19,11 @@ In planner workflow, the key primitives are:
 ## Install
 
 ```bash
-pnpm add -D @atelier-kit/atelier-kit
-# or
-npx @atelier-kit/atelier-kit@latest init
+npm install -g @atelier-kit/atelier-kit
 ```
+
+`atelier-kit` is intended to be used as a command-line tool. A global install
+makes the `atelier-kit` command available in your shell.
 
 ## Quickstart
 
@@ -32,7 +33,7 @@ This is the recommended starting point.
 
 ```bash
 cd your-repo
-npx atelier-kit init
+atelier-kit init
 atelier-kit planner autoplan "Migrate Python framework to PHP"
 atelier-kit planner present
 atelier-kit planner approve

@@ -95,4 +95,9 @@ export async function cmdInit(
       'Next: run `atelier-kit planner autoplan "your goal"`',
     ),
   );
+  console.log(
+    pc.dim(
+      'If `atelier-kit` is not found, install it globally with `npm install -g @atelier-kit/atelier-kit`.',
+    ),
+  );
 }

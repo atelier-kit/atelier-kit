@@ -159,7 +159,7 @@ End-to-end smoke test after step 4:
 
 ```bash
 mkdir /tmp/atk-test && cd /tmp/atk-test && git init
-npx atelier-kit init
-npx atelier-kit planner autoplan "add user authentication"
-npx atelier-kit status
+atelier-kit init
+atelier-kit planner autoplan "add user authentication"
+atelier-kit status
 ```

@@ -43,7 +43,7 @@ atelier-kit planner execute
 This path:
 
 1. creates planner state in `.atelier/context.md`
-2. turns the objective into repo, tech, and business research tasks
+2. turns the objective into repo and tech research tasks, adding business research only for market-research intent
 3. synthesizes those tracks into executable slices
 4. generates the review plan at `.atelier/plan/<slug-do-plano>/plan.md` (and mirrors it to `.atelier/artifacts/plan.md` for compatibility)
 5. stops for approval before implementation
@@ -66,7 +66,7 @@ atelier-kit uses a planner-oriented runtime in `.atelier/context.md`.
 Recommended relationship between entities:
 
 - **Epic** groups a larger initiative, such as "migrate Python framework to PHP".
-- **Task** captures work needed to understand or sequence the initiative, such as repo mapping, tech feasibility, business impact, or final synthesis.
+- **Task** captures work needed to understand or sequence the initiative, such as repo mapping, tech feasibility, optional market/business discovery, or final synthesis.
 - **Slice** is the output of planning: a vertical, executable delivery unit with acceptance checks and dependencies.
 
 In this model:
@@ -80,7 +80,7 @@ The default planner shape is:
 
 ```text
 objective
-  -> repo researcher + tech researcher + business researcher
+  -> repo researcher + tech researcher (+ business researcher for market research)
   -> synthesis / planner
   -> decision / designer
   -> plan.md + design.md
@@ -100,7 +100,7 @@ atelier-kit status
 
 The planner operates across two distinct moments:
 
-- **Autoplan**: run repo, tech, business, synthesis, and decision tasks until a final plan is ready for human validation
+- **Autoplan**: run repo, tech, optional business, synthesis, and decision tasks until a final plan is ready for human validation
 - **Execution**: only begins after approval and focuses approved slices in implementer mode
 
 ### Approval flow

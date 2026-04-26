@@ -53,9 +53,9 @@ sequenceDiagram
   Human->>CLI: atelier-kit planner autoplan "goal"
   CLI->>Planner: startPlannerGoal(goal)
   Planner->>Planner: classify goal and choose task template
-  Planner->>State: create epic + repo/tech/business/synthesis tasks
+  Planner->>State: create epic + repo/tech/(optional business)/synthesis tasks
 
-  loop discovery tasks (repo, tech, business)
+  loop discovery tasks (repo, tech, optional business)
     Planner->>State: focus current_task
     State->>Skills: route task type to skill
     Skills-->>Planner: evidence and task completion
@@ -96,17 +96,17 @@ Supported goal classes:
 - `research`
 - `default`
 
-Each template creates the same planning shape:
+Each template creates the same core planning shape. The `business` task is added only when the objective implies market research, competitor benchmarking, pricing, regional, or regulatory discovery.
 
 | Task type | Active skill | Purpose |
 |-----------|--------------|---------|
 | `repo` | `repo-analyst` | Map repository facts: entrypoints, contracts, dependencies, tests, persistence, and operational boundaries. |
 | `tech` | `tech-analyst` | Gather external evidence: platform constraints, APIs, versions, tradeoffs, compatibility, security, or migration risks. |
-| `business` | `business-analyst` | Clarify rollout, stakeholder impact, acceptance criteria, operational risk, and decision constraints. |
+| `business` | `business-analyst` | Optional track for market-research intent: clarify rollout, stakeholder impact, acceptance criteria, operational risk, and decision constraints. |
 | `synthesis` | `planner` | Converge the discovery tracks into executable slices, dependencies, risks, and acceptance checks. |
 | `decision` | `designer` | Document architectural boundaries, design approach, patterns, and open decisions in `design.md`. |
 
-The `repo`, `tech`, and `business` tasks receive a shared `parallel_group`.
+The `repo`, `tech`, and optional `business` tasks receive a shared `parallel_group`.
 That models them as parallel discovery tracks, even though the built-in
 `autoplan` command advances them sequentially.
 The `decision` task depends on synthesis and must be complete before approval.
@@ -138,7 +138,7 @@ stateDiagram-v2
   [*] --> idle
 
   idle --> planning: startPlannerGoal / add epic/task/slice
-  planning --> planning: repo, tech, business tasks
+  planning --> planning: repo, tech, optional business tasks
   planning --> planning: synthesis task
   planning --> awaiting_approval: synthesis done + current epic has slices
 

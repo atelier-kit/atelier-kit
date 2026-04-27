@@ -7,6 +7,10 @@ export const AdapterSchema = z.enum([
   "claude-code",
   "claude",
   "codex",
+  "gemini-cli",
+  "antigravity",
+  "kiro",
+  "kilo",
   "cline",
   "windsurf",
   "generic",
@@ -39,6 +43,7 @@ export const ApprovalStatusSchema = z.enum([
 ]);
 
 export const SkillSchema = z.enum([
+  "questioner",
   "repo-analyst",
   "tech-analyst",
   "business-analyst",
@@ -49,6 +54,7 @@ export const SkillSchema = z.enum([
 ]);
 
 export const TaskTypeSchema = z.enum([
+  "questions",
   "repo",
   "tech",
   "business",

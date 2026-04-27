@@ -19,11 +19,15 @@ export async function cmdInit(
         { title: "Cursor (.cursor/rules)", value: "cursor" },
         { title: "Claude Code", value: "claude-code" },
         { title: "Codex CLI", value: "codex" },
+        { title: "Gemini CLI", value: "gemini-cli" },
+        { title: "Antigravity", value: "antigravity" },
+        { title: "Kiro", value: "kiro" },
+        { title: "Kilo Code", value: "kilo" },
         { title: "Windsurf", value: "windsurf" },
         { title: "Cline", value: "cline" },
         { title: "Generic (atelier-system-prompt.txt)", value: "generic" },
       ],
-      initial: 5,
+      initial: 9,
     });
     if (typeof a.adapter === "string") adapter = AdapterSchema.parse(a.adapter);
 
@@ -49,7 +53,7 @@ export async function cmdInit(
   console.log(pc.dim(`Adapter: ${adapter}, default Atelier mode: ${mode}`));
   console.log(
     pc.dim(
-      'Next: use native `/plan ...`, or activate Atelier with `atelier new "your goal" --mode quick`.',
+      'Next: use native `/plan ...`, or activate Atelier with `/atelier plan ...` or `atelier new "your goal" --mode standard`.',
     ),
   );
   console.log(

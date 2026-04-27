@@ -89,8 +89,11 @@ Typical flow:
 
 ```text
 native
-  -> discovery
-  -> synthesis/design/planning
+  -> discovery/questioner
+  -> discovery/research
+  -> synthesis
+  -> design
+  -> planning
   -> awaiting_approval
   -> approved
   -> execution
@@ -138,6 +141,7 @@ named by `active_skill`.
 
 Examples:
 
+- `questioner` writes `questions.md`
 - `repo-analyst` writes `research/repo.md`
 - `planner` writes `synthesis.md`, `plan.md` and state updates
 - `implementer` executes only `current_slice`

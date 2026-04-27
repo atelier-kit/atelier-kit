@@ -68,6 +68,7 @@ export const WorkStatusSchema = z.enum([
 ]);
 
 export const TaskTypeSchema = z.enum([
+  "questions",
   "repo",
   "tech",
   "business",

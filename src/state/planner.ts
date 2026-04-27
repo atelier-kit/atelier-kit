@@ -257,6 +257,7 @@ function hasSliceForTask(meta: ContextMeta, taskId: string): boolean {
 
 function taskPriority(task: Task): number {
   const priorities: Record<Task["type"], number> = {
+    questions: 0,
     repo: 0,
     tech: 1,
     business: 2,

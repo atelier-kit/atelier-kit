@@ -1,8 +1,8 @@
 import pc from "picocolors";
-import { validateProtocol } from "../protocol/validator.js";
+import { doctorProtocol } from "../protocol/validator.js";
 
 export async function cmdDoctor(cwd: string): Promise<void> {
-  const result = await validateProtocol(cwd);
+  const result = await doctorProtocol(cwd);
   if (result.ok) {
     console.log(pc.green("doctor: Atelier protocol installation is healthy"));
     return;

@@ -1,34 +1,18 @@
-import { cp, mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname } from "node:path";
+import { cp, mkdir, readFile } from "node:fs/promises";
 import { getKitRoot } from "../paths.js";
 import { writeJson } from "./state.js";
 import {
-  adapterRule,
-  coreRule,
   defaultAtelierConfig,
-  gatesYaml,
   inactiveState,
-  modesYaml,
-  schemaFiles,
-  skillBody,
-  skillsYaml,
-  SKILLS,
-  STANDARD_ADAPTERS,
-  workflowYaml,
 } from "./templates.js";
 import type { AdapterName, AtelierMode } from "./schema.js";
 import { atelierPath, activeStatePath, atelierConfigPath } from "./paths.js";
 import { installAdapter } from "../adapters/index.js";
 import type { AdapterName as LegacyAdapterName } from "../adapters/types.js";
 
-async function writeText(path: string, content: string): Promise<void> {
-  await mkdir(dirname(path), { recursive: true });
-  await writeFile(path, content.endsWith("\n") ? content : `${content}\n`, "utf8");
-}
-
 async function copyBundledKit(cwd: string): Promise<void> {
   const kit = getKitRoot();
-  await cp(kit, atelierPath(cwd), { recursive: true, force: true }).catch(() => {});
+  await cp(kit, atelierPath(cwd), { recursive: true, force: true });
 }
 
 export async function initializeProtocol(cwd: string, options?: {
@@ -43,26 +27,9 @@ export async function initializeProtocol(cwd: string, options?: {
   await writeJson(atelierConfigPath(cwd), defaultAtelierConfig(adapter, mode));
   await writeJson(activeStatePath(cwd), inactiveState());
 
-  await writeText(atelierPath(cwd, "protocol", "workflow.yaml"), workflowYaml);
-  await writeText(atelierPath(cwd, "protocol", "gates.yaml"), gatesYaml);
-  await writeText(atelierPath(cwd, "protocol", "modes.yaml"), modesYaml);
-  await writeText(atelierPath(cwd, "protocol", "skills.yaml"), skillsYaml);
-
-  await writeText(atelierPath(cwd, "rules", "core.md"), coreRule());
-  for (const name of STANDARD_ADAPTERS) {
-    await writeText(atelierPath(cwd, "rules", "adapters", `${name}.md`), adapterRule(name));
-  }
-
-  for (const skill of SKILLS) {
-    await writeText(atelierPath(cwd, "skills", `${skill}.md`), skillBody(skill));
-  }
-
-  for (const [name, content] of Object.entries(schemaFiles())) {
-    await writeText(atelierPath(cwd, "schemas", name), content);
-  }
   await installAdapter(
     cwd,
-    (adapter === "claude-code" ? "claude" : adapter) as LegacyAdapterName,
+    adapter as LegacyAdapterName,
   );
   return { atelierDir: atelierPath(cwd) };
 }

@@ -6,6 +6,7 @@ export function atelierCommandProtocol(): string {
 - Use \`atelier new "<goal>" --mode quick|standard|deep\` to create an epic ledger.
 - Read \`.atelier/active.json\` and \`.atelier/epics/<active_epic>/state.json\` when active.
 - Stop at \`awaiting_approval\`; use \`atelier approve\` only after the before_approval gate passes.
+- Use \`atelier next\` and \`atelier done\` to advance discovery/design/planning tasks.
 - Use \`atelier execute\`, \`atelier done\`, and \`atelier next\` to execute approved slices one at a time.`;
 }
 
@@ -28,4 +29,3 @@ ${atelierStateReminder()}
 
 When Atelier is active, load only the skill named by \`active_skill\` and do not edit project code unless the active epic is in \`execution\` with approved approval status.`;
 }
-

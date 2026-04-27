@@ -16,7 +16,6 @@ export async function cmdInstallAdapter(
   }
   const config = await readAtelierConfig(cwd);
   await writeAtelierConfig(cwd, { ...config, adapter: parsed.data });
-  const legacyAdapter = parsed.data === "claude-code" ? "claude" : parsed.data;
-  await installAdapter(cwd, legacyAdapter as LegacyAdapterName);
+  await installAdapter(cwd, parsed.data as LegacyAdapterName);
   console.log(pc.green(`Installed adapter: ${parsed.data}`));
 }

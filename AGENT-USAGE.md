@@ -71,7 +71,8 @@ Expected behavior:
 Expected behavior:
 
 - create an epic ledger;
-- create `questions.md`, `research/repo.md`, and `plan.md`;
+- focus `questioner` first and replace generic `questions.md` placeholders;
+- create `research/repo.md` and `plan.md`;
 - stop in `awaiting_approval`;
 - wait for human approval before code changes.
 
@@ -84,7 +85,9 @@ Expected behavior:
 Expected behavior:
 
 - create the active epic;
-- complete repo, tech, and business research;
+- complete project-specific questions first;
+- complete repo and tech research;
+- use business research when product/stakeholder impact is material;
 - write synthesis, decisions, design, and plan artifacts;
 - define slices with allowed files, acceptance criteria, and validation;
 - stop for approval.
@@ -98,6 +101,7 @@ Expected behavior:
 Expected behavior:
 
 - follow the standard flow;
+- require business research;
 - add risk register, rollback, test strategy, and critique artifacts;
 - require approval before execution.
 

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Atelier plan markdown expectations",
+  "type": "object",
+  "properties": {
+    "required_headings": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "Goal",
+          "Mode",
+          "Evidence Summary",
+          "Assumptions",
+          "Risks",
+          "Slices",
+          "Approval"
+        ]
+      }
+    },
+    "slice_required_sections": {
+      "type": "array",
+      "items": {
+        "enum": ["Goal", "Allowed files", "Acceptance criteria", "Validation"]
+      }
+    }
+  }
+}

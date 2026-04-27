@@ -94,6 +94,7 @@ export function phaseToSkillFolder(phase: Phase): string | null {
 
 export function taskTypeToSkillFolder(taskType: TaskType): string {
   const map: Record<TaskType, string> = {
+    questions: "questioner",
     repo: "repo-analyst",
     tech: "tech-analyst",
     business: "business-analyst",

@@ -21,8 +21,22 @@ async function writeAdapterRule(cwd: string, adapter: AdapterName, rendered: str
       await write("CLAUDE.md");
       break;
     case "codex":
-    case "generic":
       await write("AGENTS.md");
+      break;
+    case "gemini-cli":
+      await write("GEMINI.md");
+      break;
+    case "antigravity":
+      await write(".antigravity/atelier.md");
+      break;
+    case "kiro":
+      await write(".kiro/steering/atelier.md");
+      break;
+    case "kilo":
+      await write(".kilocode/rules/atelier.md");
+      break;
+    case "generic":
+      await write("atelier-system-prompt.txt");
       break;
     case "cline":
       await write(".clinerules/atelier-core.md");

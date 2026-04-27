@@ -12,12 +12,17 @@ export const STANDARD_ADAPTERS: AdapterName[] = [
   "claude-code",
   "claude",
   "codex",
+  "gemini-cli",
+  "antigravity",
+  "kiro",
+  "kilo",
   "cline",
   "windsurf",
   "generic",
 ];
 
 export const SKILLS: SkillName[] = [
+  "questioner",
   "repo-analyst",
   "tech-analyst",
   "business-analyst",
@@ -87,7 +92,6 @@ export function requiredArtifactsForMode(
     "questions.md",
     "research/repo.md",
     "research/tech.md",
-    "research/business.md",
     "synthesis.md",
     "decisions.md",
     "design.md",
@@ -97,7 +101,9 @@ export function requiredArtifactsForMode(
   ];
   if (mode === "standard") return standard;
   return [
-    ...standard.slice(0, 7),
+    ...standard.slice(0, 3),
+    "research/business.md",
+    ...standard.slice(3, 6),
     "risk-register.md",
     "rollback.md",
     "test-strategy.md",
@@ -123,7 +129,7 @@ export function defaultEpicState(params: {
     goal: params.goal,
     mode: params.mode,
     status: "discovery",
-    active_skill: "repo-analyst",
+    active_skill: "questioner",
     current_slice: null,
     approval: {
       status: "none",
@@ -151,6 +157,12 @@ export function defaultEpicState(params: {
 function tasksForMode(mode: Exclude<AtelierMode, "native">): EpicState["tasks"] {
   const tasks: EpicState["tasks"] = [
     {
+      id: "questions",
+      type: "questions",
+      status: "pending",
+      artifact: "questions.md",
+    },
+    {
       id: "repo-research",
       type: "repo",
       status: "pending",
@@ -165,12 +177,18 @@ function tasksForMode(mode: Exclude<AtelierMode, "native">): EpicState["tasks"] 
         status: "pending",
         artifact: "research/tech.md",
       },
-      {
-        id: "business-research",
-        type: "business",
-        status: "pending",
-        artifact: "research/business.md",
-      },
+    );
+    if (mode === "deep") {
+      tasks.push(
+        {
+          id: "business-research",
+          type: "business",
+          status: "pending",
+          artifact: "research/business.md",
+        },
+      );
+    }
+    tasks.push(
       {
         id: "synthesis",
         type: "synthesis",
@@ -312,6 +330,42 @@ When active:
 
 export function skillBody(skill: SkillName): string {
   const bodies: Record<SkillName, string> = {
+    questioner: `# Questioner
+
+## Mission
+
+Create project-specific planning questions before research starts.
+
+## Inputs
+
+- \`.atelier/active.json\`
+- Active epic \`state.json\`
+- Epic title and goal
+
+## Allowed reads
+
+- \`.atelier/epics/<epic>/state.json\`
+- Repository root docs/config for shallow orientation
+
+## Allowed writes
+
+- \`.atelier/epics/<epic>/questions.md\`
+- \`.atelier/epics/<epic>/state.json\`
+
+## Forbidden actions
+
+- Do not edit project code.
+- Do not perform deep research.
+- Do not create slices.
+
+## Output format
+
+Write project-specific questions grouped by scope, architecture, data, auth, deploy, tests and risks.
+
+## Completion criteria
+
+\`questions.md\` contains project-specific questions or an explicit no-open-questions section.
+`,
     "repo-analyst": `# Repo Analyst
 
 ## Mission
@@ -780,7 +834,6 @@ export const modesYaml = `modes:
       - questions.md
       - research/repo.md
       - research/tech.md
-      - research/business.md
       - synthesis.md
       - decisions.md
       - design.md
@@ -790,7 +843,7 @@ export const modesYaml = `modes:
     research_tracks:
       repo: required
       tech: required
-      business: required
+      business: optional
   deep:
     description: High-risk architectural or product change.
     required_artifacts:
@@ -1040,4 +1093,3 @@ export function schemaFile(name: string): string {
   };
   return `${JSON.stringify(schemas[name] ?? base, null, 2)}\n`;
 }
-

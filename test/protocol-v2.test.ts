@@ -9,6 +9,7 @@ import {
   cmdApprove,
   cmdDone,
   cmdExecute,
+  cmdNext,
   cmdPause,
   cmdResume,
 } from "../src/commands/lifecycle.js";
@@ -50,8 +51,132 @@ describe("atelier v2 protocol", () => {
 
     const state = await readEpicState(dir, "add-payment-endpoint");
     expect(state.status).toBe("discovery");
+    expect(state.active_skill).toBe("questioner");
     expect(state.allowed_actions.write_project_code).toBe(false);
     expect(await readFile(join(dir, ".atelier", "epics", state.epic_id, "plan.md"), "utf8")).toContain("Status: pending");
+  });
+
+  test("standard mode treats business research as optional", async () => {
+    const dir = await initialized();
+    await cmdNew(dir, "Add payment endpoint", { mode: "standard" });
+
+    const state = await readEpicState(dir, "add-payment-endpoint");
+    expect(state.tasks[0]?.id).toBe("questions");
+    expect(state.required_artifacts).toContain("research/repo.md");
+    expect(state.required_artifacts).toContain("research/tech.md");
+    expect(state.required_artifacts).not.toContain("research/business.md");
+    expect(state.tasks.some((task) => task.id === "business-research")).toBe(false);
+  });
+
+  test("deep mode keeps business research required", async () => {
+    const dir = await initialized();
+    await cmdNew(dir, "Migrate auth to SSO", { mode: "deep" });
+
+    const state = await readEpicState(dir, "migrate-auth-to-sso");
+    expect(state.required_artifacts).toContain("research/business.md");
+    expect(state.tasks.some((task) => task.id === "business-research")).toBe(true);
+  });
+
+  test("next and done advance planning tasks without skipping designer", async () => {
+    const dir = await initialized();
+    await cmdNew(dir, "Add payment endpoint", { mode: "standard" });
+
+    await cmdNext(dir);
+    let state = await readEpicState(dir, "add-payment-endpoint");
+    expect(state.status).toBe("discovery");
+    expect(state.active_skill).toBe("questioner");
+    expect(state.tasks.find((task) => task.id === "questions")?.status).toBe("in_progress");
+
+    await cmdDone(dir);
+    expect(process.exitCode).toBe(1);
+    process.exitCode = 0;
+
+    await writeFile(join(dir, ".atelier", "epics", state.epic_id, "questions.md"), [
+      "# Questions: Add payment endpoint",
+      "",
+      "## Critical Questions",
+      "",
+      "- [scope] Which payment operation is in scope?",
+      "",
+    ].join("\n"), "utf8");
+    await cmdDone(dir);
+    state = await readEpicState(dir, "add-payment-endpoint");
+    expect(state.active_skill).toBe("repo-analyst");
+    expect(state.tasks.find((task) => task.id === "questions")?.status).toBe("done");
+    expect(state.tasks.find((task) => task.id === "repo-research")?.status).toBe("in_progress");
+
+    await writeFile(join(dir, ".atelier", "epics", state.epic_id, "research", "repo.md"), "# Repo\n\nEvidence.\n", "utf8");
+    await cmdDone(dir);
+    state = await readEpicState(dir, "add-payment-endpoint");
+    expect(state.active_skill).toBe("tech-analyst");
+
+    await writeFile(join(dir, ".atelier", "epics", state.epic_id, "research", "tech.md"), "# Tech\n\nEvidence.\n", "utf8");
+    await cmdDone(dir);
+    state = await readEpicState(dir, "add-payment-endpoint");
+    expect(state.status).toBe("synthesis");
+    expect(state.active_skill).toBe("planner");
+
+    await writeFile(join(dir, ".atelier", "epics", state.epic_id, "synthesis.md"), "# Synthesis\n\nEvidence.\n", "utf8");
+    await cmdDone(dir);
+    state = await readEpicState(dir, "add-payment-endpoint");
+    expect(state.status).toBe("design");
+    expect(state.active_skill).toBe("designer");
+
+    await cmdDone(dir);
+    expect(process.exitCode).toBe(1);
+    process.exitCode = 0;
+    state = await readEpicState(dir, "add-payment-endpoint");
+    expect(state.status).toBe("design");
+
+    await writeFile(join(dir, ".atelier", "epics", state.epic_id, "decisions.md"), "# Decisions\n\n- Use existing route pattern.\n", "utf8");
+    await writeFile(join(dir, ".atelier", "epics", state.epic_id, "design.md"), "# Design\n\nUse existing architecture.\n", "utf8");
+    await cmdDone(dir);
+    state = await readEpicState(dir, "add-payment-endpoint");
+    expect(state.status).toBe("planning");
+    expect(state.active_skill).toBe("planner");
+  });
+
+  test("validate catches skipped designer and wrong task artifact", async () => {
+    const dir = await initialized();
+    await cmdNew(dir, "Add payment endpoint", { mode: "standard" });
+    const state = await readEpicState(dir, "add-payment-endpoint");
+    state.status = "discovery";
+    state.active_skill = "designer";
+    state.approval.status = "pending";
+    state.tasks = state.tasks.map((task) =>
+      task.id === "design"
+        ? { ...task, status: "done" as const, artifact: "plan.md" }
+        : task,
+    );
+    state.tasks = state.tasks.map((task) =>
+      task.id === "repo-research"
+        ? { ...task, status: "done" as const }
+        : task,
+    );
+    state.slices = [
+      {
+        id: "slice-001",
+        title: "Route",
+        status: "ready",
+        goal: "Add route",
+        depends_on: [],
+        allowed_files: ["src/**"],
+        acceptance_criteria: ["Returns expected response"],
+        validation: ["Run tests"],
+      },
+    ];
+    await writeEpicState(dir, state);
+    const active = await readActiveState(dir);
+    active.active_phase = "discovery";
+    active.active_skill = "designer";
+    await writeActiveState(dir, active);
+
+    const report = await validateProtocol(dir);
+    expect(report.ok).toBe(false);
+    expect(report.errors.join("\n")).toContain("discovery requires active_skill in [questioner, repo-analyst, tech-analyst, business-analyst]");
+    expect(report.errors.join("\n")).toContain("approval.status=pending requires status=awaiting_approval");
+    expect(report.errors.join("\n")).toContain("task design (design) must write design.md, not plan.md");
+    expect(report.errors.join("\n")).toContain("task repo-research cannot start before questions are done");
   });
 
   test("validate treats inactive state as native mode", async () => {

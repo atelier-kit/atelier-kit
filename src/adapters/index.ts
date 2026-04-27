@@ -6,6 +6,10 @@ import { applyCodex } from "./codex.js";
 import { applyWindsurf } from "./windsurf.js";
 import { applyGeneric } from "./generic.js";
 import { applyCline } from "./cline.js";
+import { applyGeminiCli } from "./gemini-cli.js";
+import { applyAntigravity } from "./antigravity.js";
+import { applyKiro } from "./kiro.js";
+import { applyKilo } from "./kilo.js";
 import { readAtelierConfig } from "../protocol/state.js";
 import { readAtelierRc } from "../state/atelierrc.js";
 
@@ -15,6 +19,7 @@ export async function installAdapter(
 ): Promise<void> {
   const base = atelierDir(cwd);
   switch (adapter) {
+    case "claude-code":
     case "claude":
       await applyClaude(cwd, base);
       break;
@@ -23,6 +28,18 @@ export async function installAdapter(
       break;
     case "codex":
       await applyCodex(cwd, base);
+      break;
+    case "gemini-cli":
+      await applyGeminiCli(cwd, base);
+      break;
+    case "antigravity":
+      await applyAntigravity(cwd, base);
+      break;
+    case "kiro":
+      await applyKiro(cwd, base);
+      break;
+    case "kilo":
+      await applyKilo(cwd, base);
       break;
     case "windsurf":
       await applyWindsurf(cwd, base);
@@ -43,7 +60,7 @@ export async function refreshFallbackAdapters(cwd: string): Promise<void> {
   let adapter: AdapterName;
   try {
     const config = await readAtelierConfig(cwd);
-    adapter = (config.adapter === "claude-code" ? "claude" : config.adapter) as AdapterName;
+    adapter = config.adapter as AdapterName;
   } catch {
     try {
       const rc = await readAtelierRc(cwd);
@@ -56,7 +73,11 @@ export async function refreshFallbackAdapters(cwd: string): Promise<void> {
     adapter === "generic" ||
     adapter === "windsurf" ||
     adapter === "codex" ||
-    adapter === "cline"
+    adapter === "cline" ||
+    adapter === "gemini-cli" ||
+    adapter === "antigravity" ||
+    adapter === "kiro" ||
+    adapter === "kilo"
   ) {
     await installAdapter(cwd, adapter);
   }

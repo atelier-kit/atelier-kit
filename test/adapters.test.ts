@@ -1,5 +1,5 @@
 import { describe, expect, test, afterEach } from "vitest";
-import { readFile } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { cmdInit } from "../src/commands/init.js";
 import { cmdInstallAdapter } from "../src/commands/install-adapter.js";
@@ -27,7 +27,7 @@ describe("agent adapters include planner protocol", () => {
     const prompt = await readFile(join(path, "atelier-system-prompt.txt"), "utf8");
     expect(prompt).toContain("/atelier quick");
     expect(prompt).toContain(".atelier/active.json");
-    expect(prompt).toContain("active_skill: repo-analyst");
+    expect(prompt).toContain("active_skill: questioner");
   });
 
   test("cursor adapter renders workspace rules", async () => {
@@ -69,8 +69,43 @@ describe("agent adapters include planner protocol", () => {
     await cmdInit(path, { yes: true });
     await cmdRenderRules(path, "generic");
 
-    const agents = await readFile(join(path, "AGENTS.md"), "utf8");
+    const agents = await readFile(join(path, "atelier-system-prompt.txt"), "utf8");
     expect(agents).toContain("Atelier-Kit is inactive by default");
     expect(agents).toContain("/atelier quick");
+  });
+
+  test("claude adapter installs command spec and mirrored skills", async () => {
+    const { path, cleanup: c } = await tempDir();
+    cleanup = c;
+    process.env.ATELIER_KIT_ROOT = kitPath();
+
+    await cmdInit(path, { yes: true });
+    await cmdInstallAdapter(path, "claude-code");
+
+    const claude = await readFile(join(path, "CLAUDE.md"), "utf8");
+    const command = await readFile(join(path, ".claude", "commands", "atelier.md"), "utf8");
+    await access(join(path, ".claude", "skills", "atelier", "planner.md"));
+
+    expect(claude).toContain("/plan ...");
+    expect(claude).toContain("/atelier plan");
+    expect(command).toContain('atelier new "<goal>" --mode standard');
+  });
+
+  test.each([
+    ["gemini-cli", "GEMINI.md"],
+    ["antigravity", ".antigravity/atelier.md"],
+    ["kiro", ".kiro/steering/atelier.md"],
+    ["kilo", ".kilocode/rules/atelier.md"],
+  ])("%s adapter installs its market-agent rule file", async (adapter, file) => {
+    const { path, cleanup: c } = await tempDir();
+    cleanup = c;
+    process.env.ATELIER_KIT_ROOT = kitPath();
+
+    await cmdInit(path, { yes: true });
+    await cmdInstallAdapter(path, adapter);
+
+    const rules = await readFile(join(path, file), "utf8");
+    expect(rules).toContain("Atelier-Kit is an opt-in planning protocol");
+    expect(rules).toContain("/atelier quick");
   });
 });

@@ -107,7 +107,7 @@ export async function createEpic(cwd: string, params: {
 }
 
 export function skillForStatus(status: string): SkillName | null {
-  if (status === "discovery") return "repo-analyst";
+  if (status === "discovery") return "questioner";
   if (status === "synthesis" || status === "planning" || status === "awaiting_approval") return "planner";
   if (status === "design") return "designer";
   if (status === "execution") return "implementer";

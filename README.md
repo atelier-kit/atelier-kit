@@ -27,7 +27,8 @@ approval and execution mode.
 In Atelier protocol mode, the key primitives are:
 
 - **epic**: the business or technical initiative being planned
-- **task**: a unit of discovery, analysis, decision, or implementation planning
+- **question**: the first planning artifact; research cannot start while it is generic
+- **task**: a unit of questions, discovery, analysis, decision, or implementation planning
 - **slice**: a vertical delivery cut derived from planning tasks and executed end-to-end
 
 **Not affiliated with HumanLayer.** See [CREDITS.md](./CREDITS.md).
@@ -39,7 +40,8 @@ npm install -g @atelier-kit/atelier-kit
 ```
 
 `atelier-kit` is intended to be used as a command-line tool. A global install
-makes the `atelier-kit` command available in your shell.
+makes the `atelier` command available in your shell. The legacy `atelier-kit`
+binary remains available.
 
 ## Quickstart
 
@@ -113,7 +115,9 @@ The default protocol shape is:
 explicit activation
   -> .atelier/active.json
   -> .atelier/epics/<epic>/state.json
-  -> questions and research artifacts
+  -> questioner writes questions.md
+  -> research artifacts
+  -> design decisions
   -> plan.md with slices
   -> awaiting_approval
   -> approved execution, one slice at a time
@@ -125,6 +129,8 @@ explicit activation
 | Command | Purpose |
 |---------|---------|
 | `atelier init` | Install the Atelier protocol files |
+| `atelier install-adapter <name>` | Install adapter files for a host agent |
+| `atelier adapter install <name>` | Alias for adapter installation |
 | `atelier new "<goal>" --mode quick` | Create an active epic ledger |
 | `atelier status` | Show active protocol state |
 | `atelier validate` | Validate schemas, state, gates and premature diffs |
@@ -144,14 +150,20 @@ explicit activation
 `atelier render-rules --adapter <name>` writes the protocol rules for the
 selected host:
 
-| Agent | Output |
-|-------|--------|
-| Claude Code | `CLAUDE.md` |
-| Cursor | `.cursor/rules/atelier-core.mdc` |
-| Codex CLI | `AGENTS.md` |
-| Windsurf | `.windsurfrules` |
-| Cline | `.clinerules/atelier-core.md` |
-| Generic | `AGENTS.md` |
+| Agent | Adapter | Output |
+|-------|---------|--------|
+| Claude Code | `claude-code` | `CLAUDE.md`, `.claude/commands/atelier.md`, `.claude/skills/atelier/*.md` |
+| Cursor | `cursor` | `.cursor/rules/atelier-core.mdc` |
+| Codex CLI | `codex` | `AGENTS.md` |
+| Gemini CLI | `gemini-cli` | `GEMINI.md` |
+| Antigravity | `antigravity` | `.antigravity/atelier.md` |
+| Kiro | `kiro` | `.kiro/steering/atelier.md` |
+| Kilo Code | `kilo` | `.kilocode/rules/atelier.md` |
+| Windsurf | `windsurf` | `.windsurfrules` |
+| Cline | `cline` | `.clinerules/atelier-core.md` |
+| Generic | `generic` | `atelier-system-prompt.txt` |
+
+See [ADAPTERS.md](./ADAPTERS.md) for the adapter capability matrix.
 
 ## License
 

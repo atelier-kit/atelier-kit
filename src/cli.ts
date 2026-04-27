@@ -67,7 +67,7 @@ program
 program
   .command("render-rules")
   .description("Render core + adapter rules")
-  .requiredOption("--adapter <name>", "cursor|claude-code|codex|cline|windsurf|generic")
+  .requiredOption("--adapter <name>", "cursor|claude-code|codex|gemini-cli|antigravity|kiro|kilo|cline|windsurf|generic")
   .option("--stdout", "Print rules instead of writing adapter files")
   .action(async (opts: { adapter: string; stdout?: boolean }) => {
     await cmdRenderRules(processCwd(), opts.adapter, { stdout: opts.stdout });
@@ -134,7 +134,16 @@ program
 
 program
   .command("install-adapter <name>")
-  .description("claude-code | claude | cursor | codex | windsurf | cline | generic")
+  .description("claude-code | claude | cursor | codex | gemini-cli | antigravity | kiro | kilo | windsurf | cline | generic")
+  .action(async (name: string) => {
+    await cmdInstallAdapter(processCwd(), name);
+  });
+
+program
+  .command("adapter")
+  .description("Adapter helpers")
+  .command("install <name>")
+  .description("Install adapter files for an agent")
   .action(async (name: string) => {
     await cmdInstallAdapter(processCwd(), name);
   });

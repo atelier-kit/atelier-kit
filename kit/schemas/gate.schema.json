@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Atelier gate contracts",
+  "definitions": {
+    "approval": {
+      "type": "object",
+      "required": ["status", "approved_by", "approved_at", "notes"],
+      "properties": {
+        "status": { "enum": ["none", "pending", "approved", "rejected"] },
+        "approved_by": { "type": ["string", "null"] },
+        "approved_at": { "type": ["string", "null"] },
+        "notes": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

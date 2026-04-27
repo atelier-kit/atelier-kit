@@ -1,17 +1,12 @@
 import { join } from "node:path";
 import { writeText } from "../fs-utils.js";
-import { adapterInstruction, activationReminder } from "./common.js";
+import { renderAdapterBody } from "./adapter-utils.js";
 
 export async function applyWindsurf(
   cwd: string,
   _atelier: string,
 ): Promise<void> {
-  const rules = `# atelier-kit — .windsurfrules
-
-${activationReminder()}
-
-${adapterInstruction()}
-`;
+  const rules = await renderAdapterBody(cwd, "windsurf", "atelier-kit — .windsurfrules");
 
   await writeText(join(cwd, ".windsurfrules"), rules);
 }

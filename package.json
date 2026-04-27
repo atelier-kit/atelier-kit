@@ -27,6 +27,10 @@
   "files": [
     "dist",
     "kit",
+    "ADAPTERS.md",
+    "AGENT-USAGE.md",
+    "ARCHITECTURE.md",
+    "PROTOCOL.md",
     "LICENSE",
     "CREDITS.md"
   ],

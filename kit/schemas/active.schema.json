@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Atelier active state",
+  "type": "object",
+  "required": [
+    "active",
+    "mode",
+    "active_epic",
+    "active_phase",
+    "active_skill",
+    "updated_at"
+  ],
+  "properties": {
+    "active": { "type": "boolean" },
+    "mode": { "enum": ["native", "atelier"] },
+    "active_epic": { "type": ["string", "null"], "minLength": 1 },
+    "active_phase": {
+      "type": ["string", "null"],
+      "enum": [
+        "native",
+        "idle",
+        "discovery",
+        "synthesis",
+        "design",
+        "planning",
+        "awaiting_approval",
+        "approved",
+        "execution",
+        "review",
+        "done",
+        "blocked",
+        "paused",
+        null
+      ]
+    },
+    "active_skill": {
+      "type": ["string", "null"],
+      "enum": [
+        "questioner",
+        "repo-analyst",
+        "tech-analyst",
+        "business-analyst",
+        "planner",
+        "designer",
+        "implementer",
+        "reviewer",
+        null
+      ]
+    },
+    "updated_at": { "type": ["string", "null"] }
+  }
+}

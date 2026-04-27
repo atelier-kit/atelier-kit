@@ -47,6 +47,18 @@ atelier resume
 atelier off
 ```
 
+## Planning order
+
+Every Atelier epic starts with questions.
+
+```text
+questioner -> repo-analyst -> tech-analyst -> [business-analyst] -> designer -> planner
+```
+
+`questioner` writes `questions.md` before research starts. The file may be
+refined later, but it cannot remain as the generic seed questions once the
+questions task is marked done.
+
 ## Approval invariant
 
 Project code can be edited only when:

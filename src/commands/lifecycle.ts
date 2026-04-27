@@ -1,9 +1,14 @@
 import pc from "picocolors";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { readActiveEpic, readActiveState, readEpicState, writeActiveState, writeEpicState } from "../protocol/state.js";
+import { epicDir } from "../protocol/paths.js";
 import { inactiveState } from "../protocol/templates.js";
 import { firstReadySlice } from "../protocol/epic.js";
 import { validateBeforeApproval } from "../protocol/validator.js";
-import type { AtelierStatus, EpicState, SkillName } from "../protocol/schema.js";
+import type { AtelierStatus, EpicState, ProtocolSlice, SkillName } from "../protocol/schema.js";
+
+type ProtocolTask = EpicState["tasks"][number];
 
 function inferResumeState(state: EpicState): { status: AtelierStatus; skill: SkillName } {
   if (state.approval.status === "approved") {
@@ -54,6 +59,110 @@ async function runLifecycle(
   } catch (error) {
     console.error(pc.red((error as Error).message));
     process.exitCode = 1;
+  }
+}
+
+function taskSkill(task: ProtocolTask): SkillName {
+  switch (task.type) {
+    case "questions":
+      return "questioner";
+    case "repo":
+      return "repo-analyst";
+    case "tech":
+      return "tech-analyst";
+    case "business":
+      return "business-analyst";
+    case "design":
+      return "designer";
+    case "implementation":
+      return "implementer";
+    case "review":
+      return "reviewer";
+    case "synthesis":
+    case "planning":
+      return "planner";
+  }
+}
+
+function taskStatus(task: ProtocolTask): AtelierStatus {
+  switch (task.type) {
+    case "questions":
+    case "repo":
+    case "tech":
+    case "business":
+      return "discovery";
+    case "synthesis":
+      return "synthesis";
+    case "design":
+      return "design";
+    case "planning":
+      return "planning";
+    case "implementation":
+      return "execution";
+    case "review":
+      return "review";
+  }
+}
+
+function focusTask(state: EpicState, task: ProtocolTask): void {
+  task.status = "in_progress";
+  state.status = taskStatus(task);
+  state.active_skill = taskSkill(task);
+  state.current_slice = null;
+  state.allowed_actions.write_project_code = false;
+  state.allowed_actions.run_tests = false;
+}
+
+function currentPlanningTask(state: EpicState): ProtocolTask | null {
+  const active = state.tasks.find((task) => task.status === "in_progress");
+  if (active) return active;
+  return state.tasks.find((task) => {
+    if (task.status !== "pending") return false;
+    return taskStatus(task) === state.status && taskSkill(task) === state.active_skill;
+  }) ?? null;
+}
+
+function nextPlanningTask(state: EpicState): ProtocolTask | null {
+  return state.tasks.find((task) => task.status === "pending") ?? null;
+}
+
+function normalizeExecutingSlice(slice: ProtocolSlice): void {
+  slice.status = "executing";
+}
+
+function artifactLooksPending(content: string): boolean {
+  const normalized = content.trim();
+  return /^# .+\n\nPending\.?$/i.test(normalized) ||
+    /^# .+\n\n_Pending\b/i.test(normalized) ||
+    /\b_Pending\._/i.test(normalized);
+}
+
+function questionsLookGenericOnly(content: string): boolean {
+  const lower = content.toLowerCase();
+  const hasSeedRepo = lower.includes("which existing files and patterns constrain this work");
+  const hasSeedTech = lower.includes("which framework or dependency constraints need verification");
+  const hasSeedBusiness = lower.includes("what user-visible outcomes and edge cases define success");
+  const hasExplicitNoOpen = /##\s+(no open questions|sem perguntas abertas)\b/i.test(content);
+  const hasSpecificQuestionSection = /##\s+.+(questions|perguntas|unknowns|incertezas)/i.test(content) &&
+    !/##\s+perguntas geradas automaticamente/i.test(content);
+  return hasSeedRepo && hasSeedTech && hasSeedBusiness && !hasExplicitNoOpen && !hasSpecificQuestionSection;
+}
+
+async function assertTaskArtifactComplete(cwd: string, state: EpicState, task: ProtocolTask): Promise<void> {
+  const artifacts = task.type === "design"
+    ? ["decisions.md", "design.md"]
+    : [task.artifact];
+  const pending: string[] = [];
+  for (const artifact of artifacts) {
+    const content = await readFile(join(epicDir(cwd, state.epic_id), artifact), "utf8")
+      .catch(() => "");
+    if (!content || artifactLooksPending(content)) pending.push(artifact);
+    if (task.type === "questions" && questionsLookGenericOnly(content)) {
+      pending.push(`${artifact} is still generic`);
+    }
+  }
+  if (pending.length > 0) {
+    throw new Error(`Cannot mark ${task.id} done; artifact is incomplete: ${pending.join(", ")}`);
   }
 }
 
@@ -113,9 +222,19 @@ export async function cmdExecute(cwd: string): Promise<void> {
 }
 
 export async function cmdNext(cwd: string): Promise<void> {
-  await runLifecycle(cwd, "next slice", (state) => {
+  await runLifecycle(cwd, "next", (state) => {
     if (state.status !== "execution") {
-      throw new Error("`atelier next` is only available during execution.");
+      const next = nextPlanningTask(state);
+      if (!next) {
+        if (state.status === "awaiting_approval") {
+          throw new Error("Plan is awaiting approval. Use `atelier approve` or `atelier reject`.");
+        }
+        state.status = "planning";
+        state.active_skill = "planner";
+        return;
+      }
+      focusTask(state, next);
+      return;
     }
     const current = state.slices.find((slice) => slice.id === state.current_slice);
     if (current && current.status === "executing") current.status = "needs-review";
@@ -128,20 +247,20 @@ export async function cmdNext(cwd: string): Promise<void> {
       state.allowed_actions.run_tests = true;
       return;
     }
-    next.status = "executing";
+    normalizeExecutingSlice(next);
     state.current_slice = next.id;
     state.active_skill = "implementer";
   });
 }
 
 export async function cmdDone(cwd: string): Promise<void> {
-  await runLifecycle(cwd, "done", (state) => {
+  await runLifecycle(cwd, "done", async (state) => {
     if (state.status === "execution" && state.current_slice) {
       const current = state.slices.find((slice) => slice.id === state.current_slice);
       if (current) current.status = "done";
       const next = firstReadySlice(state);
       if (next) {
-        next.status = "executing";
+        normalizeExecutingSlice(next);
         state.current_slice = next.id;
         state.status = "execution";
         state.active_skill = "implementer";
@@ -160,7 +279,37 @@ export async function cmdDone(cwd: string): Promise<void> {
       state.allowed_actions.run_tests = false;
       return;
     }
-    throw new Error("`atelier done` requires execution or review state.");
+    if (state.status !== "approved" && state.status !== "awaiting_approval") {
+      const current = currentPlanningTask(state);
+      if (!current) {
+        throw new Error("No active planning task. Use `atelier next` to focus the next task.");
+      }
+      await assertTaskArtifactComplete(cwd, state, current);
+      current.status = "done";
+      if (current.type === "planning") {
+        state.status = "awaiting_approval";
+        state.active_skill = "planner";
+        state.approval.status = "pending";
+        const errors = await validateBeforeApproval(cwd, state);
+        if (errors.length > 0) {
+          state.status = "planning";
+          state.active_skill = "planner";
+          state.approval.status = "none";
+          current.status = "in_progress";
+          throw new Error(`Cannot finish planning: before_approval gate failed.\n- ${errors.join("\n- ")}`);
+        }
+        return;
+      }
+      const next = nextPlanningTask(state);
+      if (next) {
+        focusTask(state, next);
+      } else {
+        state.status = "planning";
+        state.active_skill = "planner";
+      }
+      return;
+    }
+    throw new Error("`atelier done` cannot run while awaiting approval or approved.");
   });
 }
 

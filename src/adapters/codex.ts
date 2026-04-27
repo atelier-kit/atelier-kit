@@ -1,14 +1,6 @@
-import { join } from "node:path";
-import { writeText } from "../fs-utils.js";
-import { adapterInstruction, activationReminder } from "./common.js";
+import { renderAdapterBody, writeAdapterFile } from "./adapter-utils.js";
 
 export async function applyCodex(cwd: string, atelier: string): Promise<void> {
-  const body = `# AGENTS — atelier-kit (Codex CLI)
-
-${activationReminder()}
-
-${adapterInstruction()}
-`;
-
-  await writeText(join(cwd, "AGENTS.md"), body);
+  const body = await renderAdapterBody(cwd, "codex", "AGENTS — atelier-kit (Codex CLI)");
+  await writeAdapterFile(cwd, "AGENTS.md", body);
 }

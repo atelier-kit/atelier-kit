@@ -1,20 +1,29 @@
-# atelier-kit
+# atelier-kit v2
 
-Planner-first CLI for AI coding workflows. Installs a `.atelier/` directory with
-planning state, **`SKILL.md` skills**, templates, gates, and optional adapters for **Claude Code**,
-**Cursor**, **Codex CLI**, **Windsurf**, **Cline**, **Kilo**, **Anti-GRAVITY**, or a
-**generic** prompt file.
+**Filesystem-native planning protocol for coding agents.**
 
-atelier-kit is a **planner-first framework** built around epics, tasks, slices, approval,
-and execution.
+Atelier-Kit v2 turns native agent planning into an auditable engineering workflow.
 
-In planner workflow, the key primitives are:
-
-- **epic**: the business or technical initiative being planned
-- **task**: a unit of discovery, analysis, decision, or implementation planning
-- **slice**: a vertical delivery cut derived from planning tasks and executed end-to-end
+> Atelier-Kit is inactive by default.  
+> When active, no project code can be edited before human approval.
 
 **Not affiliated with HumanLayer.** See [CREDITS.md](./CREDITS.md).
+
+---
+
+## Product Thesis
+
+Atelier-Kit v2 is a filesystem-native planning protocol with:
+
+- small, explicit activation rules
+- on-demand skills
+- explicit state
+- approval gates
+- slice-based execution
+
+It extends — not replaces — the native plan mode of coding agents.
+
+---
 
 ## Install
 
@@ -22,188 +31,118 @@ In planner workflow, the key primitives are:
 npm install -g @atelier-kit/atelier-kit
 ```
 
-`atelier-kit` is intended to be used as a command-line tool. A global install
-makes the `atelier-kit` command available in your shell.
+The global install makes both `atelier` and `atelier-kit` commands available.
+
+---
 
 ## Quickstart
 
-### Planner-first quickstart
-
-This is the recommended starting point.
-
 ```bash
 cd your-repo
-atelier-kit init
-atelier-kit planner autoplan "Migrate Python framework to PHP"
-atelier-kit planner present
-atelier-kit planner approve
-atelier-kit planner execute
+atelier init
+atelier render-rules --adapter cursor
+atelier new "Add payment endpoint" --mode quick
+# agent runs discovery → research → planning
+atelier validate
+atelier approve
+atelier execute
+atelier done
+atelier next
 ```
 
-This path:
+---
 
-1. creates planner state in `.atelier/context.md`
-2. turns the objective into repo, tech, and business research tasks
-3. synthesizes those tracks into executable slices
-4. generates the review plan at `.atelier/plan/<slug-do-plano>/plan.md` (and mirrors it to `.atelier/artifacts/plan.md` for compatibility)
-5. stops for approval before implementation
+## Activation
 
-## Planning model
+Atelier-Kit activates **only** when explicitly requested.
 
-Planner documentation is organized by purpose:
+| User says | Behavior |
+|---|---|
+| `/plan add this endpoint` | Native agent plan mode. No Atelier. |
+| `/atelier quick add this endpoint` | Atelier protocol — quick mode |
+| `/atelier plan add payments` | Atelier protocol — standard mode |
+| `/atelier deep migrate auth to SSO` | Atelier protocol — deep mode |
 
-- [PLANNER.md](./PLANNER.md) — planner lifecycle, state, and approval flow
-- [EXECUTION-FLOW.md](./EXECUTION-FLOW.md) — diagrammed execution flow from objective to researchers, plan, approval, and slices
-- [AGENT-USAGE.md](./AGENT-USAGE.md) — how to use the planner from Claude, Cursor, Codex, Windsurf, Cline, Kilo, Anti-GRAVITY, and generic agents
-- [ARCHITECTURE.md](./ARCHITECTURE.md) — internal architecture, state model, runtime, adapters, and artifacts
+---
 
-atelier-kit uses a planner-oriented runtime in `.atelier/context.md`.
+## Planning Modes
 
-- The planner workflow is the product's default flow.
-- Artifacts support the graph; they are not the only source of truth.
-- Internal runtime fields support routing and adapters; they are not part of the public planner interface.
+| Mode | Use for | Max slices |
+|---|---|---|
+| `quick` | Small, low-risk changes | 3 |
+| `standard` | Normal features, full research | — |
+| `deep` | High-risk architectural changes | — |
 
-Recommended relationship between entities:
+---
 
-- **Epic** groups a larger initiative, such as "migrate Python framework to PHP".
-- **Task** captures work needed to understand or sequence the initiative, such as repo mapping, tech feasibility, business impact, or final synthesis.
-- **Slice** is the output of planning: a vertical, executable delivery unit with acceptance checks and dependencies.
+## CLI
 
-In this model:
+| Command | Responsibility |
+|---|---|
+| `atelier init` | Install `.atelier/`, protocol, rules, skills, schemas |
+| `atelier status` | Show active mode, epic, phase, skill, approval state |
+| `atelier new "<title>" --mode <mode>` | Create a new epic ledger and activate Atelier |
+| `atelier validate` | Validate schemas, gates and protocol violations |
+| `atelier doctor` | Diagnose installation and broken state |
+| `atelier render-rules --adapter <name>` | Generate rules for Cursor, Claude Code, Codex, etc. |
+| `atelier approve` | Mark pending plan as approved |
+| `atelier reject --reason "..."` | Reject plan and return to planning |
+| `atelier execute` | Start execution after approval |
+| `atelier next` | Move to next slice |
+| `atelier done` | Mark current slice as done |
+| `atelier pause` | Pause Atelier without deleting the active epic |
+| `atelier off` | Disable Atelier (return to native mode) |
 
-- the objective creates questions
-- questions become role-specific researcher tasks
-- tasks answer **what needs to be discovered or decided**
-- slices answer **what can be delivered end-to-end next**
+---
 
-The default planner shape is:
+## Adapter Support
+
+| Agent | Mechanism | Adapter name |
+|---|---|---|
+| Cursor | `.cursor/rules/atelier-core.mdc` | `cursor` |
+| Claude Code | `.claude/CLAUDE.md` | `claude-code` |
+| Codex CLI | `AGENTS.md` | `codex` |
+| Cline | `.clinerules/atelier-core.md` | `cline` |
+| Windsurf | `.windsurfrules` | `windsurf` |
+| Generic | `atelier-system-prompt.txt` | `generic` |
+
+---
+
+## `.atelier` Structure
 
 ```text
-objective
-  -> repo researcher + tech researcher + business researcher
-  -> synthesis / planner
-  -> decision / designer
-  -> plan.md + design.md
-  -> human approval
-  -> approved execution slices
+.atelier/
+├── atelier.json          ← global config
+├── active.json           ← activation state
+├── protocol/             ← workflow, gates, modes, skills definitions
+├── rules/                ← core rule + adapter overlays
+├── skills/               ← on-demand agent skill files
+├── schemas/              ← JSON schemas for validation
+└── epics/
+    └── <epic-slug>/
+        ├── state.json    ← single source of truth for the epic
+        ├── questions.md
+        ├── research/
+        ├── synthesis.md
+        ├── design.md
+        ├── plan.md
+        ├── execution-log.md
+        └── review.md
 ```
 
-### Planner workflow example
+---
 
-```bash
-atelier-kit planner autoplan "Migrate Python framework to PHP"
-atelier-kit planner present
-atelier-kit planner approve
-atelier-kit planner execute
-atelier-kit status
-```
+## Documentation
 
-The planner operates across two distinct moments:
+- [PROTOCOL.md](./PROTOCOL.md) — protocol states, transitions, and invariants
+- [RULES.md](./RULES.md) — core rule and activation logic
+- [SKILLS.md](./SKILLS.md) — on-demand skill descriptions
+- [GATES.md](./GATES.md) — approval gates and guard rules
+- [ADAPTERS.md](./ADAPTERS.md) — per-agent adapter instructions
+- [EXAMPLES.md](./EXAMPLES.md) — end-to-end usage examples
+- [CLI.md](./CLI.md) — CLI command reference
 
-- **Autoplan**: run repo, tech, business, synthesis, and decision tasks until a final plan is ready for human validation
-- **Execution**: only begins after approval and focuses approved slices in implementer mode
-
-### Approval flow
-
-When autoplan completes, the planner:
-
-- writes the plan under `.atelier/plan/<slug-do-plano>/` (plus a snapshot and manifest) and mirrors `plan.md` to `.atelier/artifacts/`
-- sets `planner_state=awaiting_approval`
-- sets `approval_status=pending`
-- clears active task/slice focus so the plan can be reviewed
-
-From there:
-
-```bash
-atelier-kit planner present
-atelier-kit planner approve
-atelier-kit planner execute
-```
-
-or, if changes are needed:
-
-```bash
-atelier-kit planner reject --reason "Need a lower-risk rollout plan"
-```
-
-Execution is blocked until approval.
-
-In planner mode, the active skill is derived from the focused task:
-
-- `repo` -> `repo-analyst`
-- `tech` -> `tech-analyst`
-- `business` -> `business-analyst`
-- `synthesis` -> `planner`
-- `implementation` -> `implementer`
-- `decision` -> `designer`
-
-### Triggering the planner from an agent
-
-All supported adapters share the same textual protocol. Inside the agent, you can say:
-
-```text
-/planner migrate Python framework to PHP
-/planner present
-/planner approve
-/planner execute
-/planner status
-```
-
-The adapter instructions tell the agent to translate those commands into:
-
-- `atelier-kit planner autoplan "<goal>"`
-- `atelier-kit planner present`
-- `atelier-kit planner approve`
-- `atelier-kit planner execute`
-- `atelier-kit status`
-
-After every state-changing command, the agent is instructed to re-read `.atelier/context.md` and continue with the newly active skill.
-
-## Core CLI
-
-| Command | Purpose |
-|---------|---------|
-| `atelier-kit init` | Initialize the planner workspace and install an agent adapter |
-| `atelier-kit status` | Show current planner state |
-| `atelier-kit install-adapter <name>` | Install or switch the active agent adapter |
-| `atelier-kit planner autoplan "<goal>"` | Run planning automatically until a final plan is ready for approval |
-| `atelier-kit planner present` | Print the current final plan summary for human validation |
-| `atelier-kit planner approve` | Approve the plan and unlock execution |
-| `atelier-kit planner reject --reason "..."` | Reject the plan and return to planning |
-| `atelier-kit planner execute` | Enter execution mode and focus the first slice |
-| `atelier-kit planner next` | Advance focus to the next ready task or slice |
-| `atelier-kit planner done` | Mark the current task or slice done and advance |
-| `atelier-kit planner validate` | Report planner blockers and concrete next actions |
-| `atelier-kit planner validate --repair` | Reconcile planner state from valid artifacts where safe |
-
-### Advanced planner commands
-
-These exist for tighter control, debugging, or maintainers:
-
-- `atelier-kit planner start "<goal>"`
-- `atelier-kit planner generate-slices`
-- `atelier-kit planner sync-phase`
-- `atelier-kit planner epic <add|update|focus>`
-- `atelier-kit planner task <add|update|focus>`
-- `atelier-kit planner slice <add|update|focus>`
-- `atelier-kit mode quick|standard|deep`
-- `atelier-kit validate <phase>`
-- `atelier-kit return <phase> --reason "..."`
-- `atelier-kit handoff`
-- `atelier-kit doctor`
-
-## Compatibility
-
-| Agent | Mechanism |
-|-------|-----------|
-| Claude Code | `.claude/skills/` + `CLAUDE.md` |
-| Cursor | `.cursor/skills/` + `.cursor/rules/atelier-core.mdc` |
-| Codex CLI | `AGENTS.md` |
-| Windsurf | `.windsurfrules` |
-| Cline | `.clinerules/atelier-core.md` |
-| Kilo | `.kilocode/rules/atelier-core.md` + `AGENTS.md` |
-| Anti-GRAVITY | `.agent/rules/atelier-core.md` + `AGENTS.md` |
-| Generic | `atelier-system-prompt.txt` |
+---
 
 ## License
 

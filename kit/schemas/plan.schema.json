@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "plan.schema.json",
+  "title": "Plan",
+  "description": "Schema for plan.md front-matter validation (if used with YAML front matter).",
+  "type": "object",
+  "properties": {
+    "epic_id": { "type": "string" },
+    "mode": { "type": "string", "enum": ["quick", "standard", "deep"] },
+    "status": { "type": "string" },
+    "version": { "type": "number" }
+  }
+}

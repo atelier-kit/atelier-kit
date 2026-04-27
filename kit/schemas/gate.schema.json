@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "gate.schema.json",
+  "title": "Gate",
+  "type": "object",
+  "required": ["description", "require"],
+  "properties": {
+    "description": { "type": "string" },
+    "require": { "type": "array", "items": { "type": "string" } }
+  }
+}

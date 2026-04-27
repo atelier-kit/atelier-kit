@@ -1,7 +1,7 @@
 {
   "name": "@atelier-kit/atelier-kit",
-  "version": "0.1.3",
-  "description": "Planner-first CLI for agent workflows (.atelier/)",
+  "version": "2.0.0",
+  "description": "Filesystem-native planning protocol for coding agents (.atelier/)",
   "type": "module",
   "license": "MIT",
   "author": "",
@@ -21,6 +21,7 @@
     "workflow"
   ],
   "bin": {
+    "atelier": "./dist/cli.js",
     "atelier-kit": "./dist/cli.js"
   },
   "files": [

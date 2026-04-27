@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "atelier.schema.json",
+  "title": "AtelierConfig",
+  "type": "object",
+  "required": ["version", "protocol", "default_agent_mode", "default_atelier_mode", "adapter", "rules", "guards"],
+  "properties": {
+    "version": { "type": "number", "enum": [2] },
+    "protocol": { "type": "string", "enum": ["atelier-planning-protocol"] },
+    "default_agent_mode": { "type": "string", "enum": ["native"] },
+    "default_atelier_mode": { "type": "string", "enum": ["quick", "standard", "deep"] },
+    "adapter": { "type": "string", "enum": ["cursor", "claude-code", "codex", "cline", "windsurf", "generic"] },
+    "rules": {
+      "type": "object",
+      "required": ["activation", "core_max_tokens", "skills_load_strategy"],
+      "properties": {
+        "activation": { "type": "string", "enum": ["explicit"] },
+        "core_max_tokens": { "type": "number" },
+        "skills_load_strategy": { "type": "string", "enum": ["on_demand"] }
+      }
+    },
+    "guards": {
+      "type": "object",
+      "required": ["detect_pre_approval_code_changes", "use_git_diff"],
+      "properties": {
+        "detect_pre_approval_code_changes": { "type": "boolean" },
+        "use_git_diff": { "type": "boolean" }
+      }
+    }
+  },
+  "additionalProperties": false
+}

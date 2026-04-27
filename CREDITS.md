@@ -16,6 +16,6 @@ This project is an **independent, clean-room implementation** and is **not affil
 
 ## What atelier-kit adds
 
-- Planner-first kit (`SKILL.md` with frontmatter) with a persistent planner runtime (epics, tasks, slices, approval gates) and multi-agent adapters (Claude Code, Cursor, Codex CLI, Windsurf, Cline, Kilo, Anti-GRAVITY, generic).
-- Session state in `.atelier/context.md` and CLI commands (`planner`, `status`, `handoff`).
-- Programmatic validators (`doctor`, `validate`).
+- An opt-in, filesystem-native Planning Protocol for coding agents.
+- Explicit active state in `.atelier/active.json` and per-epic source of truth in `.atelier/epics/<epic>/state.json`.
+- Programmatic validators (`doctor`, `validate`), approval gates, on-demand skills, and multi-agent adapter rules.

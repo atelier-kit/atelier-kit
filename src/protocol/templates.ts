@@ -14,8 +14,6 @@ export const STANDARD_ADAPTERS: AdapterName[] = [
   "codex",
   "cline",
   "windsurf",
-  "kilo",
-  "antigravity",
   "generic",
 ];
 
@@ -59,6 +57,17 @@ export function inactiveState(): ActiveState {
     active_phase: null,
     active_skill: null,
     updated_at: null,
+  };
+}
+
+export function pausedState(epicId: string): ActiveState {
+  return {
+    active: false,
+    mode: "native",
+    active_epic: epicId,
+    active_phase: "paused",
+    active_skill: null,
+    updated_at: new Date().toISOString(),
   };
 }
 
@@ -185,21 +194,28 @@ function tasksForMode(mode: Exclude<AtelierMode, "native">): EpicState["tasks"] 
   return tasks;
 }
 
-export function emptyArtifact(name: string, title: string): string {
+export function emptyArtifact(
+  name: string,
+  title: string,
+  goal?: string,
+  mode?: Exclude<AtelierMode, "native">,
+): string {
   const heading = name
     .replace(/\.md$/, "")
     .replace(/[-/]/g, " ")
     .replace(/\b\w/g, (char) => char.toUpperCase());
+  const planGoal = goal ?? "_To be completed by the planner skill._";
+  const planMode = mode ?? "_quick | standard | deep_";
   if (name === "plan.md") {
     return `# Plan: ${title}
 
 ## Goal
 
-_To be completed by the planner skill._
+${planGoal}
 
 ## Mode
 
-_quick | standard | deep_
+${planMode}
 
 ## Evidence Summary
 

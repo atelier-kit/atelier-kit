@@ -21,6 +21,7 @@ describe("init", () => {
     await access(join(path, ".atelier", "protocol", "workflow.yaml"));
     await access(join(path, ".atelier", "rules", "core.md"));
     await access(join(path, ".atelier", "skills", "repo-analyst.md"));
+    await access(join(path, ".atelier", "METHOD.md"));
     await access(join(path, "atelier-system-prompt.txt"));
     const config = JSON.parse(await readFile(join(path, ".atelier", "atelier.json"), "utf8"));
     const active = JSON.parse(await readFile(join(path, ".atelier", "active.json"), "utf8"));
@@ -28,5 +29,8 @@ describe("init", () => {
     expect(config.version).toBe(2);
     expect(active.active).toBe(false);
     expect(active.mode).toBe("native");
+    const method = await readFile(join(path, ".atelier", "METHOD.md"), "utf8");
+    expect(method).toContain("Atelier-Kit v2 is inactive by default");
+    expect(method).not.toContain(".atelier/context.md");
   });
 });

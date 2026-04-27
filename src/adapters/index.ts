@@ -6,8 +6,6 @@ import { applyCodex } from "./codex.js";
 import { applyWindsurf } from "./windsurf.js";
 import { applyGeneric } from "./generic.js";
 import { applyCline } from "./cline.js";
-import { applyKilo } from "./kilo.js";
-import { applyAntigravity } from "./antigravity.js";
 import { readAtelierConfig } from "../protocol/state.js";
 import { readAtelierRc } from "../state/atelierrc.js";
 
@@ -32,12 +30,6 @@ export async function installAdapter(
     case "cline":
       await applyCline(cwd, base);
       break;
-    case "kilo":
-      await applyKilo(cwd, base);
-      break;
-    case "antigravity":
-      await applyAntigravity(cwd);
-      break;
     case "generic":
       await applyGeneric(cwd, base);
       break;
@@ -46,7 +38,7 @@ export async function installAdapter(
   }
 }
 
-/** Re-run fallback generators after phase or planner focus changes. */
+/** Re-run fallback generators after protocol state changes. */
 export async function refreshFallbackAdapters(cwd: string): Promise<void> {
   let adapter: AdapterName;
   try {
@@ -64,9 +56,7 @@ export async function refreshFallbackAdapters(cwd: string): Promise<void> {
     adapter === "generic" ||
     adapter === "windsurf" ||
     adapter === "codex" ||
-    adapter === "cline" ||
-    adapter === "kilo" ||
-    adapter === "antigravity"
+    adapter === "cline"
   ) {
     await installAdapter(cwd, adapter);
   }

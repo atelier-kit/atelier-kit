@@ -52,11 +52,6 @@ export async function initializeProtocol(cwd: string, options?: {
   for (const name of STANDARD_ADAPTERS) {
     await writeText(atelierPath(cwd, "rules", "adapters", `${name}.md`), adapterRule(name));
   }
-  await writeText(
-    atelierPath(cwd, "rules", "adapters", "claude-code.md"),
-    adapterRule("claude-code"),
-  );
-  await writeText(atelierPath(cwd, "rules", "adapters", "claude-code.md"), adapterRule("claude-code"));
 
   for (const skill of SKILLS) {
     await writeText(atelierPath(cwd, "skills", `${skill}.md`), skillBody(skill));

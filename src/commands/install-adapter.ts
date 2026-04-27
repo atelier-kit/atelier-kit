@@ -17,11 +17,6 @@ export async function cmdInstallAdapter(
   const config = await readAtelierConfig(cwd);
   await writeAtelierConfig(cwd, { ...config, adapter: parsed.data });
   const legacyAdapter = parsed.data === "claude-code" ? "claude" : parsed.data;
-  if (legacyAdapter === "kilo" || legacyAdapter === "antigravity") {
-    console.error(pc.red(`Adapter is not part of the v2 standard set: ${parsed.data}`));
-    process.exitCode = 1;
-    return;
-  }
   await installAdapter(cwd, legacyAdapter as LegacyAdapterName);
   console.log(pc.green(`Installed adapter: ${parsed.data}`));
 }

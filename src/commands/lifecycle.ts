@@ -1,7 +1,8 @@
 import pc from "picocolors";
 import { readActiveEpic, writeActiveState, writeEpicState } from "../protocol/state.js";
 import { inactiveState } from "../protocol/templates.js";
-import { firstReadySlice, skillForStatus } from "../protocol/epic.js";
+import { firstReadySlice } from "../protocol/epic.js";
+import { validateBeforeApproval } from "../protocol/validator.js";
 import type { EpicState } from "../protocol/schema.js";
 
 async function loadRequiredActive(cwd: string): Promise<EpicState> {
@@ -26,11 +27,11 @@ async function syncActive(cwd: string, state: EpicState) {
 async function runLifecycle(
   cwd: string,
   action: string,
-  mutate: (state: EpicState) => void,
+  mutate: (state: EpicState) => void | Promise<void>,
 ): Promise<void> {
   try {
     const state = await loadRequiredActive(cwd);
-    mutate(state);
+    await mutate(state);
     await writeEpicState(cwd, state);
     await syncActive(cwd, state);
     console.log(pc.green(`${action}: ${state.epic_id} status=${state.status}`));
@@ -44,7 +45,11 @@ export async function cmdApprove(
   cwd: string,
   opts: { by?: string; notes?: string } = {},
 ): Promise<void> {
-  await runLifecycle(cwd, "approved", (state) => {
+  await runLifecycle(cwd, "approved", async (state) => {
+    const errors = await validateBeforeApproval(cwd, state);
+    if (errors.length > 0) {
+      throw new Error(`Cannot approve plan: before_approval gate failed.\n- ${errors.join("\n- ")}`);
+    }
     state.approval = {
       status: "approved",
       approved_by: opts.by ?? "human",
@@ -118,10 +123,14 @@ export async function cmdDone(cwd: string): Promise<void> {
     if (state.status === "execution" && state.current_slice) {
       const current = state.slices.find((slice) => slice.id === state.current_slice);
       if (current) current.status = "done";
-      state.current_slice = null;
-      if (firstReadySlice(state)) {
+      const next = firstReadySlice(state);
+      if (next) {
+        next.status = "executing";
+        state.current_slice = next.id;
+        state.status = "execution";
         state.active_skill = "implementer";
       } else {
+        state.current_slice = null;
         state.status = "review";
         state.active_skill = "reviewer";
         state.allowed_actions.write_project_code = false;
@@ -143,12 +152,12 @@ export async function cmdPause(cwd: string): Promise<void> {
   try {
     const state = await loadRequiredActive(cwd);
     state.status = "paused";
-    state.active_skill = skillForStatus("paused");
+    state.active_skill = null;
     state.allowed_actions.write_project_code = false;
     await writeEpicState(cwd, state);
     await writeActiveState(cwd, {
-      active: true,
-      mode: "atelier",
+      active: false,
+      mode: "native",
       active_epic: state.epic_id,
       active_phase: "paused",
       active_skill: null,

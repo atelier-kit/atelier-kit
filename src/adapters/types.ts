@@ -4,8 +4,6 @@ export type AdapterName =
   | "codex"
   | "windsurf"
   | "cline"
-  | "kilo"
-  | "antigravity"
   | "generic";
 
 export interface AdapterWrite {

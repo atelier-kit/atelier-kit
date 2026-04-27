@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { cmdInit } from "../src/commands/init.js";
 import { cmdInstallAdapter } from "../src/commands/install-adapter.js";
+import { cmdRenderRules } from "../src/commands/rules.js";
 import { tempDir, kitPath } from "./helpers.js";
 import { cmdNew } from "../src/commands/new.js";
 
@@ -42,5 +43,34 @@ describe("agent adapters include planner protocol", () => {
     );
     expect(cursorRules).toContain("Atelier-Kit is inactive by default");
     expect(cursorRules).toContain("/atelier plan");
+  });
+
+  test("render-rules writes adapter files", async () => {
+    const { path, cleanup: c } = await tempDir();
+    cleanup = c;
+    process.env.ATELIER_KIT_ROOT = kitPath();
+
+    await cmdInit(path, { yes: true });
+    await cmdRenderRules(path, "cursor");
+
+    const cursorRules = await readFile(
+      join(path, ".cursor", "rules", "atelier-core.mdc"),
+      "utf8",
+    );
+    expect(cursorRules).toContain("Atelier-Kit is inactive by default");
+    expect(cursorRules).toContain("/plan ...");
+  });
+
+  test("render-rules writes generic agent instructions", async () => {
+    const { path, cleanup: c } = await tempDir();
+    cleanup = c;
+    process.env.ATELIER_KIT_ROOT = kitPath();
+
+    await cmdInit(path, { yes: true });
+    await cmdRenderRules(path, "generic");
+
+    const agents = await readFile(join(path, "AGENTS.md"), "utf8");
+    expect(agents).toContain("Atelier-Kit is inactive by default");
+    expect(agents).toContain("/atelier quick");
   });
 });

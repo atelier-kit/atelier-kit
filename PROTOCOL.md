@@ -24,7 +24,7 @@ The active epic state lives in:
 .atelier/epics/<epic-slug>/state.json
 ```
 
-`.atelier/context.md` is not authoritative for v2.
+The v2 protocol does not use the old session context file as operational state.
 
 ## CLI
 

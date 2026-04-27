@@ -1,23 +1,17 @@
-import { cp } from "node:fs/promises";
 import { join } from "node:path";
 import { writeText } from "../fs-utils.js";
-import { plannerCommandProtocol, plannerStateReminder } from "./common.js";
+import { atelierCommandProtocol, atelierStateReminder } from "./common.js";
 
 export async function applyClaude(cwd: string, atelier: string): Promise<void> {
-  const skillsSrc = join(atelier, "skills");
-  const destSkills = join(cwd, ".claude", "skills");
-  await cp(skillsSrc, destSkills, { recursive: true });
-
   const md = `# atelier-kit (Claude Code)
 
-Before any tool use or code change, read \`.atelier/context.md\` (frontmatter) to learn the current planner state.
+Atelier-Kit is inactive by default. Use native behavior unless the user explicitly activates Atelier.
 
-- Skills are vendored into \`.claude/skills/\`.
-- Prefer the skill implied by \`.atelier/context.md → current_task\`, \`current_slice\`, and planner state.
-- ${plannerStateReminder()}
+- ${atelierStateReminder()}
+- Load only the skill named by \`.atelier/active.json\` and the active epic state.
 - Full operating contract: \`.atelier/METHOD.md\`.
 
-${plannerCommandProtocol()}
+${atelierCommandProtocol()}
 
 **Not affiliated with HumanLayer.**
 `;

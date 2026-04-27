@@ -4,7 +4,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { activeStatePath, epicDir } from "./paths.js";
 import { readAtelierConfig, writeJson, writeEpicState } from "./state.js";
-import { defaultEpicState } from "./templates.js";
+import { defaultEpicState, emptyArtifact } from "./templates.js";
 import type { AtelierMode, EpicState, ProtocolSlice, SkillName } from "./schema.js";
 
 const execFileAsync = promisify(execFile);
@@ -66,50 +66,7 @@ function artifactStub(artifact: string, state: EpicState): string {
 `;
   }
   if (artifact === "plan.md") {
-    return `# Plan: ${state.title}
-
-## Goal
-
-${state.goal}
-
-## Mode
-
-${state.mode}
-
-## Evidence Summary
-
-### Repository Evidence
-
-- Pending repository research.
-
-### Technical Evidence
-
-- Pending technical research.
-
-### Business / Product Evidence
-
-- Pending business research.
-
-## Assumptions
-
-- Pending.
-
-## Risks
-
-| Risk | Impact | Mitigation |
-|---|---:|---|
-| Planning evidence incomplete | Medium | Complete discovery before approval |
-
-## Slices
-
-No slices defined yet.
-
-## Approval
-
-Status: pending
-
-Human approval required before implementation.
-`;
+    return emptyArtifact("plan.md", state.title, state.goal, state.mode);
   }
   return `# ${heading}
 

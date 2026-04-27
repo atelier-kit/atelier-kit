@@ -37,11 +37,14 @@ function zodMessage(error: unknown): string {
   return (error as Error).message;
 }
 
-function planHasReviewableShape(plan: string): string[] {
+function planHasReviewableShape(plan: string, strictSlices = false): string[] {
   const errors: string[] = [];
   if (!/## Goal\b/.test(plan)) errors.push("plan.md missing ## Goal");
   if (!/## Slices\b/.test(plan)) errors.push("plan.md missing ## Slices");
-  if (/No slices defined yet\./i.test(plan)) return errors;
+  if (/No slices defined yet\./i.test(plan)) {
+    if (strictSlices) errors.push("plan.md has no slice sections");
+    return errors;
+  }
   if (!/### Slice\s+\d+/i.test(plan)) errors.push("plan.md has no slice sections");
   if (!/\*\*Goal:\*\*/i.test(plan)) errors.push("each slice must include **Goal:**");
   if (!/\*\*Acceptance criteria:\*\*/i.test(plan)) {
@@ -49,6 +52,40 @@ function planHasReviewableShape(plan: string): string[] {
   }
   if (!/\*\*Validation:\*\*/i.test(plan)) {
     errors.push("each slice must include validation steps");
+  }
+  if (!/## Risks\b/.test(plan)) errors.push("plan.md missing ## Risks");
+  return errors;
+}
+
+export async function validateBeforeApproval(
+  cwd: string,
+  state: EpicState,
+): Promise<string[]> {
+  const errors: string[] = [];
+  if (state.status !== "awaiting_approval") {
+    errors.push("Plan can only be approved when status is awaiting_approval");
+  }
+  if (state.approval.status !== "none" && state.approval.status !== "pending") {
+    errors.push("Plan can only be approved when approval.status is none or pending");
+  }
+  const planPath = join(epicDir(cwd, state.epic_id), "plan.md");
+  if (!(await exists(planPath))) {
+    errors.push("before_approval requires plan.md");
+  } else {
+    const plan = await readFile(planPath, "utf8");
+    errors.push(...planHasReviewableShape(plan, true));
+  }
+  if (state.slices.length === 0) {
+    errors.push("before_approval requires at least one slice");
+  }
+  for (const slice of state.slices) {
+    if (!slice.goal.trim()) errors.push(`slice ${slice.id} missing goal`);
+    if (slice.acceptance_criteria.length === 0) {
+      errors.push(`slice ${slice.id} missing acceptance criteria`);
+    }
+    if (slice.validation.length === 0) {
+      errors.push(`slice ${slice.id} missing validation steps`);
+    }
   }
   return errors;
 }
@@ -60,8 +97,6 @@ function validateStateCoherence(state: EpicState): string[] {
     if (!canWrite) errors.push("execution requires allowed_actions.write_project_code=true");
     if (state.approval.status !== "approved") errors.push("execution requires approval.status=approved");
     if (!state.current_slice) errors.push("execution requires current_slice");
-  } else if (state.status === "awaiting_approval" && state.approval.status !== "approved") {
-    errors.push("before_execution requires approval.status=approved");
   } else if (canWrite) {
     errors.push(`${state.status} must not allow project code writes`);
   }
@@ -160,9 +195,9 @@ export async function validateProtocol(cwd: string): Promise<ValidationReport> {
   }
 
   const planPath = join(epicDir(cwd, state.epic_id), "plan.md");
-  if (await exists(planPath)) {
+  if (await exists(planPath) && (state.status === "awaiting_approval" || state.status === "approved" || state.status === "execution")) {
     const plan = await readFile(planPath, "utf8");
-    errors.push(...planHasReviewableShape(plan));
+    errors.push(...planHasReviewableShape(plan, true));
   } else if (state.status === "planning" || state.status === "awaiting_approval" || state.status === "approved") {
     errors.push("plan.md required before approval/execution");
   }

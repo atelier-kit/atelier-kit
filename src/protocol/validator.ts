@@ -1,6 +1,6 @@
+import { execFile } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { promisify } from "node:util";
-import { execFile } from "node:child_process";
 import { parsePlanDocument } from "./gates.js";
 import { epicArtifactPath } from "./paths.js";
 import { readActiveState, readAtelierConfig, readEpicState, writeEpicState } from "./workspace.js";
@@ -150,8 +150,7 @@ async function diffAgainstBaseline(cwd: string, baselineRef: string): Promise<st
   try {
     const { stdout } = await execFileAsync("git", ["diff", "--name-only", baselineRef, "--"], { cwd });
     return stdout
-      .split(/?
-/)
+      .split(/\r?\n/)
       .map((line) => line.trim())
       .filter(Boolean);
   } catch (error) {
@@ -168,9 +167,9 @@ async function diffAgainstBaseline(cwd: string, baselineRef: string): Promise<st
 }
 
 function matchesAllowed(file: string, patterns: string[]): boolean {
-  const normalized = file.replace(/\/g, "/");
+  const normalized = file.replace(/\\/g, "/");
   return patterns.some((pattern) => {
-    const cleanPattern = pattern.replace(/\/g, "/");
+    const cleanPattern = pattern.replace(/\\/g, "/");
     if (cleanPattern.endsWith("/**")) {
       const prefix = cleanPattern.slice(0, -3);
       return normalized === prefix || normalized.startsWith(`${prefix}/`);

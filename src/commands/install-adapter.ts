@@ -2,7 +2,7 @@ import pc from "picocolors";
 import { installAdapter } from "../adapters/index.js";
 import type { AdapterName } from "../adapters/types.js";
 import { readAtelierConfig, requireInitialized, writeAtelierConfig } from "../protocol/workspace.js";
-import { writeAtelierRc } from "../state/atelierrc.js";
+import { defaultAtelierRc, writeAtelierRc } from "../state/atelierrc.js";
 
 const ADAPTERS = new Set<AdapterName>([
   "claude",
@@ -28,7 +28,7 @@ export async function cmdInstallAdapter(
   const adapter = name as AdapterName;
   const config = await readAtelierConfig(cwd);
   await writeAtelierConfig(cwd, { ...config, adapter });
-  await writeAtelierRc(cwd, { adapter, mode: config.default_atelier_mode });
+  await writeAtelierRc(cwd, defaultAtelierRc({ adapter, mode: config.default_atelier_mode }));
   await installAdapter(cwd, adapter);
   console.log(pc.green(`Installed adapter: ${adapter}`));
 }

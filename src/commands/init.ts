@@ -7,7 +7,7 @@ import { installAdapter } from "../adapters/index.js";
 import type { AdapterName } from "../adapters/types.js";
 import { bootstrapWorkspace, ensureAtelierRoot, writeAtelierConfig } from "../protocol/workspace.js";
 import { defaultAtelierConfig } from "../protocol/templates.js";
-import { writeAtelierRc } from "../state/atelierrc.js";
+import { defaultAtelierRc, writeAtelierRc } from "../state/atelierrc.js";
 
 const PROTOCOL_FILES = ["workflow.yaml", "gates.yaml", "skills.yaml", "modes.yaml"];
 const RULE_FILES = ["core.md"];
@@ -75,7 +75,7 @@ export async function cmdInit(
   await bootstrapWorkspace(cwd, adapter, mode);
   await copyProtocolKit(kit, dest);
   await writeAtelierConfig(cwd, defaultAtelierConfig(adapter, mode));
-  await writeAtelierRc(cwd, { adapter, mode });
+  await writeAtelierRc(cwd, defaultAtelierRc({ adapter, mode }));
   await installAdapter(cwd, adapter);
 
   console.log(pc.green(`atelier initialized in ${dest}`));

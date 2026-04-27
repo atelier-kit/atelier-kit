@@ -11,8 +11,7 @@ export async function applyKilo(cwd: string): Promise<void> {
     activeProtocol(),
     "",
     commandReference(),
-  ].join("
-");
+  ].join("\n");
 
   await writeText(join(cwd, "AGENTS.md"), body);
   await writeText(join(cwd, ".kilocode", "rules", "atelier-core.md"), body);

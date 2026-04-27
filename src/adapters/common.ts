@@ -5,8 +5,7 @@ export function activationProtocol(): string {
     "- `/plan ...` stays in the host agent's native plan mode.",
     "- `/atelier quick ...`, `/atelier plan ...`, `/atelier deep ...`, or an explicit request to use Atelier-Kit activates the protocol.",
     "- When inactive, do not create Atelier artifacts, enforce Atelier gates, or load Atelier skills.",
-  ].join("
-");
+  ].join("\n");
 }
 
 export function activeProtocol(): string {
@@ -20,19 +19,17 @@ export function activeProtocol(): string {
     "6. If `status` is `awaiting_approval`, present `plan.md` and stop.",
     "7. If `status` is `execution`, execute only `current_slice`.",
     "8. After each protocol step, update the relevant artifact and `state.json`.",
-  ].join("
-");
+  ].join("\n");
 }
 
 export function commandReference(): string {
   return [
     "CLI helpers:",
-    "- `atelier status`",
-    "- `atelier validate`",
-    "- `atelier new "Epic title" --mode quick|standard|deep`",
-    "- `atelier approve` / `atelier reject --reason "..."`",
-    "- `atelier execute` / `atelier next` / `atelier done`",
-    "- `atelier pause` / `atelier off`",
-  ].join("
-");
+    '- `atelier status`',
+    '- `atelier validate`',
+    '- `atelier new "Epic title" --mode quick|standard|deep`',
+    '- `atelier approve` / `atelier reject --reason "..."`',
+    '- `atelier execute` / `atelier next` / `atelier done`',
+    '- `atelier pause` / `atelier off`',
+  ].join("\n");
 }

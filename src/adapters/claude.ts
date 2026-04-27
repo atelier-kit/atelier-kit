@@ -17,8 +17,7 @@ export async function applyClaude(cwd: string, atelier: string): Promise<void> {
     commandReference(),
     "",
     "Reference rule: `.atelier/rules/core.md`.",
-  ].join("
-");
+  ].join("\n");
 
   await writeText(join(cwd, "CLAUDE.md"), body);
 }

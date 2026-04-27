@@ -17,14 +17,12 @@ export async function cmdStatus(cwd: string): Promise<void> {
   console.log(`  updated_at:      ${active.updated_at ?? "-"}`);
 
   if (!active.active || !active.active_epic) {
-    console.log(pc.dim("
-Atelier is inactive. Native agent behavior should remain unchanged."));
+    console.log(pc.dim("\nAtelier is inactive. Native agent behavior should remain unchanged."));
     return;
   }
 
   const state = await readEpicState(cwd, active.active_epic);
-  console.log(pc.bold("
-Active epic"));
+  console.log(pc.bold("\nActive epic"));
   console.log(`  title:           ${state.title}`);
   console.log(`  goal:            ${state.goal}`);
   console.log(`  protocol_mode:   ${state.mode}`);

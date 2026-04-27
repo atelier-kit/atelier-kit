@@ -14,8 +14,7 @@ export async function applyCline(cwd: string, atelier: string): Promise<void> {
     activeProtocol(),
     "",
     commandReference(),
-  ].join("
-");
+  ].join("\n");
 
   await writeText(join(cwd, ".clinerules", "atelier-core.md"), body);
 }

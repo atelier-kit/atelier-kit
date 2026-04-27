@@ -13,8 +13,7 @@ export async function applyGeneric(cwd: string, _atelier: string): Promise<void>
     commandReference(),
     "",
     "Authoritative files live under `.atelier/`. The source of truth for an active epic is `.atelier/epics/<active_epic>/state.json`.",
-  ].join("
-");
+  ].join("\n");
 
   await writeText(join(cwd, "atelier-system-prompt.txt"), out);
 }

@@ -232,8 +232,7 @@ function planTemplate(title: string, mode: AtelierMode): string {
     "",
     "Human approval required before implementation.",
     "",
-  ].join("
-");
+  ].join("\n");
 }
 
 export function createArtifactTemplates(input: {
@@ -250,8 +249,7 @@ export function createArtifactTemplates(input: {
       "- What repository facts still need to be mapped?",
       modeQuestion(input.mode),
       "",
-    ].join("
-"),
+    ].join("\n"),
     "research/repo.md": [
       `# Repository Research: ${input.title}`,
       "",
@@ -279,16 +277,14 @@ export function createArtifactTemplates(input: {
       "",
       "- _TBD_",
       "",
-    ].join("
-"),
+    ].join("\n"),
     "plan.md": planTemplate(input.title, input.mode),
     "execution-log.md": [
       `# Execution Log: ${input.title}`,
       "",
       "No slices executed yet.",
       "",
-    ].join("
-"),
+    ].join("\n"),
     "review.md": [
       `# Review: ${input.title}`,
       "",
@@ -312,8 +308,7 @@ export function createArtifactTemplates(input: {
       "",
       "No.",
       "",
-    ].join("
-"),
+    ].join("\n"),
   };
 
   if (input.mode !== "quick") {
@@ -340,8 +335,7 @@ export function createArtifactTemplates(input: {
       "",
       "- _TBD_",
       "",
-    ].join("
-");
+    ].join("\n");
     base["research/business.md"] = [
       `# Business Research: ${input.title}`,
       "",
@@ -365,8 +359,7 @@ export function createArtifactTemplates(input: {
       "",
       "- _TBD_",
       "",
-    ].join("
-");
+    ].join("\n");
     base["synthesis.md"] = [
       `# Synthesis: ${input.title}`,
       "",
@@ -382,8 +375,7 @@ export function createArtifactTemplates(input: {
       "",
       "- _TBD_",
       "",
-    ].join("
-");
+    ].join("\n");
     base["decisions.md"] = [
       `# Decisions: ${input.title}`,
       "",
@@ -399,8 +391,7 @@ export function createArtifactTemplates(input: {
       "",
       "- _TBD_",
       "",
-    ].join("
-");
+    ].join("\n");
     base["design.md"] = [
       `# Design: ${input.title}`,
       "",
@@ -420,27 +411,14 @@ export function createArtifactTemplates(input: {
       "",
       "- _TBD_",
       "",
-    ].join("
-");
+    ].join("\n");
   }
 
   if (input.mode === "deep") {
-    base["risk-register.md"] = "# Risk Register
-
-- _TBD_
-";
-    base["rollback.md"] = "# Rollback Plan
-
-- _TBD_
-";
-    base["test-strategy.md"] = "# Test Strategy
-
-- _TBD_
-";
-    base["critique.md"] = "# Critique
-
-- _TBD_
-";
+    base["risk-register.md"] = "# Risk Register\n\n- _TBD_\n";
+    base["rollback.md"] = "# Rollback Plan\n\n- _TBD_\n";
+    base["test-strategy.md"] = "# Test Strategy\n\n- _TBD_\n";
+    base["critique.md"] = "# Critique\n\n- _TBD_\n";
   }
 
   return base;

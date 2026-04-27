@@ -1,14 +1,13 @@
-import { afterEach, beforeEach, describe, expect, test } from "vitest";
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
-import { mkdtemp } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { cmdApprove } from "../src/commands/approve.js";
+import { cmdDone } from "../src/commands/done.js";
+import { cmdExecute } from "../src/commands/execute.js";
 import { cmdInit } from "../src/commands/init.js";
 import { cmdNew } from "../src/commands/new.js";
-import { cmdApprove } from "../src/commands/approve.js";
-import { cmdExecute } from "../src/commands/execute.js";
-import { cmdDone } from "../src/commands/done.js";
 import { validateWorkspace } from "../src/protocol/validator.js";
 
 const planContent = [
@@ -74,8 +73,7 @@ const planContent = [
   "",
   "Human approval required before implementation.",
   "",
-].join("
-");
+].join("\n");
 
 describe("Atelier v2 protocol flow", () => {
   let dir = "";
@@ -115,8 +113,7 @@ describe("Atelier v2 protocol flow", () => {
     state.status = "planning";
     state.active_skill = "planner";
     state.approval.status = "pending";
-    await writeFile(statePath, JSON.stringify(state, null, 2) + "
-", "utf8");
+    await writeFile(statePath, JSON.stringify(state, null, 2) + "\n", "utf8");
 
     await cmdApprove(dir);
     let updated = JSON.parse(await readFile(statePath, "utf8"));
@@ -145,18 +142,15 @@ describe("Atelier v2 protocol flow", () => {
     await cmdInit(dir, { yes: true });
     await cmdNew(dir, "Add payment endpoint", { mode: "quick" });
     await mkdir(join(dir, "src"), { recursive: true });
-    await writeFile(join(dir, "src", "app.ts"), "export const app = true;
-", "utf8");
+    await writeFile(join(dir, "src", "app.ts"), "export const app = true;\n", "utf8");
 
     execFileSync("git", ["add", "."], { cwd: dir, stdio: "ignore" });
     execFileSync("git", ["commit", "-m", "baseline"], { cwd: dir, stdio: "ignore" });
 
-    await writeFile(join(dir, "src", "app.ts"), "export const app = false;
-", "utf8");
+    await writeFile(join(dir, "src", "app.ts"), "export const app = false;\n", "utf8");
 
     const result = await validateWorkspace(dir);
     expect(result.ok).toBe(false);
-    expect(result.violations.join("
-")).toContain("Premature project code changes detected before execution");
+    expect(result.violations.join("\n")).toContain("Premature project code changes detected before execution");
   });
 });

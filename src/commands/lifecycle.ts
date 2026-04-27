@@ -2,16 +2,17 @@ import pc from "picocolors";
 import { readActiveEpic, writeActiveState, writeEpicState } from "../protocol/state.js";
 import { inactiveState } from "../protocol/templates.js";
 import { firstReadySlice, skillForStatus } from "../protocol/epic.js";
+import type { EpicState } from "../protocol/schema.js";
 
-async function loadRequiredActive(cwd: string) {
+async function loadRequiredActive(cwd: string): Promise<EpicState> {
   const activeEpic = await readActiveEpic(cwd);
   if (!activeEpic.state) {
     throw new Error("No active Atelier epic. Use `atelier new \"Goal\"` first.");
   }
-  return activeEpic;
+  return activeEpic.state;
 }
 
-async function syncActive(cwd: string, state: NonNullable<Awaited<ReturnType<typeof loadRequiredActive>>["state"]>) {
+async function syncActive(cwd: string, state: EpicState) {
   await writeActiveState(cwd, {
     active: true,
     mode: "atelier",
@@ -25,10 +26,10 @@ async function syncActive(cwd: string, state: NonNullable<Awaited<ReturnType<typ
 async function runLifecycle(
   cwd: string,
   action: string,
-  mutate: (state: NonNullable<Awaited<ReturnType<typeof loadRequiredActive>>["state"]>) => void,
+  mutate: (state: EpicState) => void,
 ): Promise<void> {
   try {
-    const { state } = await loadRequiredActive(cwd);
+    const state = await loadRequiredActive(cwd);
     mutate(state);
     await writeEpicState(cwd, state);
     await syncActive(cwd, state);
@@ -140,7 +141,7 @@ export async function cmdDone(cwd: string): Promise<void> {
 
 export async function cmdPause(cwd: string): Promise<void> {
   try {
-    const { state } = await loadRequiredActive(cwd);
+    const state = await loadRequiredActive(cwd);
     state.status = "paused";
     state.active_skill = skillForStatus("paused");
     state.allowed_actions.write_project_code = false;

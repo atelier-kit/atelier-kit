@@ -8,6 +8,6 @@ export async function cmdDoctor(cwd: string): Promise<void> {
     return;
   }
   console.log(pc.red("doctor: Atelier protocol has issues"));
-  for (const issue of result.issues) console.log(pc.dim(`  - ${issue}`));
+  for (const issue of result.errors) console.log(pc.dim(`  - ${issue}`));
   process.exitCode = 1;
 }

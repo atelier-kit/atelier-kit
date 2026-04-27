@@ -60,6 +60,8 @@ function validateStateCoherence(state: EpicState): string[] {
     if (!canWrite) errors.push("execution requires allowed_actions.write_project_code=true");
     if (state.approval.status !== "approved") errors.push("execution requires approval.status=approved");
     if (!state.current_slice) errors.push("execution requires current_slice");
+  } else if (state.status === "awaiting_approval" && state.approval.status !== "approved") {
+    errors.push("before_execution requires approval.status=approved");
   } else if (canWrite) {
     errors.push(`${state.status} must not allow project code writes`);
   }

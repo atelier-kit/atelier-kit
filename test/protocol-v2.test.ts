@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, test } from "vitest";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { join } from "node:path";
 import { cmdInit } from "../src/commands/init.js";
 import { cmdNew } from "../src/commands/new.js";
@@ -7,6 +9,8 @@ import { cmdApprove, cmdExecute } from "../src/commands/lifecycle.js";
 import { readActiveState, readEpicState, writeEpicState } from "../src/protocol/state.js";
 import { validateProtocol } from "../src/protocol/validator.js";
 import { tempDir, kitPath } from "./helpers.js";
+
+const execFileAsync = promisify(execFile);
 
 describe("atelier v2 protocol", () => {
   let cleanup: () => Promise<void> = async () => {};
@@ -115,6 +119,11 @@ describe("atelier v2 protocol", () => {
 
   test("premature code changes are violations before execution", async () => {
     const dir = await initialized();
+    await execFileAsync("git", ["init"], { cwd: dir });
+    await execFileAsync("git", ["config", "user.email", "test@example.com"], { cwd: dir });
+    await execFileAsync("git", ["config", "user.name", "Test"], { cwd: dir });
+    await execFileAsync("git", ["add", ".atelier"], { cwd: dir });
+    await execFileAsync("git", ["commit", "-m", "baseline"], { cwd: dir });
     await cmdNew(dir, "Add payment endpoint", { mode: "quick" });
     await mkdir(join(dir, "src"), { recursive: true });
     await writeFile(join(dir, "src", "changed.ts"), "export {}\n", "utf8");

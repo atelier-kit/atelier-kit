@@ -1,6 +1,6 @@
-# Atelier-Kit v2 Protocol
+# Atelier-Kit Protocol
 
-Atelier-Kit v2 is an opt-in planning protocol for coding agents.
+Atelier-Kit is an opt-in planning protocol for coding agents.
 
 ## Activation
 
@@ -24,7 +24,7 @@ The active epic state lives in:
 .atelier/epics/<epic-slug>/state.json
 ```
 
-The v2 protocol does not use the old session context file as operational state.
+The protocol does not use a session context file as operational state.
 
 ## CLI
 
@@ -33,6 +33,8 @@ atelier init
 atelier new "Add payment endpoint" --mode quick
 atelier status
 atelier validate
+atelier validate --gate before-approval
+atelier validate --gate before-execution
 atelier doctor
 atelier render-rules --adapter cursor
 atelier approve
@@ -41,6 +43,7 @@ atelier execute
 atelier next
 atelier done
 atelier pause
+atelier resume
 atelier off
 ```
 
@@ -53,4 +56,3 @@ Project code can be edited only when:
 3. `approval.status` is `approved`.
 4. `allowed_actions.write_project_code` is true.
 5. `current_slice` is set.
-

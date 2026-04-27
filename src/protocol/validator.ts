@@ -57,6 +57,20 @@ function planHasReviewableShape(plan: string, strictSlices = false): string[] {
   return errors;
 }
 
+export function validateBeforeExecution(state: EpicState): string[] {
+  const errors: string[] = [];
+  if (state.approval.status !== "approved") {
+    errors.push("before_execution requires approval.status=approved");
+  }
+  if (state.status !== "approved" && state.status !== "execution") {
+    errors.push("before_execution requires status=approved or status=execution");
+  }
+  if (!state.slices.some((s) => s.status === "ready" || s.status === "executing")) {
+    errors.push("before_execution requires at least one ready slice");
+  }
+  return errors;
+}
+
 export async function validateBeforeApproval(
   cwd: string,
   state: EpicState,

@@ -3,7 +3,23 @@ import { readActiveEpic, readActiveState, readEpicState, writeActiveState, write
 import { inactiveState } from "../protocol/templates.js";
 import { firstReadySlice } from "../protocol/epic.js";
 import { validateBeforeApproval } from "../protocol/validator.js";
-import type { EpicState } from "../protocol/schema.js";
+import type { AtelierStatus, EpicState, SkillName } from "../protocol/schema.js";
+
+function inferResumeState(state: EpicState): { status: AtelierStatus; skill: SkillName } {
+  if (state.approval.status === "approved") {
+    const hasReadyOrActive = state.slices.some(
+      (s) => s.status === "ready" || s.status === "executing",
+    );
+    if (hasReadyOrActive || state.current_slice) {
+      return { status: "execution", skill: "implementer" };
+    }
+    return { status: "review", skill: "reviewer" };
+  }
+  if (state.approval.status === "pending" && state.slices.length > 0) {
+    return { status: "awaiting_approval", skill: "planner" };
+  }
+  return { status: "planning", skill: "planner" };
+}
 
 async function loadRequiredActive(cwd: string): Promise<EpicState> {
   const activeEpic = await readActiveEpic(cwd);
@@ -174,14 +190,15 @@ export async function cmdResume(cwd: string): Promise<void> {
   try {
     const active = await readActiveState(cwd);
     if (!active.active_epic) {
-      throw new Error("No paused epic to resume. Use `atelier new` to start one.");
+      throw new Error("No paused epic to resume. Use `atelier new \"<goal>\"` to start one.");
     }
     const state = await readEpicState(cwd, active.active_epic);
     if (state.status !== "paused") {
       throw new Error(`Epic ${state.epic_id} is not paused (status=${state.status}).`);
     }
-    state.status = "planning";
-    state.active_skill = "planner";
+    const { status, skill } = inferResumeState(state);
+    state.status = status;
+    state.active_skill = skill;
     await writeEpicState(cwd, state);
     await writeActiveState(cwd, {
       active: true,
@@ -191,7 +208,9 @@ export async function cmdResume(cwd: string): Promise<void> {
       active_skill: state.active_skill,
       updated_at: new Date().toISOString(),
     });
-    console.log(pc.green(`resumed: ${state.epic_id} status=${state.status}`));
+    console.log(pc.green(`Resumed Atelier epic: ${state.epic_id}`));
+    console.log(pc.dim(`Status: ${state.status}`));
+    console.log(pc.dim(`Active skill: ${state.active_skill}`));
   } catch (error) {
     console.error(pc.red((error as Error).message));
     process.exitCode = 1;

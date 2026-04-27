@@ -124,7 +124,7 @@ explicit activation
 
 | Command | Purpose |
 |---------|---------|
-| `atelier init` | Install the v2 protocol files |
+| `atelier init` | Install the Atelier protocol files |
 | `atelier new "<goal>" --mode quick` | Create an active epic ledger |
 | `atelier status` | Show active protocol state |
 | `atelier validate` | Validate schemas, state, gates and premature diffs |

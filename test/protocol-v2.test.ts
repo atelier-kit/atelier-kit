@@ -18,7 +18,7 @@ import {
   writeActiveState,
   writeEpicState,
 } from "../src/protocol/state.js";
-import { validateProtocol } from "../src/protocol/validator.js";
+import { validateProtocol, validateBeforeExecution } from "../src/protocol/validator.js";
 import { tempDir, kitPath } from "./helpers.js";
 
 const execFileAsync = promisify(execFile);
@@ -268,6 +268,140 @@ describe("atelier v2 protocol", () => {
     expect(active.active_epic).toBe("add-payment-endpoint");
     expect(state.status).toBe("planning");
     expect(state.active_skill).toBe("planner");
+  });
+
+  test("resume fails when there is no active_epic", async () => {
+    const dir = await initialized();
+
+    await cmdResume(dir);
+
+    expect(process.exitCode).toBe(1);
+    process.exitCode = 0;
+  });
+
+  test("resume fails when the epic is not paused", async () => {
+    const dir = await initialized();
+    await cmdNew(dir, "Add payment endpoint", { mode: "quick" });
+
+    await cmdResume(dir);
+
+    expect(process.exitCode).toBe(1);
+    process.exitCode = 0;
+  });
+
+  test("resume infers awaiting_approval when approval is pending and slices exist", async () => {
+    const dir = await initialized();
+    await cmdNew(dir, "Add payment endpoint", { mode: "quick" });
+    const state = await readEpicState(dir, "add-payment-endpoint");
+    state.approval.status = "pending";
+    state.slices = [
+      {
+        id: "slice-001",
+        title: "Route",
+        status: "ready",
+        goal: "Add the route",
+        depends_on: [],
+        allowed_files: ["src/**"],
+        acceptance_criteria: ["Returns 200"],
+        validation: ["Run tests"],
+      },
+    ];
+    await writeEpicState(dir, state);
+    await cmdPause(dir);
+
+    await cmdResume(dir);
+
+    const resumed = await readEpicState(dir, "add-payment-endpoint");
+    expect(resumed.status).toBe("awaiting_approval");
+    expect(resumed.active_skill).toBe("planner");
+  });
+
+  test("resume infers execution when approval is approved and ready slices exist", async () => {
+    const dir = await initialized();
+    await cmdNew(dir, "Add payment endpoint", { mode: "quick" });
+    const state = await readEpicState(dir, "add-payment-endpoint");
+    state.approval = {
+      status: "approved",
+      approved_by: "human",
+      approved_at: new Date().toISOString(),
+      notes: null,
+    };
+    state.slices = [
+      {
+        id: "slice-001",
+        title: "Route",
+        status: "ready",
+        goal: "Add the route",
+        depends_on: [],
+        allowed_files: ["src/**"],
+        acceptance_criteria: ["Returns 200"],
+        validation: ["Run tests"],
+      },
+    ];
+    await writeEpicState(dir, state);
+    await cmdPause(dir);
+
+    await cmdResume(dir);
+
+    const resumed = await readEpicState(dir, "add-payment-endpoint");
+    expect(resumed.status).toBe("execution");
+    expect(resumed.active_skill).toBe("implementer");
+  });
+
+  test("before-execution gate fails without approval", async () => {
+    const dir = await initialized();
+    await cmdNew(dir, "Add payment endpoint", { mode: "quick" });
+    const state = await readEpicState(dir, "add-payment-endpoint");
+
+    const errors = validateBeforeExecution(state);
+
+    expect(errors).toContain("before_execution requires approval.status=approved");
+  });
+
+  test("before-execution gate fails without a ready slice", async () => {
+    const dir = await initialized();
+    await cmdNew(dir, "Add payment endpoint", { mode: "quick" });
+    const state = await readEpicState(dir, "add-payment-endpoint");
+    state.approval = {
+      status: "approved",
+      approved_by: "human",
+      approved_at: new Date().toISOString(),
+      notes: null,
+    };
+    state.status = "approved";
+
+    const errors = validateBeforeExecution(state);
+
+    expect(errors).toContain("before_execution requires at least one ready slice");
+  });
+
+  test("before-execution gate passes with approved state and a ready slice", async () => {
+    const dir = await initialized();
+    await cmdNew(dir, "Add payment endpoint", { mode: "quick" });
+    const state = await readEpicState(dir, "add-payment-endpoint");
+    state.approval = {
+      status: "approved",
+      approved_by: "human",
+      approved_at: new Date().toISOString(),
+      notes: null,
+    };
+    state.status = "approved";
+    state.slices = [
+      {
+        id: "slice-001",
+        title: "Route",
+        status: "ready",
+        goal: "Add the route",
+        depends_on: [],
+        allowed_files: ["src/**"],
+        acceptance_criteria: ["Returns 200"],
+        validation: ["Run tests"],
+      },
+    ];
+
+    const errors = validateBeforeExecution(state);
+
+    expect(errors).toHaveLength(0);
   });
 
   test("premature code changes are violations before execution", async () => {

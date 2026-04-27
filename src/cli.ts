@@ -57,10 +57,11 @@ program
   });
 
 program
-  .command("validate [phase]")
+  .command("validate")
   .description("Validate Atelier schemas, gates and protocol violations")
-  .action(async () => {
-    await cmdValidate(processCwd());
+  .option("--gate <name>", "Run a specific gate: before-approval | before-execution")
+  .action(async (opts: { gate?: string }) => {
+    await cmdValidate(processCwd(), opts);
   });
 
 program

@@ -1,6 +1,6 @@
 # atelier-kit agent usage
 
-atelier-kit v2 is an opt-in Planning Protocol. It extends an agent's native
+atelier-kit is an opt-in Planning Protocol. It extends an agent's native
 planning only when the user explicitly activates Atelier.
 
 ## Activation rules

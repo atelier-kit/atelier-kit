@@ -1,6 +1,6 @@
 # atelier-kit architecture
 
-Atelier-Kit v2 is a filesystem-native Planning Protocol, not a planner-first
+Atelier-Kit is a filesystem-native Planning Protocol, not a planner-first
 runtime. The host coding agent keeps its native behavior until Atelier is
 explicitly activated.
 

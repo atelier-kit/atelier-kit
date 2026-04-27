@@ -1,0 +1,33 @@
+gates:
+  before_code:
+    description: Project code cannot be edited unless execution is approved.
+    require:
+      - active.active=true
+      - state.status=execution
+      - state.approval.status=approved
+      - state.allowed_actions.write_project_code=true
+      - state.current_slice!=null
+
+  before_approval:
+    description: Plan must be reviewable by a human.
+    require:
+      - plan.md exists
+      - plan_has_goal
+      - plan_has_slices
+      - each_slice_has_acceptance_criteria
+      - risks_are_documented
+      - validation_steps_are_documented
+
+  before_execution:
+    description: Execution can only start after human approval.
+    require:
+      - approval.status=approved
+      - state.status=approved
+      - at_least_one_slice_ready
+
+  after_slice:
+    description: Each slice must leave trace.
+    require:
+      - execution-log.md updated
+      - slice_status in [done, blocked, needs-review]
+      - validation_result_present

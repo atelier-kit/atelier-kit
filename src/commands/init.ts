@@ -9,6 +9,7 @@ import { defaultContextMeta, writeContext } from "../state/context.js";
 import { installAdapter } from "../adapters/index.js";
 import type { AdapterName } from "../adapters/types.js";
 import { ModeSchema } from "../state/schema.js";
+import { installProtocolV2 } from "../protocol/init.js";
 
 export async function cmdInit(
   cwd: string,
@@ -86,18 +87,20 @@ export async function cmdInit(
     }),
   );
 
+  await installProtocolV2(cwd, adapter, mode);
   await installAdapter(cwd, adapter);
 
   console.log(pc.green(`atelier-kit initialized in ${dest}`));
   console.log(pc.dim(`Adapter: ${adapter}, mode: ${mode}`));
+  console.log(pc.dim("v2 protocol: .atelier/atelier.json, active.json, protocol/, rules/, skills/*.md"));
   console.log(
     pc.dim(
-      'Next: run `atelier-kit planner autoplan "your goal"`',
+      'Native plan: use `/plan` (no Atelier). Atelier: `/atelier plan "goal"` then `atelier new "..." --mode standard`.',
     ),
   );
   console.log(
     pc.dim(
-      'If `atelier-kit` is not found, install it globally with `npm install -g @atelier-kit/atelier-kit`.',
+      'CLI: `atelier` or `atelier-kit`. Install globally: `npm install -g @atelier-kit/atelier-kit`.',
     ),
   );
 }

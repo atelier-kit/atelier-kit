@@ -1,12 +1,14 @@
 # atelier-kit
 
-Planner-first CLI for AI coding workflows. Installs a `.atelier/` directory with
-planning state, **`SKILL.md` skills**, templates, gates, and optional adapters for **Claude Code**,
-**Cursor**, **Codex CLI**, **Windsurf**, **Cline**, **Kilo**, **Anti-GRAVITY**, or a
-**generic** prompt file.
+Filesystem-native toolkit for AI coding workflows. **`atelier init`** installs a `.atelier/` tree with optional adapters for **Claude Code**, **Cursor**, **Codex CLI**, **Windsurf**, **Cline**, **Kilo**, **Anti-GRAVITY**, or a **generic** prompt file.
 
-atelier-kit is a **planner-first framework** built around epics, tasks, slices, approval,
-and execution.
+## v2 planning protocol (opt-in)
+
+**Atelier-Kit v2** is a planning protocol: explicit activation, epic state in `.atelier/epics/<slug>/state.json`, on-demand flat skills (`.atelier/skills/*.md`), and CLI commands under the **`atelier`** binary (same package as `atelier-kit`). **`/plan`** stays native; **`/atelier …`** drives the protocol. See [PROTOCOL.md](./PROTOCOL.md) and [EXAMPLES.md](./EXAMPLES.md).
+
+## Legacy planner CLI
+
+atelier-kit remains a **planner-first framework** (epics, tasks, slices, approval, execution) under **`atelier-kit planner …`**, with state in `.atelier/context.md`.
 
 In planner workflow, the key primitives are:
 
@@ -27,9 +29,17 @@ makes the `atelier-kit` command available in your shell.
 
 ## Quickstart
 
-### Planner-first quickstart
+### v2 protocol quickstart
 
-This is the recommended starting point.
+```bash
+cd your-repo
+atelier-kit init   # or: atelier init
+atelier new "Add payment endpoint" --mode quick
+atelier status
+atelier validate
+```
+
+### Planner-first quickstart (legacy)
 
 ```bash
 cd your-repo

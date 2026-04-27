@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atelier-kit.dev/schemas/gate.schema.json",
+  "title": "Named validation gate (reference)",
+  "type": "object",
+  "properties": {
+    "id": { "type": "string" },
+    "passed": { "type": "boolean" },
+    "message": { "type": "string" }
+  }
+}

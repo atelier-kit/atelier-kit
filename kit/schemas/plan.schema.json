@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://atelier-kit.dev/schemas/plan.schema.json",
+  "title": "plan.md structure (informal)",
+  "description": "Human-authored markdown; validator checks headings and slice sections in code.",
+  "type": "string"
+}

@@ -4,6 +4,8 @@ Atelier-Kit is a filesystem-native Planning Protocol, not a planner-first
 runtime. The host coding agent keeps its native behavior until Atelier is
 explicitly activated.
 
+![Atelier mental execution flow](./assets/atelier-mental-execution-flow.png)
+
 ## Layers
 
 1. **Protocol files** in `.atelier/protocol/`

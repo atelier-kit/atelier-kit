@@ -1,20 +1,12 @@
 import prompts from "prompts";
 import pc from "picocolors";
-import { cp, mkdir, rm } from "node:fs/promises";
-import { join } from "node:path";
-import { getKitRoot } from "../paths.js";
-import { atelierDir } from "../fs-utils.js";
-import { defaultAtelierRc, writeAtelierRc } from "../state/atelierrc.js";
-import { defaultContextMeta, writeContext } from "../state/context.js";
-import { installAdapter } from "../adapters/index.js";
-import type { AdapterName } from "../adapters/types.js";
-import { ModeSchema } from "../state/schema.js";
+import { initializeProtocol } from "../protocol/init.js";
+import { AdapterSchema, AtelierModeSchema, type AdapterName } from "../protocol/schema.js";
 
 export async function cmdInit(
   cwd: string,
   opts: { yes?: boolean },
 ): Promise<void> {
-  const kit = getKitRoot();
   let adapter: AdapterName = "generic";
   let mode: "quick" | "standard" | "deep" = "standard";
 
@@ -24,18 +16,16 @@ export async function cmdInit(
       name: "adapter",
       message: "Which agent environment?",
       choices: [
-        { title: "Claude Code (.claude/skills)", value: "claude" },
-        { title: "Cursor (.cursor/skills)", value: "cursor" },
-        { title: "Codex CLI (AGENTS.md)", value: "codex" },
-        { title: "Windsurf (.windsurfrules)", value: "windsurf" },
-        { title: "Cline (.clinerules/)", value: "cline" },
-        { title: "Kilo (.kilocode/rules + AGENTS.md)", value: "kilo" },
-        { title: "Anti-GRAVITY (.agent/rules + AGENTS.md)", value: "antigravity" },
+        { title: "Cursor (.cursor/rules)", value: "cursor" },
+        { title: "Claude Code", value: "claude-code" },
+        { title: "Codex CLI", value: "codex" },
+        { title: "Windsurf", value: "windsurf" },
+        { title: "Cline", value: "cline" },
         { title: "Generic (atelier-system-prompt.txt)", value: "generic" },
       ],
-      initial: 7,
+      initial: 5,
     });
-    if (typeof a.adapter === "string") adapter = a.adapter as AdapterName;
+    if (typeof a.adapter === "string") adapter = AdapterSchema.parse(a.adapter);
 
     const m = await prompts({
       type: "select",
@@ -48,56 +38,23 @@ export async function cmdInit(
       ],
       initial: 1,
     });
-    if (typeof m.mode === "string") mode = ModeSchema.parse(m.mode);
+    if (typeof m.mode === "string") {
+      const parsed = AtelierModeSchema.parse(m.mode);
+      if (parsed !== "native") mode = parsed;
+    }
   }
 
-  const dest = atelierDir(cwd);
-  await mkdir(dest, { recursive: true });
-  await mkdir(join(dest, "artifacts"), { recursive: true });
-  await mkdir(join(dest, "plan"), { recursive: true });
-
-  await cp(kit, dest, { recursive: true });
-
-  await rm(join(dest, "brief.md"), { force: true }).catch(() => {});
-
-  await writeAtelierRc(
-    cwd,
-    defaultAtelierRc({ adapter, mode }),
-  );
-
-  await writeContext(
-    cwd,
-    defaultContextMeta({
-      workflow: "planner",
-      planner_mode: "autoplan",
-      planner_state: "idle",
-      approval_status: "none",
-      phase: "plan",
-      mode,
-      adapter,
-      gate_pending: null,
-      current_epic: null,
-      current_task: null,
-      current_slice: null,
-      epics: [],
-      tasks: [],
-      slices: [],
-      returns: [],
-    }),
-  );
-
-  await installAdapter(cwd, adapter);
-
-  console.log(pc.green(`atelier-kit initialized in ${dest}`));
-  console.log(pc.dim(`Adapter: ${adapter}, mode: ${mode}`));
+  const result = await initializeProtocol(cwd, { adapter, mode });
+  console.log(pc.green(`atelier-kit initialized in ${result.atelierDir}`));
+  console.log(pc.dim(`Adapter: ${adapter}, default Atelier mode: ${mode}`));
   console.log(
     pc.dim(
-      'Next: run `atelier-kit planner autoplan "your goal"`',
+      'Next: use native `/plan ...`, or activate Atelier with `atelier new "your goal" --mode quick`.',
     ),
   );
   console.log(
     pc.dim(
-      'If `atelier-kit` is not found, install it globally with `npm install -g @atelier-kit/atelier-kit`.',
+      'Atelier is inactive until `/atelier ...`, "Use Atelier-Kit", or `atelier new` explicitly activates it.',
     ),
   );
 }

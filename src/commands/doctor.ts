@@ -1,18 +1,13 @@
 import pc from "picocolors";
-import { runDoctor, defaultSkillsRoot } from "../gates/run.js";
+import { validateProtocol } from "../protocol/validator.js";
 
 export async function cmdDoctor(cwd: string): Promise<void> {
-  const skillsRoot = defaultSkillsRoot(cwd);
-  const { ok, reports } = await runDoctor(cwd, skillsRoot);
-  for (const r of reports) {
-    if (r.errors.length === 0) {
-      console.log(pc.green(`✓ ${r.name}`));
-    } else {
-      console.log(pc.red(`✗ ${r.name}`));
-      for (const e of r.errors) console.log(pc.dim(`  - ${e}`));
-    }
+  const result = await validateProtocol(cwd);
+  if (result.ok) {
+    console.log(pc.green("doctor: Atelier protocol installation is healthy"));
+    return;
   }
-  if (!ok) {
-    process.exitCode = 1;
-  }
+  console.log(pc.red("doctor: Atelier protocol has issues"));
+  for (const issue of result.errors) console.log(pc.dim(`  - ${issue}`));
+  process.exitCode = 1;
 }

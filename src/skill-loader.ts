@@ -1,27 +1,61 @@
 import matter from "gray-matter";
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { readdir, readFile } from "node:fs/promises";
+import { basename, join } from "node:path";
 import { z } from "zod";
 import type { ContextMeta, Phase, TaskType } from "./state/schema.js";
 
 const FrontSchema = z.object({
-  name: z.string(),
-  description: z.string(),
+  name: z.string().optional(),
+  description: z.string().optional(),
   phase: z.union([z.string(), z.array(z.string())]).optional(),
   reads: z.array(z.string()).optional(),
   produces: z.array(z.string()).optional(),
 });
 
-export type SkillFront = z.infer<typeof FrontSchema>;
+export interface SkillFront {
+  name: string;
+  description: string;
+  phase?: string | string[];
+  reads?: string[];
+  produces?: string[];
+}
+
+export interface SkillFile {
+  name: string;
+  path: string;
+  label: string;
+}
+
+export async function listSkillFiles(skillsRoot: string): Promise<SkillFile[]> {
+  const entries = await readdir(skillsRoot, { withFileTypes: true });
+  const found: SkillFile[] = [];
+
+  for (const entry of entries) {
+    if (!entry.isFile() || !entry.name.endsWith(".md")) continue;
+    const name = basename(entry.name, ".md");
+    found.push({
+      name,
+      path: join(skillsRoot, entry.name),
+      label: entry.name,
+    });
+  }
+
+  return found.sort((a, b) => a.name.localeCompare(b.name));
+}
 
 export async function loadSkill(
   skillsRoot: string,
   folder: string,
 ): Promise<{ front: SkillFront; body: string; instructions: string }> {
-  const p = join(skillsRoot, folder, "SKILL.md");
+  const p = join(skillsRoot, `${folder}.md`);
   const raw = await readFile(p, "utf8");
   const { data, content } = matter(raw);
-  const front = FrontSchema.parse(data);
+  const parsed = FrontSchema.parse(data);
+  const front: SkillFront = {
+    ...parsed,
+    name: parsed.name ?? folder,
+    description: parsed.description ?? "",
+  };
   const instructions = extractInstructions(content);
   return { front, body: content, instructions };
 }
@@ -43,7 +77,7 @@ export function countInstructions(instructionBlock: string): number {
   return n;
 }
 
-/** Map runtime phase to skill directory name under .atelier/skills */
+/** Map runtime phase to skill name under .atelier/skills */
 export function phaseToSkillFolder(phase: Phase): string | null {
   const map: Partial<Record<Phase, string>> = {
     questions: "questions",

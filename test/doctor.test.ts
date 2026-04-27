@@ -10,7 +10,7 @@ describe("doctor", () => {
     delete process.env.ATELIER_KIT_ROOT;
   });
 
-  test("passes on fresh init tree", async () => {
+  test("passes with inactive native state", async () => {
     const { path, cleanup: c } = await tempDir();
     cleanup = c;
     process.env.ATELIER_KIT_ROOT = kitPath();

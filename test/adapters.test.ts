@@ -3,12 +3,9 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { cmdInit } from "../src/commands/init.js";
 import { cmdInstallAdapter } from "../src/commands/install-adapter.js";
+import { cmdRenderRules } from "../src/commands/rules.js";
 import { tempDir, kitPath } from "./helpers.js";
-import {
-  cmdPlannerAutoplan,
-  cmdPlannerApprove,
-  cmdPlannerExecute,
-} from "../src/commands/planner.js";
+import { cmdNew } from "../src/commands/new.js";
 
 describe("agent adapters include planner protocol", () => {
   let cleanup: () => Promise<void> = async () => {};
@@ -18,54 +15,62 @@ describe("agent adapters include planner protocol", () => {
     delete process.env.ATELIER_KIT_ROOT;
   });
 
-  test("generic adapter prompt includes /planner commands", async () => {
+  test("generic adapter prompt includes Atelier activation rules", async () => {
     const { path, cleanup: c } = await tempDir();
     cleanup = c;
     process.env.ATELIER_KIT_ROOT = kitPath();
 
     await cmdInit(path, { yes: true });
-    await cmdPlannerAutoplan(path, "Migrate Python framework to PHP");
-    await cmdPlannerApprove(path);
-    await cmdPlannerExecute(path);
+    await cmdNew(path, "Migrate Python framework to PHP", { mode: "quick" });
+    await cmdInstallAdapter(path, "generic");
 
     const prompt = await readFile(join(path, "atelier-system-prompt.txt"), "utf8");
-    expect(prompt).toContain("/planner <goal>");
-    expect(prompt).toContain("atelier-kit planner autoplan");
-    expect(prompt).toContain("atelier-kit planner approve");
-    expect(prompt).toContain("current_task:");
+    expect(prompt).toContain("/atelier quick");
+    expect(prompt).toContain(".atelier/active.json");
+    expect(prompt).toContain("active_skill: repo-analyst");
   });
 
-  test("cline, kilo, and antigravity adapters render workspace rules", async () => {
+  test("cursor adapter renders workspace rules", async () => {
     const { path, cleanup: c } = await tempDir();
     cleanup = c;
     process.env.ATELIER_KIT_ROOT = kitPath();
 
     await cmdInit(path, { yes: true });
-    await cmdPlannerAutoplan(path, "Evaluate framework migration");
-
-    await cmdInstallAdapter(path, "cline");
-    const clineRules = await readFile(
-      join(path, ".clinerules", "atelier-core.md"),
+    await cmdInstallAdapter(path, "cursor");
+    const cursorRules = await readFile(
+      join(path, ".cursor", "rules", "atelier-core.mdc"),
       "utf8",
     );
-    expect(clineRules).toContain("/planner <goal>");
+    expect(cursorRules).toContain("Atelier-Kit is inactive by default");
+    expect(cursorRules).toContain("/atelier plan");
+  });
 
-    await cmdInstallAdapter(path, "kilo");
-    const kiloRules = await readFile(
-      join(path, ".kilocode", "rules", "atelier-core.md"),
+  test("render-rules writes adapter files", async () => {
+    const { path, cleanup: c } = await tempDir();
+    cleanup = c;
+    process.env.ATELIER_KIT_ROOT = kitPath();
+
+    await cmdInit(path, { yes: true });
+    await cmdRenderRules(path, "cursor");
+
+    const cursorRules = await readFile(
+      join(path, ".cursor", "rules", "atelier-core.mdc"),
       "utf8",
     );
-    const kiloAgents = await readFile(join(path, "AGENTS.md"), "utf8");
-    expect(kiloRules).toContain("atelier-kit planner autoplan");
-    expect(kiloAgents).toContain("Current skill");
+    expect(cursorRules).toContain("Atelier-Kit is inactive by default");
+    expect(cursorRules).toContain("/plan ...");
+  });
 
-    await cmdInstallAdapter(path, "antigravity");
-    const agRules = await readFile(
-      join(path, ".agent", "rules", "atelier-core.md"),
-      "utf8",
-    );
-    const gemini = await readFile(join(path, "GEMINI.md"), "utf8");
-    expect(agRules).toContain("atelier-kit planner approve");
-    expect(gemini).toContain("/planner <goal>");
+  test("render-rules writes generic agent instructions", async () => {
+    const { path, cleanup: c } = await tempDir();
+    cleanup = c;
+    process.env.ATELIER_KIT_ROOT = kitPath();
+
+    await cmdInit(path, { yes: true });
+    await cmdRenderRules(path, "generic");
+
+    const agents = await readFile(join(path, "AGENTS.md"), "utf8");
+    expect(agents).toContain("Atelier-Kit is inactive by default");
+    expect(agents).toContain("/atelier quick");
   });
 });

@@ -5,7 +5,7 @@ export async function cmdStatus(cwd: string): Promise<void> {
   try {
     const config = await readAtelierConfig(cwd);
     const { active, state } = await readActiveEpic(cwd);
-    console.log(pc.bold("Atelier-Kit v2"));
+    console.log(pc.bold("Atelier-Kit"));
     console.log(`  protocol:      ${config.protocol}`);
     console.log(`  active:        ${active.active ? pc.green("true") : pc.dim("false")}`);
     console.log(`  mode:          ${active.mode}`);

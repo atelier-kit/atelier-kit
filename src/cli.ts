@@ -27,7 +27,7 @@ program
 
 program
   .command("init")
-  .description("Install .atelier/ v2 protocol files")
+  .description("Install .atelier/ protocol files")
   .option("-y, --yes", "Skip prompts (default: generic, standard)")
   .action(async (opts: { yes?: boolean }) => {
     await cmdInit(processCwd(), opts);

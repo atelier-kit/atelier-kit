@@ -45,7 +45,7 @@ export async function cmdInit(
   }
 
   const result = await initializeProtocol(cwd, { adapter, mode });
-  console.log(pc.green(`atelier-kit v2 initialized in ${result.atelierDir}`));
+  console.log(pc.green(`atelier-kit initialized in ${result.atelierDir}`));
   console.log(pc.dim(`Adapter: ${adapter}, default Atelier mode: ${mode}`));
   console.log(
     pc.dim(

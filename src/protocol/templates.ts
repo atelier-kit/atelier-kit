@@ -271,12 +271,14 @@ Use the host agent's normal behavior unless one of these is true:
 4. The current task belongs to an active Atelier epic.
 
 When Atelier-Kit is inactive:
+
 - Do not create Atelier artifacts.
 - Do not enforce Atelier gates.
 - Do not block normal agent behavior.
 - Do not load Atelier skills.
 
 When Atelier-Kit is active:
+
 1. Read \`.atelier/atelier.json\`.
 2. Read \`.atelier/active.json\`.
 3. Read \`.atelier/epics/<active_epic>/state.json\`.
@@ -299,7 +301,10 @@ This adapter extends the host agent's native planning only when Atelier-Kit is e
 - \`/plan ...\` remains native host-agent planning. Do not create Atelier artifacts.
 - \`/atelier quick ...\`, \`/atelier plan ...\`, and \`/atelier deep ...\` activate Atelier.
 - "Use Atelier-Kit for this feature" also activates Atelier.
-- When active, read \`.atelier/active.json\` and the active epic \`state.json\` before acting.
+
+When active:
+
+- Read \`.atelier/active.json\` and the active epic \`state.json\` before acting.
 - Load only the skill named by \`active_skill\`.
 - Do not edit project code unless the active epic is in \`execution\` with approved approval status.
 `;
@@ -310,9 +315,11 @@ export function skillBody(skill: SkillName): string {
     "repo-analyst": `# Repo Analyst
 
 ## Mission
+
 Map the repository facts needed for the active epic.
 
 ## Inputs
+
 - \`.atelier/epics/<epic>/questions.md\`
 - project source files
 - tests
@@ -320,19 +327,24 @@ Map the repository facts needed for the active epic.
 - routing/config files
 
 ## Allowed reads
+
 - Project files relevant to the active epic
 - Existing tests and dependency/config files
 
 ## Allowed writes
+
 - \`.atelier/epics/<epic>/research/repo.md\`
 
 ## Forbidden actions
+
 - Do not edit project code.
 - Do not create slices.
 - Do not make final architecture decisions.
 
 ## Output format
+
 Write:
+
 1. Existing architecture patterns.
 2. Relevant files.
 3. Similar implementations.
@@ -341,32 +353,40 @@ Write:
 6. Unknowns.
 
 ## Completion criteria
+
 Repository evidence is concrete enough for planning and references actual files.
 `,
     "tech-analyst": `# Tech Analyst
 
 ## Mission
+
 Validate technical feasibility and dependency constraints.
 
 ## Inputs
+
 - \`.atelier/epics/<epic>/questions.md\`
 - dependency manifests
 - framework/API documentation if needed
 
 ## Allowed reads
+
 - Project dependency/config files
 - Relevant external documentation when current facts are required
 
 ## Allowed writes
+
 - \`.atelier/epics/<epic>/research/tech.md\`
 
 ## Forbidden actions
+
 - Do not edit project code.
 - Do not create slices.
 - Do not approve implementation.
 
 ## Output format
+
 Write:
+
 1. Libraries or APIs involved.
 2. Version constraints.
 3. Security concerns.
@@ -374,32 +394,40 @@ Write:
 5. Implementation notes.
 
 ## Completion criteria
+
 Technical constraints and integration risks are explicit and sourced.
 `,
     "business-analyst": `# Business Analyst
 
 ## Mission
+
 Map user flow, edge cases and acceptance criteria.
 
 ## Inputs
+
 - User request
 - \`.atelier/epics/<epic>/questions.md\`
 - Product/business context available in the repo
 
 ## Allowed reads
+
 - Product docs
 - User-facing flows and tests
 
 ## Allowed writes
+
 - \`.atelier/epics/<epic>/research/business.md\`
 
 ## Forbidden actions
+
 - Do not edit project code.
 - Do not create final slices.
 - Do not make final architecture decisions.
 
 ## Output format
+
 Write:
+
 1. User/business goal.
 2. Happy path.
 3. Error paths.
@@ -407,34 +435,42 @@ Write:
 5. Acceptance criteria candidates.
 
 ## Completion criteria
+
 Acceptance criteria candidates cover happy path, errors and edge cases.
 `,
     planner: `# Planner
 
 ## Mission
+
 Transform evidence into an executable plan.
 
 ## Inputs
+
 - Research artifacts
 - Design/decision artifacts when present
 - Active epic \`state.json\`
 
 ## Allowed reads
+
 - \`.atelier/epics/<epic>/**\`
 - Project files referenced by evidence
 
 ## Allowed writes
+
 - \`.atelier/epics/<epic>/synthesis.md\`
 - \`.atelier/epics/<epic>/plan.md\`
 - \`.atelier/epics/<epic>/state.json\`
 
 ## Forbidden actions
+
 - Do not edit project code.
 - Do not mark a plan as approved.
 - Do not execute slices.
 
 ## Output format
+
 Write:
+
 1. Evidence summary.
 2. Assumptions.
 3. Risks.
@@ -443,31 +479,39 @@ Write:
 6. Validation steps.
 
 ## Completion criteria
+
 The plan has reviewable slices with allowed files, acceptance criteria and validation.
 `,
     designer: `# Designer
 
 ## Mission
+
 Record architectural decisions and solution design.
 
 ## Inputs
+
 - Research artifacts
 - Active epic goal and constraints
 
 ## Allowed reads
+
 - \`.atelier/epics/<epic>/**\`
 - Project architecture and API files
 
 ## Allowed writes
+
 - \`.atelier/epics/<epic>/decisions.md\`
 - \`.atelier/epics/<epic>/design.md\`
 
 ## Forbidden actions
+
 - Do not edit project code.
 - Do not execute slices.
 
 ## Output format
+
 Write:
+
 1. Chosen design.
 2. Alternatives considered.
 3. Trade-offs.
@@ -476,63 +520,78 @@ Write:
 6. Rollback considerations.
 
 ## Completion criteria
+
 Design decisions are traceable to evidence and ready for planning.
 `,
     implementer: `# Implementer
 
 ## Mission
+
 Execute only the current approved slice.
 
 ## Inputs
+
 - Active epic \`state.json\`
 - Approved \`plan.md\`
 - \`current_slice\`
 
 ## Allowed reads
+
 - Files needed to implement the current slice
 
 ## Allowed writes
+
 - Project files included in \`current_slice.allowed_files\`
 - \`.atelier/epics/<epic>/execution-log.md\`
 - \`.atelier/epics/<epic>/state.json\`
 
 ## Forbidden actions
+
 - Do not execute future slices.
 - Do not change files outside the slice scope unless needed and documented.
 - Do not alter the approved plan silently.
 - Do not mark unvalidated work as done.
 
 ## Output format
+
 Update the execution log with implementation and validation notes.
 
 ## Completion criteria
+
 The current slice is done, blocked, or needs review with validation recorded.
 `,
     reviewer: `# Reviewer
 
 ## Mission
+
 Review completed execution against the approved plan.
 
 ## Inputs
+
 - Approved \`plan.md\`
 - \`execution-log.md\`
 - Current git diff and tests
 
 ## Allowed reads
+
 - Project diff
 - Test output
 - Atelier artifacts
 
 ## Allowed writes
+
 - \`.atelier/epics/<epic>/review.md\`
 - \`.atelier/epics/<epic>/state.json\`
 
 ## Forbidden actions
+
 - Do not implement new scope.
 - Do not approve your own unvalidated changes.
 
 ## Output format
+
 Write:
+
 1. What changed.
 2. Validation performed.
 3. Risks remaining.
@@ -540,6 +599,7 @@ Write:
 5. Whether the epic can be marked done.
 
 ## Completion criteria
+
 Review states whether the epic can be marked done and why.
 `,
   };
@@ -550,7 +610,7 @@ export function schemaJson(name: string): string {
   const schemas: Record<string, unknown> = {
     "atelier.schema.json": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
-      title: "Atelier v2 configuration",
+      title: "Atelier configuration",
       type: "object",
       required: ["version", "protocol", "default_agent_mode", "default_atelier_mode", "adapter", "rules", "guards"],
       properties: {

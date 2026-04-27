@@ -23,16 +23,16 @@ export async function installAdapter(
       await applyCursor(cwd, base);
       break;
     case "codex":
-      await applyCodex(cwd, base);
+      await applyCodex(cwd);
       break;
     case "windsurf":
-      await applyWindsurf(cwd, base);
+      await applyWindsurf(cwd);
       break;
     case "cline":
       await applyCline(cwd, base);
       break;
     case "kilo":
-      await applyKilo(cwd, base);
+      await applyKilo(cwd);
       break;
     case "antigravity":
       await applyAntigravity(cwd);

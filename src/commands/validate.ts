@@ -1,21 +1,25 @@
 import pc from "picocolors";
-import { PhaseSchema } from "../state/schema.js";
-import { runValidatePhase, defaultSkillsRoot } from "../gates/run.js";
+import { requireInitialized } from "../protocol/workspace.js";
+import { validateWorkspace } from "../protocol/validator.js";
 
-export async function cmdValidate(cwd: string, phase: string): Promise<void> {
-  const parsed = PhaseSchema.safeParse(phase);
-  if (!parsed.success) {
-    console.error(pc.red(`Invalid phase: ${phase}`));
-    process.exitCode = 1;
-    return;
-  }
-  const skillsRoot = defaultSkillsRoot(cwd);
-  const { ok, errors } = await runValidatePhase(cwd, parsed.data, skillsRoot);
+export async function cmdValidate(cwd: string): Promise<void> {
+  await requireInitialized(cwd);
+  const { ok, errors, warnings, violations } = await validateWorkspace(cwd);
   if (ok) {
-    console.log(pc.green(`validate ${parsed.data}: OK`));
+    console.log(pc.green("atelier validate: OK"));
   } else {
-    console.log(pc.red(`validate ${parsed.data}: failed`));
-    for (const e of errors) console.log(pc.dim(`  - ${e}`));
+    console.log(pc.red("atelier validate: failed"));
+  }
+  for (const warning of warnings) {
+    console.log(pc.yellow(`  warning: ${warning}`));
+  }
+  for (const violation of violations) {
+    console.log(pc.red(`  violation: ${violation}`));
+  }
+  for (const error of errors.filter((error) => !violations.includes(error))) {
+    console.log(pc.dim(`  - ${error}`));
+  }
+  if (!ok) {
     process.exitCode = 1;
   }
 }

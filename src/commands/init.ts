@@ -1,14 +1,34 @@
 import prompts from "prompts";
 import pc from "picocolors";
-import { cp, mkdir, rm } from "node:fs/promises";
+import { copyFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { getKitRoot } from "../paths.js";
-import { atelierDir } from "../fs-utils.js";
-import { defaultAtelierRc, writeAtelierRc } from "../state/atelierrc.js";
-import { defaultContextMeta, writeContext } from "../state/context.js";
 import { installAdapter } from "../adapters/index.js";
 import type { AdapterName } from "../adapters/types.js";
-import { ModeSchema } from "../state/schema.js";
+import { bootstrapWorkspace, ensureAtelierRoot, writeAtelierConfig } from "../protocol/workspace.js";
+import { defaultAtelierConfig } from "../protocol/templates.js";
+import { writeAtelierRc } from "../state/atelierrc.js";
+
+const PROTOCOL_FILES = ["workflow.yaml", "gates.yaml", "skills.yaml", "modes.yaml"];
+const RULE_FILES = ["core.md"];
+const ADAPTER_RULE_FILES = ["cursor.md", "claude-code.md", "codex.md", "cline.md", "windsurf.md", "generic.md"];
+const SKILL_FILES = [
+  "repo-analyst.md",
+  "tech-analyst.md",
+  "business-analyst.md",
+  "planner.md",
+  "designer.md",
+  "implementer.md",
+  "reviewer.md",
+];
+const SCHEMA_FILES = [
+  "atelier.schema.json",
+  "active.schema.json",
+  "epic-state.schema.json",
+  "slice.schema.json",
+  "gate.schema.json",
+  "plan.schema.json",
+];
 
 export async function cmdInit(
   cwd: string,
@@ -24,14 +44,14 @@ export async function cmdInit(
       name: "adapter",
       message: "Which agent environment?",
       choices: [
-        { title: "Claude Code (.claude/skills)", value: "claude" },
-        { title: "Cursor (.cursor/skills)", value: "cursor" },
-        { title: "Codex CLI (AGENTS.md)", value: "codex" },
-        { title: "Windsurf (.windsurfrules)", value: "windsurf" },
-        { title: "Cline (.clinerules/)", value: "cline" },
-        { title: "Kilo (.kilocode/rules + AGENTS.md)", value: "kilo" },
-        { title: "Anti-GRAVITY (.agent/rules + AGENTS.md)", value: "antigravity" },
-        { title: "Generic (atelier-system-prompt.txt)", value: "generic" },
+        { title: "Claude Code", value: "claude" },
+        { title: "Cursor", value: "cursor" },
+        { title: "Codex CLI", value: "codex" },
+        { title: "Windsurf", value: "windsurf" },
+        { title: "Cline", value: "cline" },
+        { title: "Kilo", value: "kilo" },
+        { title: "Anti-GRAVITY", value: "antigravity" },
+        { title: "Generic prompt file", value: "generic" },
       ],
       initial: 7,
     });
@@ -40,64 +60,51 @@ export async function cmdInit(
     const m = await prompts({
       type: "select",
       name: "mode",
-      message: "Default mode?",
+      message: "Default Atelier mode?",
       choices: [
-        { title: "quick (smaller gates)", value: "quick" },
-        { title: "standard (full flow)", value: "standard" },
-        { title: "deep (strict)", value: "deep" },
+        { title: "quick", value: "quick" },
+        { title: "standard", value: "standard" },
+        { title: "deep", value: "deep" },
       ],
       initial: 1,
     });
-    if (typeof m.mode === "string") mode = ModeSchema.parse(m.mode);
+    if (typeof m.mode === "string") mode = m.mode as typeof mode;
   }
 
-  const dest = atelierDir(cwd);
-  await mkdir(dest, { recursive: true });
-  await mkdir(join(dest, "artifacts"), { recursive: true });
-  await mkdir(join(dest, "plan"), { recursive: true });
-
-  await cp(kit, dest, { recursive: true });
-
-  await rm(join(dest, "brief.md"), { force: true }).catch(() => {});
-
-  await writeAtelierRc(
-    cwd,
-    defaultAtelierRc({ adapter, mode }),
-  );
-
-  await writeContext(
-    cwd,
-    defaultContextMeta({
-      workflow: "planner",
-      planner_mode: "autoplan",
-      planner_state: "idle",
-      approval_status: "none",
-      phase: "plan",
-      mode,
-      adapter,
-      gate_pending: null,
-      current_epic: null,
-      current_task: null,
-      current_slice: null,
-      epics: [],
-      tasks: [],
-      slices: [],
-      returns: [],
-    }),
-  );
-
+  const dest = await ensureAtelierRoot(cwd);
+  await bootstrapWorkspace(cwd, adapter, mode);
+  await copyProtocolKit(kit, dest);
+  await writeAtelierConfig(cwd, defaultAtelierConfig(adapter, mode));
+  await writeAtelierRc(cwd, { adapter, mode });
   await installAdapter(cwd, adapter);
 
-  console.log(pc.green(`atelier-kit initialized in ${dest}`));
-  console.log(pc.dim(`Adapter: ${adapter}, mode: ${mode}`));
-  console.log(
-    pc.dim(
-      'Next: run `atelier-kit planner autoplan "your goal"`',
-    ),
-  );
-  console.log(
-    pc.dim(
-      'If `atelier-kit` is not found, install it globally with `npm install -g @atelier-kit/atelier-kit`.',
-    ),
-  );
+  console.log(pc.green(`atelier initialized in ${dest}`));
+  console.log(pc.dim("Atelier-Kit is inactive by default."));
+  console.log(pc.dim(`Default adapter: ${adapter}`));
+  console.log(pc.dim(`Default Atelier mode: ${mode}`));
+  console.log(pc.dim('Next: run `atelier new "Your epic" --mode quick` to activate the protocol.'));
+}
+
+async function copyProtocolKit(kitRoot: string, destination: string): Promise<void> {
+  await mkdir(join(destination, "protocol"), { recursive: true });
+  await mkdir(join(destination, "rules", "adapters"), { recursive: true });
+  await mkdir(join(destination, "skills"), { recursive: true });
+  await mkdir(join(destination, "schemas"), { recursive: true });
+  await mkdir(join(destination, "epics"), { recursive: true });
+
+  for (const file of PROTOCOL_FILES) {
+    await copyFile(join(kitRoot, "protocol", file), join(destination, "protocol", file));
+  }
+  for (const file of RULE_FILES) {
+    await copyFile(join(kitRoot, "rules", file), join(destination, "rules", file));
+  }
+  for (const file of ADAPTER_RULE_FILES) {
+    await copyFile(join(kitRoot, "rules", "adapters", file), join(destination, "rules", "adapters", file));
+  }
+  for (const file of SKILL_FILES) {
+    await copyFile(join(kitRoot, "skills", file), join(destination, "skills", file));
+  }
+  for (const file of SCHEMA_FILES) {
+    await copyFile(join(kitRoot, "schemas", file), join(destination, "schemas", file));
+  }
 }

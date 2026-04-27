@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "goal",
+    "slices"
+  ],
+  "properties": {
+    "goal": {
+      "type": "string",
+      "minLength": 1
+    },
+    "slices": {
+      "type": "array",
+      "items": {
+        "$ref": "./slice.schema.json"
+      },
+      "minItems": 1
+    }
+  }
+}

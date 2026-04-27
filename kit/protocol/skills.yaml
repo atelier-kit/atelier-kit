@@ -1,0 +1,54 @@
+skills:
+  repo-analyst:
+    file: .atelier/skills/repo-analyst.md
+    allowed_states:
+      - discovery
+    writes:
+      - research/repo.md
+
+  tech-analyst:
+    file: .atelier/skills/tech-analyst.md
+    allowed_states:
+      - discovery
+    writes:
+      - research/tech.md
+
+  business-analyst:
+    file: .atelier/skills/business-analyst.md
+    allowed_states:
+      - discovery
+    writes:
+      - research/business.md
+
+  planner:
+    file: .atelier/skills/planner.md
+    allowed_states:
+      - synthesis
+      - planning
+      - awaiting_approval
+    writes:
+      - synthesis.md
+      - plan.md
+
+  designer:
+    file: .atelier/skills/designer.md
+    allowed_states:
+      - design
+    writes:
+      - decisions.md
+      - design.md
+
+  implementer:
+    file: .atelier/skills/implementer.md
+    allowed_states:
+      - execution
+    writes:
+      - execution-log.md
+      - project_code
+
+  reviewer:
+    file: .atelier/skills/reviewer.md
+    allowed_states:
+      - review
+    writes:
+      - review.md

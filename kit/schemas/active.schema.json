@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "active",
+    "mode",
+    "active_epic",
+    "active_phase",
+    "active_skill",
+    "updated_at"
+  ],
+  "properties": {
+    "active": {
+      "type": "boolean"
+    },
+    "mode": {
+      "enum": [
+        "native",
+        "atelier"
+      ]
+    },
+    "active_epic": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "active_phase": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "active_skill": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "updated_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+}

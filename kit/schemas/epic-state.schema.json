@@ -1,0 +1,211 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "version",
+    "epic_id",
+    "title",
+    "goal",
+    "mode",
+    "status",
+    "active_skill",
+    "current_slice",
+    "approval",
+    "allowed_actions",
+    "required_artifacts",
+    "tasks",
+    "slices",
+    "guards",
+    "violations"
+  ],
+  "properties": {
+    "version": {
+      "const": 2
+    },
+    "epic_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "goal": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mode": {
+      "enum": [
+        "quick",
+        "standard",
+        "deep"
+      ]
+    },
+    "status": {
+      "enum": [
+        "native",
+        "idle",
+        "discovery",
+        "synthesis",
+        "design",
+        "planning",
+        "awaiting_approval",
+        "approved",
+        "execution",
+        "review",
+        "done",
+        "blocked",
+        "paused"
+      ]
+    },
+    "active_skill": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "current_slice": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "approval": {
+      "type": "object",
+      "required": [
+        "status",
+        "approved_by",
+        "approved_at",
+        "notes"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "none",
+            "pending",
+            "approved",
+            "rejected"
+          ]
+        },
+        "approved_by": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "approved_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "allowed_actions": {
+      "type": "object",
+      "required": [
+        "read_project_code",
+        "write_project_code",
+        "write_atelier_files",
+        "run_tests"
+      ],
+      "properties": {
+        "read_project_code": {
+          "type": "boolean"
+        },
+        "write_project_code": {
+          "type": "boolean"
+        },
+        "write_atelier_files": {
+          "type": "boolean"
+        },
+        "run_tests": {
+          "type": "boolean"
+        }
+      }
+    },
+    "required_artifacts": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "status",
+          "artifact"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "type": {
+            "enum": [
+              "repo",
+              "tech",
+              "business",
+              "synthesis",
+              "decision",
+              "implementation"
+            ]
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "ready",
+              "done",
+              "blocked"
+            ]
+          },
+          "artifact": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "slices": {
+      "type": "array",
+      "items": {
+        "$ref": "./slice.schema.json"
+      }
+    },
+    "guards": {
+      "type": "object",
+      "required": [
+        "baseline_ref",
+        "allowed_pre_execution_paths"
+      ],
+      "properties": {
+        "baseline_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "allowed_pre_execution_paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "violations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

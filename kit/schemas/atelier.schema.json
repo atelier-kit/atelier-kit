@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "version",
+    "protocol",
+    "default_agent_mode",
+    "default_atelier_mode",
+    "adapter",
+    "rules",
+    "guards"
+  ],
+  "properties": {
+    "version": {
+      "const": 2
+    },
+    "protocol": {
+      "const": "atelier-planning-protocol"
+    },
+    "default_agent_mode": {
+      "const": "native"
+    },
+    "default_atelier_mode": {
+      "enum": [
+        "quick",
+        "standard",
+        "deep"
+      ]
+    },
+    "adapter": {
+      "type": "string",
+      "minLength": 1
+    },
+    "rules": {
+      "type": "object",
+      "required": [
+        "activation",
+        "core_max_tokens",
+        "skills_load_strategy"
+      ],
+      "properties": {
+        "activation": {
+          "const": "explicit"
+        },
+        "core_max_tokens": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "skills_load_strategy": {
+          "const": "on_demand"
+        }
+      }
+    },
+    "guards": {
+      "type": "object",
+      "required": [
+        "detect_pre_approval_code_changes",
+        "use_git_diff"
+      ],
+      "properties": {
+        "detect_pre_approval_code_changes": {
+          "type": "boolean"
+        },
+        "use_git_diff": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

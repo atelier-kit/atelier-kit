@@ -1,0 +1,89 @@
+name: atelier-planning-protocol
+version: 2
+
+states:
+  native:
+    atelier_active: false
+    can_write_project_code: true
+
+  idle:
+    atelier_active: true
+    can_write_project_code: false
+    next:
+      - discovery
+
+  discovery:
+    can_write_project_code: false
+    skills:
+      - repo-analyst
+      - tech-analyst
+      - business-analyst
+    next:
+      - synthesis
+      - planning
+      - blocked
+
+  synthesis:
+    can_write_project_code: false
+    skills:
+      - planner
+    next:
+      - design
+      - planning
+      - blocked
+
+  design:
+    can_write_project_code: false
+    skills:
+      - designer
+    next:
+      - planning
+      - blocked
+
+  planning:
+    can_write_project_code: false
+    skills:
+      - planner
+    next:
+      - awaiting_approval
+      - blocked
+
+  awaiting_approval:
+    can_write_project_code: false
+    requires_human_action: true
+    next:
+      - approved
+      - planning
+      - blocked
+
+  approved:
+    can_write_project_code: false
+    next:
+      - execution
+
+  execution:
+    can_write_project_code: true
+    skills:
+      - implementer
+    requires:
+      - approval.status=approved
+      - current_slice
+    next:
+      - execution
+      - review
+      - blocked
+
+  review:
+    can_write_project_code: false
+    skills:
+      - reviewer
+    next:
+      - done
+      - execution
+      - blocked
+
+  done:
+    can_write_project_code: false
+
+  blocked:
+    can_write_project_code: false

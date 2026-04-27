@@ -1,19 +1,38 @@
-export function plannerCommandProtocol(): string {
-  return `Planner protocol:
-
-- When the user says \`/planner <goal>\`, prefer \`atelier-kit planner autoplan "<goal>"\`, then read \`.atelier/context.md\` again and continue until the planner reaches approval presentation.
-- When the user says \`/planner next\`, run \`atelier-kit planner next\`, then re-read \`.atelier/context.md\`.
-- When the user says \`/planner done\`, run \`atelier-kit planner done\`, then re-read \`.atelier/context.md\`.
-- When the user says \`/planner present\`, run \`atelier-kit planner present\`.
-- When the user says \`/planner approve\`, run \`atelier-kit planner approve\`, then re-read \`.atelier/context.md\`.
-- When the user says \`/planner reject\`, run \`atelier-kit planner reject --reason "<reason>"\`, then re-read \`.atelier/context.md\`.
-- When the user says \`/planner execute\`, run \`atelier-kit planner execute\`, then re-read \`.atelier/context.md\`.
-- When the user says \`/planner status\`, run \`atelier-kit status\`.
-- When the user says \`/planner focus <id>\`, choose \`atelier-kit planner task focus <id>\` or \`atelier-kit planner slice focus <id>\` based on the current planner state, then re-read \`.atelier/context.md\`.
-- When the user says \`/slice start\`, focus the next ready slice with \`atelier-kit planner next\` and continue in implementer mode if a slice becomes active.
-- After every planner command that mutates state, re-read \`.atelier/context.md\` before taking further action.`;
+export function activationProtocol(): string {
+  return [
+    "Activation rules:",
+    "- Atelier-Kit is inactive by default.",
+    "- `/plan ...` stays in the host agent's native plan mode.",
+    "- `/atelier quick ...`, `/atelier plan ...`, `/atelier deep ...`, or an explicit request to use Atelier-Kit activates the protocol.",
+    "- When inactive, do not create Atelier artifacts, enforce Atelier gates, or load Atelier skills.",
+  ].join("
+");
 }
 
-export function plannerStateReminder(): string {
-  return "Use `workflow`, `planner_mode`, `planner_state`, `approval_status`, `current_task`, and `current_slice` together as the state machine.";
+export function activeProtocol(): string {
+  return [
+    "When Atelier is active:",
+    "1. Read `.atelier/atelier.json`.",
+    "2. Read `.atelier/active.json`.",
+    "3. Read `.atelier/epics/<active_epic>/state.json`.",
+    "4. Load only the skill referenced by `active_skill`.",
+    "5. If `allowed_actions.write_project_code` is false, do not edit project code.",
+    "6. If `status` is `awaiting_approval`, present `plan.md` and stop.",
+    "7. If `status` is `execution`, execute only `current_slice`.",
+    "8. After each protocol step, update the relevant artifact and `state.json`.",
+  ].join("
+");
+}
+
+export function commandReference(): string {
+  return [
+    "CLI helpers:",
+    "- `atelier status`",
+    "- `atelier validate`",
+    "- `atelier new "Epic title" --mode quick|standard|deep`",
+    "- `atelier approve` / `atelier reject --reason "..."`",
+    "- `atelier execute` / `atelier next` / `atelier done`",
+    "- `atelier pause` / `atelier off`",
+  ].join("
+");
 }

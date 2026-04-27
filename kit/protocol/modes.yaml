@@ -1,0 +1,55 @@
+modes:
+  quick:
+    description: Small, low-risk change.
+    required_artifacts:
+      - questions.md
+      - research/repo.md
+      - plan.md
+      - execution-log.md
+      - review.md
+    research_tracks:
+      repo: required
+      tech: optional
+      business: optional
+    max_recommended_slices: 3
+
+  standard:
+    description: Normal feature or medium change.
+    required_artifacts:
+      - questions.md
+      - research/repo.md
+      - research/tech.md
+      - research/business.md
+      - synthesis.md
+      - decisions.md
+      - design.md
+      - plan.md
+      - execution-log.md
+      - review.md
+    research_tracks:
+      repo: required
+      tech: required
+      business: required
+
+  deep:
+    description: High-risk architectural or product change.
+    required_artifacts:
+      - questions.md
+      - research/repo.md
+      - research/tech.md
+      - research/business.md
+      - synthesis.md
+      - decisions.md
+      - design.md
+      - risk-register.md
+      - rollback.md
+      - test-strategy.md
+      - plan.md
+      - critique.md
+      - execution-log.md
+      - review.md
+    research_tracks:
+      repo: required
+      tech: required
+      business: required
+      risk: required

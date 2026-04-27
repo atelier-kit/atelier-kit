@@ -10,6 +10,7 @@ import {
   cmdDone,
   cmdExecute,
   cmdPause,
+  cmdResume,
 } from "../src/commands/lifecycle.js";
 import {
   readActiveState,
@@ -251,6 +252,22 @@ describe("atelier v2 protocol", () => {
     expect(active.active_epic).toBe("add-payment-endpoint");
     expect(active.active_phase).toBe("paused");
     expect(state.status).toBe("paused");
+  });
+
+  test("resume reactivates a paused epic in planning mode", async () => {
+    const dir = await initialized();
+    await cmdNew(dir, "Add payment endpoint", { mode: "quick" });
+    await cmdPause(dir);
+
+    await cmdResume(dir);
+
+    const active = await readActiveState(dir);
+    const state = await readEpicState(dir, "add-payment-endpoint");
+    expect(active.active).toBe(true);
+    expect(active.mode).toBe("atelier");
+    expect(active.active_epic).toBe("add-payment-endpoint");
+    expect(state.status).toBe("planning");
+    expect(state.active_skill).toBe("planner");
   });
 
   test("premature code changes are violations before execution", async () => {

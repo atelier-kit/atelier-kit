@@ -30,6 +30,7 @@ atelier execute
 atelier next
 atelier done
 atelier pause
+atelier resume
 atelier off
 ```
 
@@ -128,3 +129,7 @@ moves the epic to `review`.
 
 While paused, the agent should behave normally unless the user explicitly
 reactivates Atelier.
+
+`atelier resume` reactivates a paused epic. It sets `active: true`,
+`mode: "atelier"`, and restores the epic to `planning` so the agent can
+continue from where it left off.

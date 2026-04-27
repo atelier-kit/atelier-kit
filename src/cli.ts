@@ -16,6 +16,7 @@ import {
   cmdOff,
   cmdPause,
   cmdReject,
+  cmdResume,
 } from "./commands/lifecycle.js";
 
 const program = new Command();
@@ -114,6 +115,13 @@ program
   .description("Pause Atelier without deleting the active epic")
   .action(async () => {
     await cmdPause(processCwd());
+  });
+
+program
+  .command("resume")
+  .description("Resume a paused Atelier epic")
+  .action(async () => {
+    await cmdResume(processCwd());
   });
 
 program

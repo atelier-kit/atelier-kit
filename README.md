@@ -136,6 +136,7 @@ explicit activation
 | `atelier next` | Focus the next ready slice |
 | `atelier done` | Complete the current slice and advance |
 | `atelier pause` | Pause Atelier and return agent behavior to native mode |
+| `atelier resume` | Resume a paused epic and reactivate the protocol |
 | `atelier off` | Disable Atelier |
 
 ## Adapter outputs

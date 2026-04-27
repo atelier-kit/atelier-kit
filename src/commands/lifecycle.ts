@@ -1,5 +1,5 @@
 import pc from "picocolors";
-import { readActiveEpic, writeActiveState, writeEpicState } from "../protocol/state.js";
+import { readActiveEpic, readActiveState, readEpicState, writeActiveState, writeEpicState } from "../protocol/state.js";
 import { inactiveState } from "../protocol/templates.js";
 import { firstReadySlice } from "../protocol/epic.js";
 import { validateBeforeApproval } from "../protocol/validator.js";
@@ -164,6 +164,34 @@ export async function cmdPause(cwd: string): Promise<void> {
       updated_at: new Date().toISOString(),
     });
     console.log(pc.green(`paused: ${state.epic_id}`));
+  } catch (error) {
+    console.error(pc.red((error as Error).message));
+    process.exitCode = 1;
+  }
+}
+
+export async function cmdResume(cwd: string): Promise<void> {
+  try {
+    const active = await readActiveState(cwd);
+    if (!active.active_epic) {
+      throw new Error("No paused epic to resume. Use `atelier new` to start one.");
+    }
+    const state = await readEpicState(cwd, active.active_epic);
+    if (state.status !== "paused") {
+      throw new Error(`Epic ${state.epic_id} is not paused (status=${state.status}).`);
+    }
+    state.status = "planning";
+    state.active_skill = "planner";
+    await writeEpicState(cwd, state);
+    await writeActiveState(cwd, {
+      active: true,
+      mode: "atelier",
+      active_epic: state.epic_id,
+      active_phase: state.status,
+      active_skill: state.active_skill,
+      updated_at: new Date().toISOString(),
+    });
+    console.log(pc.green(`resumed: ${state.epic_id} status=${state.status}`));
   } catch (error) {
     console.error(pc.red((error as Error).message));
     process.exitCode = 1;

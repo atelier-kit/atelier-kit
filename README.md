@@ -1,12 +1,28 @@
 # atelier-kit
 
-Planner-first CLI for AI coding workflows. Installs a `.atelier/` directory with
-planning state, **`SKILL.md` skills**, templates, gates, and optional adapters for **Claude Code**,
-**Cursor**, **Codex CLI**, **Windsurf**, **Cline**, **Kilo**, **Anti-GRAVITY**, or a
-**generic** prompt file.
+Atelier-Kit is an opt-in, filesystem-native Planning Protocol for coding agents.
+It extends an agent's native planning mode only when explicitly activated, then
+persists planning state, approval gates, skills, and slice execution under
+`.atelier/`.
 
-atelier-kit is a **planner-first framework** built around epics, tasks, slices, approval,
-and execution.
+Atelier-Kit is inactive by default:
+
+- `/plan ...` remains the host agent's native plan mode.
+- `/atelier quick ...`, `/atelier plan ...`, `/atelier deep ...`, or "Use
+  Atelier-Kit for this feature" activate the protocol.
+- When inactive, Atelier creates no artifacts, loads no skills, and enforces no
+  gates.
+
+When active, the source of truth is the active epic ledger:
+
+```text
+.atelier/active.json
+.atelier/epics/<epic-slug>/state.json
+```
+
+Each epic moves through discovery, synthesis/design/planning, approval,
+execution, review, and done. Project code edits are forbidden before human
+approval and execution mode.
 
 In planner workflow, the key primitives are:
 
@@ -27,34 +43,69 @@ makes the `atelier-kit` command available in your shell.
 
 ## Quickstart
 
-### Planner-first quickstart
-
-This is the recommended starting point.
+### Initialize the protocol
 
 ```bash
 cd your-repo
-atelier-kit init
-atelier-kit planner autoplan "Migrate Python framework to PHP"
-atelier-kit planner present
-atelier-kit planner approve
-atelier-kit planner execute
+atelier init
 ```
 
-This path:
+This installs `.atelier/atelier.json`, `.atelier/active.json`, protocol files,
+rules, skills, schemas, and adapter instructions. `active.json` starts inactive:
 
-1. creates planner state in `.atelier/context.md`
-2. turns the objective into repo, tech, and business research tasks
-3. synthesizes those tracks into executable slices
-4. generates the review plan at `.atelier/plan/<slug-do-plano>/plan.md` (and mirrors it to `.atelier/artifacts/plan.md` for compatibility)
-5. stops for approval before implementation
+```json
+{
+  "active": false,
+  "mode": "native",
+  "active_epic": null
+}
+```
 
-## Planning model
+### Use native plan mode
 
-Planner documentation is organized by purpose:
+```text
+/plan add this endpoint
+```
 
-- [PLANNER.md](./PLANNER.md) — planner lifecycle, state, and approval flow
+Expected behavior: native agent planning only. Atelier remains inactive.
+
+### Activate Atelier explicitly
+
+```bash
+atelier new "Add payment endpoint" --mode quick
+atelier status
+atelier validate
+```
+
+In agent chat, the equivalent activation is:
+
+```text
+/atelier quick add this endpoint
+/atelier plan add payments
+/atelier deep migrate authentication to SSO
+```
+
+The active epic ledger is created at `.atelier/epics/<epic-slug>/`.
+
+### Approval and execution
+
+After the plan is reviewable and human-approved:
+
+```bash
+atelier approve --by human
+atelier execute
+atelier done
+atelier next
+```
+
+Execution runs one approved slice at a time. `atelier validate` reports invalid
+state, missing artifacts, bad gates, and project-code diffs before approval.
+
+## Planning protocol
+
+- [PROTOCOL.md](./PROTOCOL.md) — protocol states, files, gates, and commands
 - [EXECUTION-FLOW.md](./EXECUTION-FLOW.md) — diagrammed execution flow from objective to researchers, plan, approval, and slices
-- [AGENT-USAGE.md](./AGENT-USAGE.md) — how to use the planner from Claude, Cursor, Codex, Windsurf, Cline, Kilo, Anti-GRAVITY, and generic agents
+- [AGENT-USAGE.md](./AGENT-USAGE.md) — how agents should activate and obey Atelier
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — internal architecture, state model, runtime, adapters, and artifacts
 
 atelier-kit uses a planner-oriented runtime in `.atelier/context.md`.

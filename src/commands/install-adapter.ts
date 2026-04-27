@@ -1,7 +1,8 @@
 import pc from "picocolors";
-import { AdapterSchema } from "../state/schema.js";
+import { AdapterSchema } from "../protocol/schema.js";
 import { installAdapter } from "../adapters/index.js";
-import { defaultAtelierRc, readAtelierRc, writeAtelierRc } from "../state/atelierrc.js";
+import { readAtelierConfig, writeAtelierConfig } from "../protocol/state.js";
+import type { AdapterName as LegacyAdapterName } from "../adapters/types.js";
 
 export async function cmdInstallAdapter(
   cwd: string,
@@ -13,8 +14,14 @@ export async function cmdInstallAdapter(
     process.exitCode = 1;
     return;
   }
-  const rc = await readAtelierRc(cwd).catch(() => defaultAtelierRc());
-  await writeAtelierRc(cwd, { ...rc, adapter: parsed.data });
-  await installAdapter(cwd, parsed.data);
+  const config = await readAtelierConfig(cwd);
+  await writeAtelierConfig(cwd, { ...config, adapter: parsed.data });
+  const legacyAdapter = parsed.data === "claude-code" ? "claude" : parsed.data;
+  if (legacyAdapter === "kilo" || legacyAdapter === "antigravity") {
+    console.error(pc.red(`Adapter is not part of the v2 standard set: ${parsed.data}`));
+    process.exitCode = 1;
+    return;
+  }
+  await installAdapter(cwd, legacyAdapter as LegacyAdapterName);
   console.log(pc.green(`Installed adapter: ${parsed.data}`));
 }

@@ -8,6 +8,7 @@ import { applyGeneric } from "./generic.js";
 import { applyCline } from "./cline.js";
 import { applyKilo } from "./kilo.js";
 import { applyAntigravity } from "./antigravity.js";
+import { readAtelierConfig } from "../protocol/state.js";
 import { readAtelierRc } from "../state/atelierrc.js";
 
 export async function installAdapter(
@@ -49,10 +50,15 @@ export async function installAdapter(
 export async function refreshFallbackAdapters(cwd: string): Promise<void> {
   let adapter: AdapterName;
   try {
-    const rc = await readAtelierRc(cwd);
-    adapter = rc.adapter;
+    const config = await readAtelierConfig(cwd);
+    adapter = (config.adapter === "claude-code" ? "claude" : config.adapter) as AdapterName;
   } catch {
-    return;
+    try {
+      const rc = await readAtelierRc(cwd);
+      adapter = rc.adapter;
+    } catch {
+      return;
+    }
   }
   if (
     adapter === "generic" ||

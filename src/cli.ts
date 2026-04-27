@@ -10,6 +10,17 @@ import { cmdHandoff } from "./commands/handoff.js";
 import { cmdDoctor } from "./commands/doctor.js";
 import { cmdValidate } from "./commands/validate.js";
 import { cmdInstallAdapter } from "./commands/install-adapter.js";
+import { cmdNew } from "./commands/new.js";
+import { cmdRenderRules } from "./commands/rules.js";
+import {
+  cmdApprove,
+  cmdDone,
+  cmdExecute,
+  cmdNext,
+  cmdOff,
+  cmdPause,
+  cmdReject,
+} from "./commands/lifecycle.js";
 import {
   cmdWorkflow,
   cmdPlannerAutoplan,
@@ -36,16 +47,25 @@ import {
 
 const program = new Command();
 program
-  .name("atelier-kit")
-  .description("Planner-first CLI for AI agent workflows")
-  .version("0.1.2");
+  .name("atelier")
+  .description("Filesystem-native Planning Protocol for coding agents")
+  .version("0.2.0");
 
 program
   .command("init")
-  .description("Install .atelier/ kit and agent adapter")
+  .description("Install .atelier/ v2 protocol files")
   .option("-y, --yes", "Skip prompts (default: generic, standard)")
   .action(async (opts: { yes?: boolean }) => {
     await cmdInit(processCwd(), opts);
+  });
+
+program
+  .command("new <title>")
+  .description("Create and activate a new Atelier epic")
+  .option("--mode <quick|standard|deep>", "Atelier planning mode")
+  .option("--goal <goal>", "Explicit epic goal")
+  .action(async (title: string, opts: { mode?: string; goal?: string }) => {
+    await cmdNew(processCwd(), title, opts);
   });
 
 program
@@ -57,7 +77,7 @@ program
 
 program
   .command("status")
-  .description("Print .atelier/context.md")
+  .description("Show active Atelier protocol state")
   .action(async () => {
     await cmdStatus(processCwd());
   });
@@ -86,16 +106,76 @@ program
 
 program
   .command("doctor")
-  .description("Run all validators (skills + artifacts)")
+  .description("Diagnose Atelier installation and state")
   .action(async () => {
     await cmdDoctor(processCwd());
   });
 
 program
-  .command("validate <phase>")
-  .description("Run an advanced/internal validator")
-  .action(async (phase: string) => {
-    await cmdValidate(processCwd(), phase);
+  .command("validate [phase]")
+  .description("Validate Atelier schemas, gates and protocol violations")
+  .action(async () => {
+    await cmdValidate(processCwd());
+  });
+
+program
+  .command("render-rules")
+  .description("Render core + adapter rules")
+  .requiredOption("--adapter <name>", "cursor|claude-code|codex|cline|windsurf|generic")
+  .action(async (opts: { adapter: string }) => {
+    await cmdRenderRules(processCwd(), opts.adapter);
+  });
+
+program
+  .command("approve")
+  .description("Mark a pending plan approved")
+  .option("--by <name>", "Approver name")
+  .option("--notes <text>", "Approval notes")
+  .action(async (opts: { by?: string; notes?: string }) => {
+    await cmdApprove(processCwd(), opts);
+  });
+
+program
+  .command("reject")
+  .description("Reject the active plan and return to planning")
+  .requiredOption("-r, --reason <text>", "Reason for rejection")
+  .action(async (opts: { reason: string }) => {
+    await cmdReject(processCwd(), opts.reason);
+  });
+
+program
+  .command("execute")
+  .description("Start execution after approval")
+  .action(async () => {
+    await cmdExecute(processCwd());
+  });
+
+program
+  .command("next")
+  .description("Focus the next ready slice")
+  .action(async () => {
+    await cmdNext(processCwd());
+  });
+
+program
+  .command("done")
+  .description("Mark current slice done and advance to review or next slice")
+  .action(async () => {
+    await cmdDone(processCwd());
+  });
+
+program
+  .command("pause")
+  .description("Pause Atelier without deleting the active epic")
+  .action(async () => {
+    await cmdPause(processCwd());
+  });
+
+program
+  .command("off")
+  .description("Disable Atelier and return to native mode")
+  .action(async () => {
+    await cmdOff(processCwd());
   });
 
 program

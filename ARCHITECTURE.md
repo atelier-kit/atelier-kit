@@ -1,16 +1,15 @@
-# atelier-kit architecture
+# atelier-kit v2 architecture
 
-This document explains the internal architecture of the framework.
+This document explains the internal architecture of the Atelier-Kit v2 planning
+protocol.
 
 It is meant for maintainers and contributors who want to understand:
 
-- where state lives
-- how planner transitions work
-- how CLI commands map to runtime behavior
-- how adapters, skills, and artifacts fit together
+- where protocol state lives
+- how gates and approval states work
+- how CLI helpers initialize, validate and render rules
+- how adapters, skills and artifacts fit together
 
-For the conceptual explanation of the planner, read [PLANNER.md](./PLANNER.md).  
-For the diagrammed objective-to-execution flow, read [EXECUTION-FLOW.md](./EXECUTION-FLOW.md).  
 For day-to-day usage by host agents, read [AGENT-USAGE.md](./AGENT-USAGE.md).
 
 ## Architectural summary
@@ -18,7 +17,7 @@ For day-to-day usage by host agents, read [AGENT-USAGE.md](./AGENT-USAGE.md).
 atelier-kit is organized around five layers:
 
 1. **State layer**
-2. **Runtime/orchestration layer**
+2. **Protocol and gate layer**
 3. **CLI layer**
 4. **Adapter layer**
 5. **Skill and artifact layer**
@@ -27,45 +26,53 @@ These layers are intentionally separate.
 
 ### Why this matters
 
-The framework works because:
+The protocol works because:
 
 - runtime state is explicit and persistent
-- transitions are centralized
-- the CLI is the mutation interface
-- adapters expose the same protocol across hosts
-- skills remain small and role-specific
+- activation is explicit
+- adapters expose small host-specific rules
+- skills are loaded on demand
+- validation detects broken state and premature code edits
 
 ---
 
 ## 1. State layer
 
-### Primary file
+### Global files
 
-- `.atelier/context.md`
+- `.atelier/atelier.json`
+- `.atelier/active.json`
 
-This is the authoritative state file for a session.
+`atelier.json` stores installation-level protocol configuration. `active.json`
+stores whether Atelier is active. When `active=false`, host-agent behavior is
+native and `/plan` remains untouched.
 
-It stores:
+### Epic source of truth
 
-- `workflow`
-- `planner_mode`
-- `planner_state`
-- `approval_status`
-- `approval_reason`
-- `phase`
-- `current_epic`
-- `current_task`
-- `current_slice`
-- `epics[]`
-- `tasks[]` — each task may carry a `parallel_group` identifier for discovery tracks
-- `slices[]`
-- `returns[]`
+Each active planning effort has its own ledger:
+
+```text
+.atelier/epics/<epic-slug>/state.json
+```
+
+That file is the authoritative protocol state for the epic. It stores:
+
+- status
+- active skill
+- current slice
+- approval status
+- allowed actions
+- required artifacts
+- slices
+- guards and violations
 
 ### Source files in the repo
 
-- `src/state/schema.ts`
-- `src/state/context.ts`
-- `src/state/planner.ts`
+- `src/protocol/schema.ts`
+- `src/protocol/state.ts`
+- `src/protocol/init.ts`
+- `src/protocol/epic.ts`
+- `src/protocol/validator.ts`
 
 ### Responsibilities
 
@@ -73,49 +80,44 @@ It stores:
 
 Defines typed state contracts using Zod:
 
-- runtime enums
-- planner state enums
-- entity schemas
-- context schema
+- config state
+- active state
+- epic state
+- slice state
+- approval and allowed action contracts
 
-This is the contract that keeps all other layers consistent.
+This is the contract that keeps protocol files consistent.
 
-#### `context.ts`
+#### `state.ts`
 
 Handles:
 
-- reading `.atelier/context.md`
-- parsing frontmatter
-- writing updated state
-- default context initialization
+- reading and writing JSON protocol files
+- parsing config, active and epic state
+- loading the active epic safely
 
 This is the persistence layer.
 
-#### `planner.ts`
+#### `epic.ts`
 
-Implements planner state transitions and orchestration logic.
-
-This file is the effective runtime kernel for planner mode.
+Creates a new epic ledger, initializes required artifacts and activates Atelier.
 
 ---
 
-## 2. Planner runtime layer
+## 2. Protocol and gate layer
 
-The planner runtime is implemented in:
+The protocol is filesystem-native. The CLI does not orchestrate reasoning; it
+installs protocol files, mutates explicit state and validates invariants.
 
-- `src/state/planner.ts`
+Important invariants:
 
-It is responsible for:
+- Atelier is inactive by default.
+- `/plan ...` remains native host-agent planning.
+- `/atelier quick|plan|deep ...` activates Atelier.
+- Project code cannot be edited before approval in Atelier mode.
+- Execution operates one approved slice at a time.
 
-- creating planning structures from a goal
-- classifying the goal into a domain-aware task template
-- creating repo, tech, business, and synthesis tasks
-- progressing tasks
-- generating slices
-- moving to approval
-- blocking execution before approval
-- entering execution after approval
-- writing `plan.md`
+Validation is implemented in `src/protocol/validator.ts`.
 
 ### Core transitions
 

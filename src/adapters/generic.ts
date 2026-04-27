@@ -1,49 +1,33 @@
-import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { readContext } from "../state/context.js";
 import { writeText } from "../fs-utils.js";
-import { activeSkillFolder } from "../skill-loader.js";
-import { plannerCommandProtocol } from "./common.js";
+import { readActiveEpic, readAtelierConfig } from "../protocol/state.js";
+import { readRule } from "../protocol/init.js";
 
 export async function applyGeneric(
   cwd: string,
-  atelier: string,
+  _atelier: string,
 ): Promise<void> {
-  const { meta } = await readContext(cwd);
-  const method = await readFile(join(atelier, "METHOD.md"), "utf8").catch(
-    () => "",
-  );
-  const folder = activeSkillFolder(meta);
-  let skillBody = "";
-  if (folder) {
-    const sp = join(atelier, "skills", folder, "SKILL.md");
-    try {
-      skillBody = await readFile(sp, "utf8");
-    } catch {
-      skillBody = "";
-    }
-  }
+  const config = await readAtelierConfig(cwd);
+  const { active, state } = await readActiveEpic(cwd);
+  const rules = await readRule(cwd, config.adapter);
 
-  const out = `atelier-kit — generated planner prompt (generic adapter)
+  const out = `atelier-kit — generated Planning Protocol prompt (generic adapter)
 Not affiliated with HumanLayer.
 
-=== .atelier/context.md (authoritative) ===
-workflow: ${meta.workflow}
-phase: ${meta.phase}
-current_epic: ${meta.current_epic ?? "null"}
-current_task: ${meta.current_task ?? "null"}
-current_slice: ${meta.current_slice ?? "null"}
-gate_pending: ${meta.gate_pending ?? "null"}
-returns: ${meta.returns.length}
+=== Activation ===
+active: ${active.active}
+active_epic: ${active.active_epic ?? "null"}
+active_phase: ${active.active_phase ?? "null"}
+active_skill: ${active.active_skill ?? "null"}
 
-=== METHOD.md ===
-${method}
+=== Active epic ===
+status: ${state?.status ?? "none"}
+approval: ${state?.approval.status ?? "none"}
+current_slice: ${state?.current_slice ?? "null"}
+can_write_project_code: ${state?.allowed_actions.write_project_code ?? false}
 
-=== Planner commands ===
-${plannerCommandProtocol()}
-
-=== Active skill (${folder ?? "none"}) ===
-${skillBody || "(follow METHOD.md only)"}
+=== Rules ===
+${rules}
 `;
 
   await writeText(join(cwd, "atelier-system-prompt.txt"), out);

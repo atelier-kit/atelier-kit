@@ -23,7 +23,7 @@ When Atelier-Kit is active:
 3. Read `.atelier/epics/<active_epic>/state.json`.
 4. Load only the skill required by `active_skill`.
 5. If `allowed_actions.write_project_code` is false, do not edit project code.
-6. If `status` is `awaiting_approval`, present `plan.md` and stop.
+6. If `status` is `awaiting_approval`, read `.atelier/epics/<active_epic>/plan.md`, present that Atelier plan in the chat for human approval, and stop.
 7. If `status` is `execution`, execute only `current_slice`.
 8. After each protocol step, update the corresponding artifact and `state.json`.
 

@@ -8,4 +8,5 @@ Use `CLAUDE.md` and generated command files under `.claude/commands/`.
 - `/atelier deep <goal>` maps to `atelier new "<goal>" --mode deep`.
 - After any command that changes state, read `.atelier/active.json` and the active epic `state.json`.
 - Load only `.atelier/skills/<active_skill>.md`.
-- Stop at `awaiting_approval` and present the plan for human approval.
+- Stop at `awaiting_approval`, read `.atelier/epics/<active_epic>/plan.md`, and present that Atelier plan in the chat for human approval.
+- Claude's native `/plan` files under `~/.claude/plans/` are not the Atelier source of truth. Do not write them unless the user explicitly asks for a Claude-native mirror.

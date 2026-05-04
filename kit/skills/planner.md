@@ -54,7 +54,7 @@ Transform available evidence into an executable plan with reviewable slices, all
 10. Keep slices small enough for one agent iteration.
 11. Reflect the same slices in `state.json` and `plan.md`.
 12. Set `approval.status` to `pending`, `status` to `awaiting_approval`, and `active_skill` to `planner` only when the plan is ready for human review.
-13. Stop and present the plan when `status` is `awaiting_approval`.
+13. Stop and present `.atelier/epics/<active_epic>/plan.md` in chat when `status` is `awaiting_approval`.
 
 ## Output Format
 

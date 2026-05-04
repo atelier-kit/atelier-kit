@@ -5,7 +5,8 @@ export function atelierCommandProtocol(): string {
 - \`/atelier quick ...\`, \`/atelier plan ...\`, and \`/atelier deep ...\` activate Atelier.
 - Use \`atelier new "<goal>" --mode quick|standard|deep\` to create an epic ledger.
 - Read \`.atelier/active.json\` and \`.atelier/epics/<active_epic>/state.json\` when active.
-- Stop at \`awaiting_approval\`; use \`atelier approve\` only after the before_approval gate passes.
+- At \`awaiting_approval\`, read \`.atelier/epics/<active_epic>/plan.md\`, present that Atelier plan in chat, and stop.
+- Use \`atelier approve\` only after the before_approval gate passes and the human approves the presented Atelier plan.
 - Use \`atelier next\` and \`atelier done\` to advance discovery/design/planning tasks.
 - Use \`atelier execute\`, \`atelier done\`, and \`atelier next\` to execute approved slices one at a time.`;
 }

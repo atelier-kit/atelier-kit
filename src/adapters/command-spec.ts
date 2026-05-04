@@ -23,6 +23,8 @@ ${atelierCommandReference()}
 
 After any command that changes state, read \`.atelier/active.json\`, then read \`.atelier/epics/<active_epic>/state.json\`, then load only \`.atelier/skills/<active_skill>.md\`.
 
+If the active epic has \`status=awaiting_approval\`, read \`.atelier/epics/<active_epic>/plan.md\`, present that Atelier plan in chat for human approval, and stop. Do not use or write Claude native plan files under \`~/.claude/plans/\` unless the user explicitly asks for a Claude-native mirror.
+
 Never edit project code unless the active epic has \`status=execution\`, \`approval.status=approved\`, and \`allowed_actions.write_project_code=true\`.
 `;
 }

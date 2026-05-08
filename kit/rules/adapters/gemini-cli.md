@@ -2,7 +2,7 @@
 
 Use `GEMINI.md` as the persistent adapter instruction.
 
-- Native planning remains Gemini CLI behavior unless the user explicitly invokes Atelier.
+- Planning stays Gemini CLI-native until someone explicitly runs `/atelier ...`.
 - `/atelier quick <goal>` maps to `atelier new "<goal>" --mode quick`.
 - `/atelier plan <goal>` maps to `atelier new "<goal>" --mode standard`.
 - `/atelier deep <goal>` maps to `atelier new "<goal>" --mode deep`.

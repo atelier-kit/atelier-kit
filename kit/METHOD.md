@@ -1,8 +1,8 @@
 # Atelier-Kit Planning Protocol
 
-Atelier-Kit v2 is inactive by default. Use the host agent's normal behavior
-unless the user explicitly activates Atelier with `/atelier ...`, asks to use
-Atelier-Kit, or `.atelier/active.json` has `"active": true`.
+By default Atelier is off. Treat `.atelier/active.json` with `"active": false` as
+your cue to ignore this kit unless the user invokes `/atelier ...`, asks for
+Atelier-Kit by name, or you already know the task belongs to an active epic.
 
 ## Source of truth
 
@@ -36,9 +36,8 @@ Each epic ledger owns its artifacts:
 
 ## Gates
 
-Atelier owns the workflow through `planned`. A planned epic has a validated
-`plan.md`, structured slices, and an exported native plan mirror.
+Atelier guides you through `planned`: by then `plan.md` should stand scrutiny,
+slices should be spelled out, and the usual mirror export can happen.
 
-Implementation happens in the host agent's native workflow. After
-implementation, run `atelier review` to compare the diff and validation evidence
-against the planned slices.
+Coding ships via whatever workflow you already use for this agent. When changes
+exist on disk, `atelier review` captures how closely reality matches the plan.

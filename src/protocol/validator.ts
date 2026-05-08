@@ -251,10 +251,11 @@ export async function validateProtocol(cwd: string): Promise<ValidationReport> {
   }
 
   const planPath = join(epicDir(cwd, state.epic_id), "plan.md");
-  if (await exists(planPath) && (state.status === "planned" || state.status === "review" || state.status === "done")) {
+  const planExists = await exists(planPath);
+  if (planExists && (state.status === "planned" || state.status === "review" || state.status === "done")) {
     const plan = await readFile(planPath, "utf8");
     errors.push(...planHasReviewableShape(plan, true));
-  } else if (state.status === "planning") {
+  } else if (state.status === "planning" && !planExists) {
     errors.push("plan.md required before finalizing planning");
   }
 

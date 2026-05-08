@@ -1,40 +1,32 @@
 # atelier-kit
 
-Atelier-Kit is an opt-in, filesystem-native Planning Protocol for coding agents.
-It extends an agent's native planning mode only when explicitly activated, then
-persists planning state, skills, native plan mirrors, and review artifacts under
-`.atelier/`.
+Atelier-Kit adds **structure around planning** when you ask for it: artifacts
+under `.atelier/`, a ledger per epic, optional mirrors into your agent's native
+plan files, and a short review pass after implementation.
 
-The CLI is deliberately small. It initializes protocol files, validates gates,
-renders adapter instructions, exports native plan files, and performs lifecycle
-state transitions; it does not run a separate planner, keep a second session
-context, or execute implementation work.
+Nothing happens until you opt in. `/plan ...` is unchanged—that is still your
+agent's built-in planning. `/atelier ...` (or explicitly asking to use
+Atelier-Kit) turns the protocol on; until then there are no `.atelier/` writes,
+no skills loaded, no gates.
 
-Atelier-Kit is inactive by default:
-
-- `/plan ...` remains the host agent's native plan mode.
-- `/atelier quick ...`, `/atelier plan ...`, `/atelier deep ...`, or "Use
-  Atelier-Kit for this feature" activate the protocol.
-- When inactive, Atelier creates no artifacts, loads no skills, and enforces no
-  gates.
-
-When active, the source of truth is the active epic ledger:
+While an epic is active, treat these two files as authoritative:
 
 ```text
 .atelier/active.json
 .atelier/epics/<epic-slug>/state.json
 ```
 
-Each epic moves through discovery, synthesis/design/planning, `planned`,
-optional review, and done. `planned` is the handoff boundary: the host agent
-implements using its own native workflow.
+An epic walks through discovery, synthesis and design (depending on mode),
+planning, then `planned`. After `planned`, coding happens the same way it would
+without Atelier—the agent uses its usual workflow. Review at the end compares
+what shipped with what was planned.
 
-In Atelier protocol mode, the key primitives are:
+Vocabulary you will see:
 
-- **epic**: the business or technical initiative being planned
-- **question**: the first planning artifact; research cannot start while it is generic
-- **task**: a unit of questions, discovery, analysis, decision, or implementation planning
-- **slice**: a vertical delivery cut derived from planning tasks and executed end-to-end
+- **epic**: the initiative you are planning end to end
+- **question**: first artifact; research should not run on boilerplate questions alone
+- **task**: one chunk of the protocol (questions, a research track, planning, etc.)
+- **slice**: a vertical cut inside `plan.md` with scope, acceptance checks and validation
 
 **Not affiliated with HumanLayer.** See [CREDITS.md](./CREDITS.md).
 
@@ -74,7 +66,7 @@ rules, skills, schemas, and adapter instructions. `active.json` starts inactive:
 /plan add this endpoint
 ```
 
-Expected behavior: native agent planning only. Atelier remains inactive.
+Here you want ordinary agent planning—no Atelier ledger, no `.atelier/` churn.
 
 ### Activate Atelier explicitly
 
@@ -117,8 +109,8 @@ atelier done
 ## Planning protocol
 
 - [PROTOCOL.md](./PROTOCOL.md) — protocol states, files, gates, and commands
-- [AGENT-USAGE.md](./AGENT-USAGE.md) — how agents should activate and obey Atelier
-- [ARCHITECTURE.md](./ARCHITECTURE.md) — internal architecture, state model, runtime, adapters, and artifacts
+- [AGENT-USAGE.md](./AGENT-USAGE.md) — activation and what to read when Atelier is on
+- [ARCHITECTURE.md](./ARCHITECTURE.md) — internal architecture, state model, adapters, and artifacts
 
 The default protocol shape is:
 
@@ -176,9 +168,9 @@ See [ADAPTERS.md](./ADAPTERS.md) for the adapter capability matrix.
 
 ## Native plan mirrors
 
-Atelier's source of truth remains `.atelier/epics/<epic>/plan.md`. When a host
-agent has useful native planning tools, `atelier export-plan` can mirror that
-plan into the agent's expected location. The default Claude Code mirror is
+Treat `.atelier/epics/<epic>/plan.md` as canonical. When your agent reads plans
+better from its own location, `atelier export-plan` copies there—mirrors are for
+convenience, not authority. The default Claude Code mirror is
 `~/.claude/plans/<epic>.md`; Cursor, Kiro and Antigravity use workspace-local
 mirror paths unless `--path` is provided.
 

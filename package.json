@@ -1,7 +1,7 @@
 {
   "name": "@atelier-kit/atelier-kit",
   "version": "0.2.0",
-  "description": "Filesystem-native Planning Protocol for coding agents (.atelier/)",
+  "description": "CLI and `.atelier/` layout for structured, opt-in agent planning",
   "type": "module",
   "license": "MIT",
   "author": "",

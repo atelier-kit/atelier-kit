@@ -1,8 +1,6 @@
 # Atelier-Kit Planning Protocol
 
-Atelier-Kit is inactive by default.
-
-Use the host agent's normal behavior unless one of these is true:
+Treat Atelier as **off** unless one of these is true:
 
 1. The user explicitly uses `/atelier`.
 2. The user asks to use Atelier-Kit.
@@ -26,6 +24,6 @@ When Atelier-Kit is active:
 6. If `status` is `review`, compare the native implementation diff against `plan.md`.
 7. After each protocol step, update the corresponding artifact and `state.json`.
 
-Never invent missing state. If protocol state is missing or inconsistent, stop and request repair through `atelier validate` or `atelier doctor`.
+If anything in `.atelier/` disagrees with reality, pause and fix it with `atelier validate` or `atelier doctor` instead of guessing.
 
-The source of truth is `.atelier/epics/<active_epic>/state.json`. Do not use `.atelier/context.md` as the v2 state source.
+The ledger file is `.atelier/epics/<active_epic>/state.json`. Ignore `.atelier/context.md` for v2 authority—it is not the source of truth.

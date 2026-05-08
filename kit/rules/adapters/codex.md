@@ -2,7 +2,7 @@
 
 Use `AGENTS.md` as the persistent adapter instruction.
 
-- Native `/plan ...` remains Codex behavior and must not activate Atelier.
+- `/plan ...` is unchanged—still Codex's built-in planner; do not activate Atelier.
 - `/atelier quick <goal>` maps to `atelier new "<goal>" --mode quick`.
 - `/atelier plan <goal>` maps to `atelier new "<goal>" --mode standard`.
 - `/atelier deep <goal>` maps to `atelier new "<goal>" --mode deep`.

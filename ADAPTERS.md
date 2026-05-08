@@ -1,15 +1,18 @@
 # Adapter Matrix
 
-Atelier-Kit v2 is a protocol first. Adapters only translate the same protocol into files a host agent already understands.
+Each adapter is a thin localization layer: same rules underneath, different paths
+and filenames so Claude Code, Cursor, Codex, etc. can ingest them without drama.
 
 The universal contract is:
 
-- `/plan ...` remains native host-agent planning.
+- `/plan ...` stays native—host planning only until `/atelier ...`.
 - `/atelier quick <goal>` runs `atelier new "<goal>" --mode quick`.
 - `/atelier plan <goal>` runs `atelier new "<goal>" --mode standard`.
 - `/atelier deep <goal>` runs `atelier new "<goal>" --mode deep`.
 - While active, agents read `.atelier/active.json`, `.atelier/epics/<active_epic>/state.json`, and only `.atelier/skills/<active_skill>.md`.
-- Project code cannot be edited before approved execution.
+- Project code stays untouched while the epic is in discovery, synthesis, design
+  or planning. At `planned`, Atelier hands implementation back to the host
+  agent's native workflow.
 
 | Agent | Adapter | Rules | Commands | Skills |
 |---|---|---|---|---|
@@ -24,4 +27,4 @@ The universal contract is:
 | Cline | `cline` | `.clinerules/atelier-core.md` | described in rules | loaded from `.atelier/skills/` |
 | Generic | `generic` | `atelier-system-prompt.txt` | described in prompt | loaded from `.atelier/skills/` |
 
-Adapters must not promise capabilities the host does not provide. If a host does not support native slash-command files, the adapter installs explicit command mapping instructions instead.
+Do not advertise slash-command installs where the host cannot actually mount them—fallback instructions beat broken promises.

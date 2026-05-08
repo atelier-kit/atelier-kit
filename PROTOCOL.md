@@ -1,14 +1,16 @@
 # Atelier-Kit Protocol
 
-Atelier-Kit is an opt-in planning protocol for coding agents.
+Atelier-Kit is **planning only**, turned on when you say so. The agent keeps doing
+the reasoning; what changes is where artifacts land and what gets validated
+before you call a plan finished.
 
 ## Activation
 
-- `/plan ...` remains the host agent's native planning mode.
-- `/atelier quick ...`, `/atelier plan ...`, `/atelier deep ...` activate Atelier.
-- "Use Atelier-Kit for this feature" also activates Atelier.
+- `/plan ...` is unchanged—still the host's built-in planner; skip `.atelier/`.
+- `/atelier quick ...`, `/atelier plan ...`, `/atelier deep ...` turn Atelier on.
+- Saying "Use Atelier-Kit for this feature" counts too.
 
-When inactive, Atelier must not create epics, load skills, or enforce gates.
+While inactive, leave Atelier alone—no epics, no skills, no gates.
 
 ## Source of truth
 
@@ -24,13 +26,12 @@ The active epic state lives in:
 .atelier/epics/<epic-slug>/state.json
 ```
 
-The protocol does not use a session context file as operational state.
+The protocol does not stash operational state in a separate chat/session dump file.
 
 ## CLI
 
-The CLI is a protocol helper. It creates files, validates invariants and moves
-state between explicit lifecycle statuses. It does not replace the host agent's
-planning intelligence and does not keep a second planner state model.
+The `atelier` commands scaffold folders, tick validation boxes and bump lifecycle
+statuses. They do not replace your agent's judgement about what to build or how.
 
 ```bash
 atelier init
@@ -51,7 +52,7 @@ atelier off
 
 Atelier may mirror `plan.md` into host-agent planning files so users can use
 Claude Code, Cursor, Kiro, Antigravity or external review tools. Mirrors are
-derived artifacts. The canonical plan remains:
+derived artifacts. Canonical plan:
 
 ```text
 .atelier/epics/<epic-slug>/plan.md
@@ -89,10 +90,10 @@ questions task is marked done.
 
 ## Implementation and review
 
-Atelier stops owning the workflow at `planned`. The native agent may implement
-using its own tools, plan files and execution model.
+After `planned`, Atelier is no longer driving the show. Implement however you
+already implement—Cursor, Claude Code, scripts, whatever fits your repo.
 
-After implementation, run:
+Once code exists, run:
 
 ```bash
 atelier review

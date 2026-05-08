@@ -22,7 +22,7 @@ ${atelierCommandReference()}
 
 After any command that changes state, read \`.atelier/active.json\`, then read \`.atelier/epics/<active_epic>/state.json\`, then load only \`.atelier/skills/<active_skill>.md\`.
 
-If the active epic has \`status=planned\`, use the exported native plan mirror to implement in Claude Code's native workflow. The Atelier epic plan remains the source of truth for later review.
+If the active epic has \`status=planned\`, use the exported native plan mirror to implement in Claude Code's native workflow. Keep \`.atelier/epics/<active_epic>/plan.md\` as canonical for review.
 
 After implementation, run \`atelier review\` and compare the diff against \`.atelier/epics/<active_epic>/plan.md\`.
 `;

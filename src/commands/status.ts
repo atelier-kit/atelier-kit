@@ -16,7 +16,7 @@ export async function cmdStatus(cwd: string): Promise<void> {
     console.log(`  active_skill:  ${active.active_skill ?? "—"}`);
     console.log(`  updated_at:    ${active.updated_at ?? "—"}`);
     if (!state) {
-      console.log(pc.dim("\nAtelier is inactive. Native /plan remains unchanged."));
+      console.log(pc.dim("\nAtelier is inactive. `/plan ...` is unchanged."));
       return;
     }
     console.log(pc.bold("\nEpic"));

@@ -15,7 +15,7 @@ import { cmdDone, cmdNext, cmdOff } from "./commands/lifecycle.js";
 const program = new Command();
 program
   .name("atelier")
-  .description("Filesystem-native Planning Protocol for coding agents")
+  .description("Planning protocol CLI — installs .atelier/, validates state, renders adapters")
   .version("0.2.0");
 
 program

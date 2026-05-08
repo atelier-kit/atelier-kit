@@ -263,9 +263,7 @@ _Pending for ${title}._
 export function coreRule(): string {
   return `# Atelier-Kit Planning Protocol
 
-Atelier-Kit is inactive by default.
-
-Use the host agent's normal behavior unless one of these is true:
+Treat Atelier as **off** unless one of these is true:
 
 1. The user explicitly uses \`/atelier\`.
 2. The user asks to use Atelier-Kit.
@@ -289,7 +287,9 @@ When Atelier-Kit is active:
 6. If \`status\` is \`review\`, compare the native implementation diff against \`plan.md\`.
 7. After each protocol step, update the corresponding artifact and \`state.json\`.
 
-Never invent missing state. If protocol state is missing or inconsistent, stop and request repair through \`atelier validate\` or \`atelier doctor\`.
+If anything in \`.atelier/\` disagrees with reality, pause and fix it with \`atelier validate\` or \`atelier doctor\` instead of guessing.
+
+The ledger file is \`.atelier/epics/<active_epic>/state.json\`. Ignore \`.atelier/context.md\` for v2 authority—it is not the source of truth.
 `;
 }
 
@@ -297,11 +297,11 @@ export function adapterRule(adapter: AdapterName): string {
   const label = adapter === "claude-code" || adapter === "claude" ? "Claude Code" : adapter;
   return `# Atelier-Kit adapter: ${label}
 
-This adapter extends the host agent's native planning only when Atelier-Kit is explicitly activated.
+Same protocol as everywhere else—this file just spells out how **${label}** should behave.
 
-- \`/plan ...\` remains native host-agent planning. Do not create Atelier artifacts.
-- \`/atelier quick ...\`, \`/atelier plan ...\`, and \`/atelier deep ...\` activate Atelier.
-- "Use Atelier-Kit for this feature" also activates Atelier.
+- \`/plan ...\` stays native—built-in planner only; skip Atelier artifacts.
+- \`/atelier quick ...\`, \`/atelier plan ...\`, and \`/atelier deep ...\` turn Atelier on.
+- "Use Atelier-Kit for this feature" counts too.
 
 When active:
 

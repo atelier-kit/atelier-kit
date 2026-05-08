@@ -1,11 +1,16 @@
 # atelier-kit architecture
 
-Atelier-Kit is a filesystem-native Planning Protocol, not a planner-first
-runtime. The host coding agent keeps its native behavior until Atelier is
-explicitly activated, and the agent remains responsible for analysis and plan
-authoring and implementation.
+Atelier-Kit is a **planning protocol**: a convention for where artifacts
+live under `.atelier/` and how an epic moves from questions to a finished plan.
+It does **not** sit between you and the agent as an extra planner or executor.
 
-![Atelier mental execution flow](./assets/atelier-mental-execution-flow.png)
+Until someone turns Atelier on (`/atelier ...` or an equivalent explicit cue),
+the coding agent works like always—same commands, same habits. After activation,
+the agent still does the thinking: reading the repo, drafting research and
+`plan.md`, and later implementing. Atelier mostly structures outputs and tracks
+state; it does not substitute for those steps.
+
+![Atelier-Kit planning protocol architecture](./assets/atelier-architecture-flow.png)
 
 ## Layers
 
@@ -17,10 +22,10 @@ authoring and implementation.
 6. **CLI helpers** that initialize, validate, render rules, export native plans
    and move protocol state
 
-The methodology lives in the protocol files, schemas, rules, skills and epic
-ledger. The CLI is intentionally thin: it performs deterministic state
-transitions and validation, but it does not maintain a separate planner,
-workflow runtime, session context or implementation engine.
+The interesting rules live in those protocol files, schemas, rules and skills.
+The CLI stays small on purpose: it moves state and checks invariants. You will
+not find a hidden orchestrator, session store or implementation runner inside
+it.
 
 ## Source of truth
 
@@ -58,8 +63,7 @@ Atelier is inactive by default.
 /plan add this endpoint
 ```
 
-This remains native host-agent planning. The protocol does not create epics,
-load skills, enforce gates or block code edits.
+Same as always: native planning only—no epic, no Atelier artifacts.
 
 Atelier activates only through explicit requests:
 
@@ -90,7 +94,7 @@ atelier off
 
 ## State transitions
 
-Typical flow:
+Typical flow (standard/deep; **quick** skips synthesis and design tasks):
 
 ```text
 native
@@ -105,23 +109,22 @@ native
   -> done
 ```
 
-`planned` is the handoff boundary. Atelier has produced a validated plan and a
-native mirror. The host agent can then implement with its own plan UI, tools and
-execution model.
+`planned` is where Atelier steps aside: there is a validated `plan.md`, usually a
+native mirror export, and from here the host agent ships the work however it
+already prefers—tools, plan UI, tests, all unchanged.
 
 ## Validation
 
 `atelier validate` checks:
 
-- installation files
-- `atelier.json`
-- `active.json`
-- active epic state
-- state/action coherence
-- required artifacts
-- reviewable plan shape for `planned`, `review` and `done`
-- slice goal, acceptance criteria and validation
-- native plan mirror configuration
+- `atelier.json` and `active.json`
+- when active: epic `state.json`, task/skill coherence, required artifacts on disk,
+  done-task artifacts that are not empty placeholders
+- `plan.md` reviewable shape when status is `planned`, `review` or `done`
+
+`atelier doctor` runs the same validation, then verifies `.atelier/protocol/*`,
+rules, skills, schemas and (from `atelier.json`) the adapter rule files expected
+for your host—still **not** the contents of an exported plan mirror path.
 
 `atelier validate --gate plan-ready` is enforced before `atelier done` can
 finalize planning. It requires:
@@ -134,8 +137,9 @@ finalize planning. It requires:
 
 ## Skills
 
-Skills are phase lenses loaded on demand. The adapter should load only the file
-named by `active_skill`.
+Each skill is a narrow playbook for one stretch of the epic (questions first,
+then repo research, and so on). Load **only** the file named by `active_skill`;
+everything else can stay closed until that phase matters.
 
 Examples:
 

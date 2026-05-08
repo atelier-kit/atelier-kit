@@ -16,6 +16,6 @@ This project is an **independent, clean-room implementation** and is **not affil
 
 ## What atelier-kit adds
 
-- An opt-in, filesystem-native Planning Protocol for coding agents.
+- An opt-in planning layer that stores intent under `.atelier/` instead of burying it in chat logs.
 - Explicit active state in `.atelier/active.json` and per-epic source of truth in `.atelier/epics/<epic>/state.json`.
-- Programmatic validators (`doctor`, `validate`), approval gates, on-demand skills, and multi-agent adapter rules.
+- Programmatic validators (`doctor`, `validate`), planning gates, on-demand skills, and multi-agent adapter rules.

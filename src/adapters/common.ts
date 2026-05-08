@@ -1,8 +1,8 @@
 export function atelierCommandProtocol(): string {
   return `Atelier protocol:
 
-- \`/plan ...\` remains native host-agent planning.
-- \`/atelier quick ...\`, \`/atelier plan ...\`, and \`/atelier deep ...\` activate Atelier.
+- \`/plan ...\` stays native—host agent planning only.
+- \`/atelier quick ...\`, \`/atelier plan ...\`, and \`/atelier deep ...\` turn Atelier on.
 - Use \`atelier new "<goal>" --mode quick|standard|deep\` to create an epic ledger.
 - Read \`.atelier/active.json\` and \`.atelier/epics/<active_epic>/state.json\` when active.
 - Use \`atelier next\` and \`atelier done\` to advance discovery/design/planning tasks.
@@ -17,8 +17,8 @@ export function atelierStateReminder(): string {
 export function activationReminder(): string {
   return `Atelier-Kit is inactive by default.
 
-- \`/plan ...\` remains native host-agent planning.
-- \`/atelier quick ...\`, \`/atelier plan ...\`, and \`/atelier deep ...\` activate Atelier.
+- \`/plan ...\` stays native—host agent planning only.
+- \`/atelier quick ...\`, \`/atelier plan ...\`, and \`/atelier deep ...\` turn Atelier on.
 - When inactive, do not create Atelier artifacts or enforce Atelier gates.`;
 }
 

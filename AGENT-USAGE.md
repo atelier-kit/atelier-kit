@@ -1,7 +1,7 @@
 # atelier-kit agent usage
 
-atelier-kit is an opt-in Planning Protocol. It extends an agent's native
-planning only when the user explicitly activates Atelier.
+Use Atelier **only when the user asks**. Outside that, behave like the host tool
+already tells you to—especially for `/plan ...`, which stays native.
 
 ## Activation rules
 
@@ -34,16 +34,16 @@ atelier off
 
 ## What the agent should read
 
-When Atelier is inactive, use the host agent's normal behavior.
+When Atelier is off, skip `.atelier/` entirely.
 
-When Atelier is active, read:
+When it is on, read these before improvising:
 
 1. `.atelier/atelier.json`
 2. `.atelier/active.json`
 3. `.atelier/epics/<active_epic>/state.json`
 4. only the skill named by `active_skill`
 
-The active epic `state.json` is the source of truth.
+If something disagrees, trust the active epic `state.json`.
 
 ## Native plan mirrors
 

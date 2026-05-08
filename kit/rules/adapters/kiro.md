@@ -2,7 +2,7 @@
 
 Use `.kiro/steering/atelier.md` as the persistent steering file.
 
-- Native planning remains Kiro behavior unless the user explicitly invokes Atelier.
+- Planning stays Kiro-native until someone explicitly runs `/atelier ...`.
 - `/atelier quick <goal>` maps to `atelier new "<goal>" --mode quick`.
 - `/atelier plan <goal>` maps to `atelier new "<goal>" --mode standard`.
 - `/atelier deep <goal>` maps to `atelier new "<goal>" --mode deep`.

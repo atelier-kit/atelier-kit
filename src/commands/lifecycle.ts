@@ -1,30 +1,14 @@
 import pc from "picocolors";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { readActiveEpic, readActiveState, readEpicState, writeActiveState, writeEpicState } from "../protocol/state.js";
+import { readActiveEpic, readAtelierConfig, writeActiveState, writeEpicState } from "../protocol/state.js";
 import { epicDir } from "../protocol/paths.js";
 import { inactiveState } from "../protocol/templates.js";
-import { firstReadySlice } from "../protocol/epic.js";
-import { validateBeforeApproval } from "../protocol/validator.js";
-import type { AtelierStatus, EpicState, ProtocolSlice, SkillName } from "../protocol/schema.js";
+import { validatePlanReady } from "../protocol/validator.js";
+import { exportActivePlan } from "./export-plan.js";
+import type { AtelierStatus, EpicState, SkillName } from "../protocol/schema.js";
 
 type ProtocolTask = EpicState["tasks"][number];
-
-function inferResumeState(state: EpicState): { status: AtelierStatus; skill: SkillName } {
-  if (state.approval.status === "approved") {
-    const hasReadyOrActive = state.slices.some(
-      (s) => s.status === "ready" || s.status === "executing",
-    );
-    if (hasReadyOrActive || state.current_slice) {
-      return { status: "execution", skill: "implementer" };
-    }
-    return { status: "review", skill: "reviewer" };
-  }
-  if (state.approval.status === "pending" && state.slices.length > 0) {
-    return { status: "awaiting_approval", skill: "planner" };
-  }
-  return { status: "planning", skill: "planner" };
-}
 
 async function loadRequiredActive(cwd: string): Promise<EpicState> {
   const activeEpic = await readActiveEpic(cwd);
@@ -34,7 +18,7 @@ async function loadRequiredActive(cwd: string): Promise<EpicState> {
   return activeEpic.state;
 }
 
-async function syncActive(cwd: string, state: EpicState) {
+async function syncActive(cwd: string, state: EpicState): Promise<void> {
   await writeActiveState(cwd, {
     active: true,
     mode: "atelier",
@@ -49,16 +33,18 @@ async function runLifecycle(
   cwd: string,
   action: string,
   mutate: (state: EpicState) => void | Promise<void>,
-): Promise<void> {
+): Promise<boolean> {
   try {
     const state = await loadRequiredActive(cwd);
     await mutate(state);
     await writeEpicState(cwd, state);
     await syncActive(cwd, state);
     console.log(pc.green(`${action}: ${state.epic_id} status=${state.status}`));
+    return true;
   } catch (error) {
     console.error(pc.red((error as Error).message));
     process.exitCode = 1;
+    return false;
   }
 }
 
@@ -74,8 +60,6 @@ function taskSkill(task: ProtocolTask): SkillName {
       return "business-analyst";
     case "design":
       return "designer";
-    case "implementation":
-      return "implementer";
     case "review":
       return "reviewer";
     case "synthesis":
@@ -97,8 +81,6 @@ function taskStatus(task: ProtocolTask): AtelierStatus {
       return "design";
     case "planning":
       return "planning";
-    case "implementation":
-      return "execution";
     case "review":
       return "review";
   }
@@ -124,10 +106,6 @@ function currentPlanningTask(state: EpicState): ProtocolTask | null {
 
 function nextPlanningTask(state: EpicState): ProtocolTask | null {
   return state.tasks.find((task) => task.status === "pending") ?? null;
-}
-
-function normalizeExecutingSlice(slice: ProtocolSlice): void {
-  slice.status = "executing";
 }
 
 function artifactLooksPending(content: string): boolean {
@@ -166,202 +144,66 @@ async function assertTaskArtifactComplete(cwd: string, state: EpicState, task: P
   }
 }
 
-export async function cmdApprove(
-  cwd: string,
-  opts: { by?: string; notes?: string } = {},
-): Promise<void> {
-  await runLifecycle(cwd, "approved", async (state) => {
-    const errors = await validateBeforeApproval(cwd, state);
-    if (errors.length > 0) {
-      throw new Error(`Cannot approve plan: before_approval gate failed.\n- ${errors.join("\n- ")}`);
-    }
-    state.approval = {
-      status: "approved",
-      approved_by: opts.by ?? "human",
-      approved_at: new Date().toISOString(),
-      notes: opts.notes ?? null,
-    };
-    state.status = "approved";
-    state.active_skill = null;
-    state.allowed_actions.write_project_code = false;
-    state.allowed_actions.run_tests = false;
-  });
-}
-
-export async function cmdReject(cwd: string, reason: string): Promise<void> {
-  await runLifecycle(cwd, "rejected", (state) => {
-    state.approval = {
-      status: "rejected",
-      approved_by: null,
-      approved_at: null,
-      notes: reason,
-    };
-    state.status = "planning";
-    state.active_skill = "planner";
-    state.allowed_actions.write_project_code = false;
-    state.allowed_actions.run_tests = false;
-  });
-}
-
-export async function cmdExecute(cwd: string): Promise<void> {
-  await runLifecycle(cwd, "execution started", (state) => {
-    if (state.approval.status !== "approved") {
-      throw new Error("Execution requires approval.status=approved.");
-    }
-    const slice = firstReadySlice(state);
-    if (!slice) {
-      throw new Error("Execution requires at least one ready slice.");
-    }
-    slice.status = "executing";
-    state.current_slice = slice.id;
-    state.status = "execution";
-    state.active_skill = "implementer";
-    state.allowed_actions.write_project_code = true;
-    state.allowed_actions.run_tests = true;
-  });
-}
-
 export async function cmdNext(cwd: string): Promise<void> {
   await runLifecycle(cwd, "next", (state) => {
-    if (state.status !== "execution") {
-      const next = nextPlanningTask(state);
-      if (!next) {
-        if (state.status === "awaiting_approval") {
-          throw new Error("Plan is awaiting approval. Use `atelier approve` or `atelier reject`.");
-        }
-        state.status = "planning";
-        state.active_skill = "planner";
-        return;
-      }
-      focusTask(state, next);
-      return;
+    if (state.status === "planned") {
+      throw new Error("Plan is already exported. Let the native agent implement it, then run `atelier review`.");
     }
-    const current = state.slices.find((slice) => slice.id === state.current_slice);
-    if (current && current.status === "executing") current.status = "needs-review";
-    const next = firstReadySlice(state);
+    const next = nextPlanningTask(state);
     if (!next) {
-      state.status = "review";
-      state.active_skill = "reviewer";
-      state.current_slice = null;
-      state.allowed_actions.write_project_code = false;
-      state.allowed_actions.run_tests = true;
+      state.status = "planning";
+      state.active_skill = "planner";
       return;
     }
-    normalizeExecutingSlice(next);
-    state.current_slice = next.id;
-    state.active_skill = "implementer";
+    focusTask(state, next);
   });
 }
 
 export async function cmdDone(cwd: string): Promise<void> {
-  await runLifecycle(cwd, "done", async (state) => {
-    if (state.status === "execution" && state.current_slice) {
-      const current = state.slices.find((slice) => slice.id === state.current_slice);
-      if (current) current.status = "done";
-      const next = firstReadySlice(state);
-      if (next) {
-        normalizeExecutingSlice(next);
-        state.current_slice = next.id;
-        state.status = "execution";
-        state.active_skill = "implementer";
-      } else {
-        state.current_slice = null;
-        state.status = "review";
-        state.active_skill = "reviewer";
-        state.allowed_actions.write_project_code = false;
-      }
-      return;
-    }
+  let shouldExportPlan = false;
+  const ok = await runLifecycle(cwd, "done", async (state) => {
     if (state.status === "review") {
       state.status = "done";
       state.active_skill = null;
-      state.allowed_actions.write_project_code = false;
-      state.allowed_actions.run_tests = false;
       return;
     }
-    if (state.status !== "approved" && state.status !== "awaiting_approval") {
-      const current = currentPlanningTask(state);
-      if (!current) {
-        throw new Error("No active planning task. Use `atelier next` to focus the next task.");
-      }
-      await assertTaskArtifactComplete(cwd, state, current);
-      current.status = "done";
-      if (current.type === "planning") {
-        state.status = "awaiting_approval";
-        state.active_skill = "planner";
-        state.approval.status = "pending";
-        const errors = await validateBeforeApproval(cwd, state);
-        if (errors.length > 0) {
-          state.status = "planning";
-          state.active_skill = "planner";
-          state.approval.status = "none";
-          current.status = "in_progress";
-          throw new Error(`Cannot finish planning: before_approval gate failed.\n- ${errors.join("\n- ")}`);
-        }
-        return;
-      }
-      const next = nextPlanningTask(state);
-      if (next) {
-        focusTask(state, next);
-      } else {
+    if (state.status === "planned") {
+      throw new Error("Plan is already exported. Let the native agent implement it, then run `atelier review`.");
+    }
+    const current = currentPlanningTask(state);
+    if (!current) {
+      throw new Error("No active planning task. Use `atelier next` to focus the next task.");
+    }
+    await assertTaskArtifactComplete(cwd, state, current);
+    current.status = "done";
+    if (current.type === "planning") {
+      state.status = "planned";
+      state.active_skill = null;
+      const errors = await validatePlanReady(cwd, state);
+      if (errors.length > 0) {
         state.status = "planning";
         state.active_skill = "planner";
+        current.status = "in_progress";
+        throw new Error(`Cannot finish planning: plan gate failed.\n- ${errors.join("\n- ")}`);
       }
+      shouldExportPlan = true;
       return;
     }
-    throw new Error("`atelier done` cannot run while awaiting approval or approved.");
+    const next = nextPlanningTask(state);
+    if (next) {
+      focusTask(state, next);
+    } else {
+      state.status = "planning";
+      state.active_skill = "planner";
+    }
   });
-}
-
-export async function cmdPause(cwd: string): Promise<void> {
+  if (!ok || !shouldExportPlan) return;
   try {
-    const state = await loadRequiredActive(cwd);
-    state.status = "paused";
-    state.active_skill = null;
-    state.allowed_actions.write_project_code = false;
-    await writeEpicState(cwd, state);
-    await writeActiveState(cwd, {
-      active: false,
-      mode: "native",
-      active_epic: state.epic_id,
-      active_phase: "paused",
-      active_skill: null,
-      updated_at: new Date().toISOString(),
-    });
-    console.log(pc.green(`paused: ${state.epic_id}`));
+    const config = await readAtelierConfig(cwd);
+    const { path } = await exportActivePlan(cwd, { adapter: config.adapter, ifPlanned: true });
+    console.log(pc.dim(`Plan mirror exported: ${path}`));
   } catch (error) {
-    console.error(pc.red((error as Error).message));
-    process.exitCode = 1;
-  }
-}
-
-export async function cmdResume(cwd: string): Promise<void> {
-  try {
-    const active = await readActiveState(cwd);
-    if (!active.active_epic) {
-      throw new Error("No paused epic to resume. Use `atelier new \"<goal>\"` to start one.");
-    }
-    const state = await readEpicState(cwd, active.active_epic);
-    if (state.status !== "paused") {
-      throw new Error(`Epic ${state.epic_id} is not paused (status=${state.status}).`);
-    }
-    const { status, skill } = inferResumeState(state);
-    state.status = status;
-    state.active_skill = skill;
-    await writeEpicState(cwd, state);
-    await writeActiveState(cwd, {
-      active: true,
-      mode: "atelier",
-      active_epic: state.epic_id,
-      active_phase: state.status,
-      active_skill: state.active_skill,
-      updated_at: new Date().toISOString(),
-    });
-    console.log(pc.green(`Resumed Atelier epic: ${state.epic_id}`));
-    console.log(pc.dim(`Status: ${state.status}`));
-    console.log(pc.dim(`Active skill: ${state.active_skill}`));
-  } catch (error) {
-    console.error(pc.red((error as Error).message));
+    console.error(pc.red(`Plan mirror export failed: ${(error as Error).message}`));
     process.exitCode = 1;
   }
 }

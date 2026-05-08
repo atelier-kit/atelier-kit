@@ -1,7 +1,5 @@
 import { access, readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import { ZodError } from "zod";
 import { atelierPath, epicDir } from "./paths.js";
 import {
@@ -10,8 +8,6 @@ import {
   readEpicState,
 } from "./state.js";
 import type { ActiveState, AdapterName, EpicState } from "./schema.js";
-
-const execFileAsync = promisify(execFile);
 
 export type ValidationReport = {
   ok: boolean;
@@ -73,8 +69,6 @@ function expectedTaskArtifacts(taskType: EpicState["tasks"][number]["type"]): st
       return ["design.md"];
     case "planning":
       return ["plan.md"];
-    case "implementation":
-      return ["execution-log.md"];
     case "review":
       return ["review.md"];
   }
@@ -86,17 +80,13 @@ function expectedSkillForStatus(status: EpicState["status"]): string[] {
       return ["questioner", "repo-analyst", "tech-analyst", "business-analyst"];
     case "synthesis":
     case "planning":
-    case "awaiting_approval":
       return ["planner"];
     case "design":
       return ["designer"];
-    case "execution":
-      return ["implementer"];
     case "review":
       return ["reviewer"];
-    case "approved":
+    case "planned":
     case "done":
-    case "paused":
     case "native":
     case "idle":
     case "blocked":
@@ -122,40 +112,23 @@ function questionsLookGenericOnly(content: string): boolean {
   return hasSeedRepo && hasSeedTech && hasSeedBusiness && !hasExplicitNoOpen && !hasSpecificQuestionSection;
 }
 
-export function validateBeforeExecution(state: EpicState): string[] {
-  const errors: string[] = [];
-  if (state.approval.status !== "approved") {
-    errors.push("before_execution requires approval.status=approved");
-  }
-  if (state.status !== "approved" && state.status !== "execution") {
-    errors.push("before_execution requires status=approved or status=execution");
-  }
-  if (!state.slices.some((s) => s.status === "ready" || s.status === "executing")) {
-    errors.push("before_execution requires at least one ready slice");
-  }
-  return errors;
-}
-
-export async function validateBeforeApproval(
+export async function validatePlanReady(
   cwd: string,
   state: EpicState,
 ): Promise<string[]> {
   const errors: string[] = [];
-  if (state.status !== "awaiting_approval") {
-    errors.push("Plan can only be approved when status is awaiting_approval");
-  }
-  if (state.approval.status !== "none" && state.approval.status !== "pending") {
-    errors.push("Plan can only be approved when approval.status is none or pending");
+  if (state.status !== "planned") {
+    errors.push("Plan can only be finalized when status is planned");
   }
   const planPath = join(epicDir(cwd, state.epic_id), "plan.md");
   if (!(await exists(planPath))) {
-    errors.push("before_approval requires plan.md");
+    errors.push("planning requires plan.md");
   } else {
     const plan = await readFile(planPath, "utf8");
     errors.push(...planHasReviewableShape(plan, true));
   }
   if (state.slices.length === 0) {
-    errors.push("before_approval requires at least one slice");
+    errors.push("planning requires at least one slice");
   }
   for (const slice of state.slices) {
     if (!slice.goal.trim()) errors.push(`slice ${slice.id} missing goal`);
@@ -171,7 +144,6 @@ export async function validateBeforeApproval(
 
 function validateStateCoherence(state: EpicState): string[] {
   const errors: string[] = [];
-  const canWrite = state.allowed_actions.write_project_code;
   const expectedSkills = expectedSkillForStatus(state.status);
   if (
     expectedSkills.length > 0 &&
@@ -179,21 +151,6 @@ function validateStateCoherence(state: EpicState): string[] {
   ) {
     errors.push(`${state.status} requires active_skill in [${expectedSkills.join(", ")}]`);
   }
-  if (state.approval.status === "pending" && state.status !== "awaiting_approval") {
-    errors.push("approval.status=pending requires status=awaiting_approval");
-  }
-  if (state.status === "execution") {
-    if (!canWrite) errors.push("execution requires allowed_actions.write_project_code=true");
-    if (state.approval.status !== "approved") errors.push("execution requires approval.status=approved");
-    if (!state.current_slice) errors.push("execution requires current_slice");
-  } else if (canWrite) {
-    errors.push(`${state.status} must not allow project code writes`);
-  }
-
-  if (state.status === "approved" && state.approval.status !== "approved") {
-    errors.push("status=approved requires approval.status=approved");
-  }
-
   for (const slice of state.slices) {
     if (!slice.goal.trim()) errors.push(`slice ${slice.id} missing goal`);
     if (slice.acceptance_criteria.length === 0) {
@@ -240,33 +197,6 @@ async function validateCompletedTaskArtifacts(cwd: string, state: EpicState): Pr
     }
   }
   return errors;
-}
-
-function isAllowedPreExecutionPath(file: string, allowed: string[]): boolean {
-  return allowed.some((pattern) => {
-    if (pattern.endsWith("/**")) return file.startsWith(pattern.slice(0, -3));
-    return file === pattern;
-  });
-}
-
-async function changedFiles(cwd: string, baseline: string): Promise<string[]> {
-  try {
-    const { stdout } = await execFileAsync("git", ["diff", "--name-only", baseline, "--"], { cwd });
-    const { stdout: untracked } = await execFileAsync("git", ["ls-files", "--others", "--exclude-standard"], { cwd });
-    return [...stdout.split("\n"), ...untracked.split("\n")]
-      .map((file) => file.trim())
-      .filter(Boolean);
-  } catch {
-    return [];
-  }
-}
-
-async function validatePrematureDiff(cwd: string, state: EpicState): Promise<string[]> {
-  if (state.status === "execution" && state.approval.status === "approved") return [];
-  const files = await changedFiles(cwd, state.guards.baseline_ref);
-  return files
-    .filter((file) => !isAllowedPreExecutionPath(file, state.guards.allowed_pre_execution_paths))
-    .map((file) => `premature project code change before approval: ${file}`);
 }
 
 export async function validateProtocol(cwd: string): Promise<ValidationReport> {
@@ -321,18 +251,12 @@ export async function validateProtocol(cwd: string): Promise<ValidationReport> {
   }
 
   const planPath = join(epicDir(cwd, state.epic_id), "plan.md");
-  if (await exists(planPath) && (state.status === "awaiting_approval" || state.status === "approved" || state.status === "execution")) {
+  if (await exists(planPath) && (state.status === "planned" || state.status === "review" || state.status === "done")) {
     const plan = await readFile(planPath, "utf8");
     errors.push(...planHasReviewableShape(plan, true));
-  } else if (state.status === "planning" || state.status === "awaiting_approval" || state.status === "approved") {
-    errors.push("plan.md required before approval/execution");
+  } else if (state.status === "planning") {
+    errors.push("plan.md required before finalizing planning");
   }
-
-  if (state.status === "approved" && !state.slices.some((slice) => slice.status === "ready")) {
-    errors.push("before_execution requires at least one ready slice");
-  }
-
-  errors.push(...await validatePrematureDiff(cwd, state));
 
   return { ok: errors.length === 0, errors, warnings, active, state };
 }
@@ -357,7 +281,6 @@ export async function doctorProtocol(cwd: string): Promise<ValidationReport> {
     "skills/business-analyst.md",
     "skills/planner.md",
     "skills/designer.md",
-    "skills/implementer.md",
     "skills/reviewer.md",
     "schemas/atelier.schema.json",
     "schemas/active.schema.json",

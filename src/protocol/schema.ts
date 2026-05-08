@@ -26,13 +26,10 @@ export const AtelierStatusSchema = z.enum([
   "synthesis",
   "design",
   "planning",
-  "awaiting_approval",
-  "approved",
-  "execution",
+  "planned",
   "review",
   "done",
   "blocked",
-  "paused",
 ]);
 
 export const ApprovalStatusSchema = z.enum([
@@ -49,7 +46,6 @@ export const SkillSchema = z.enum([
   "business-analyst",
   "planner",
   "designer",
-  "implementer",
   "reviewer",
 ]);
 
@@ -61,7 +57,6 @@ export const TaskTypeSchema = z.enum([
   "synthesis",
   "design",
   "planning",
-  "implementation",
   "review",
 ]);
 
@@ -75,10 +70,8 @@ export const TaskStatusSchema = z.enum([
 export const SliceStatusSchema = z.enum([
   "draft",
   "ready",
-  "executing",
   "done",
   "blocked",
-  "needs-review",
 ]);
 
 export const AtelierConfigSchema = z.object({
@@ -93,7 +86,7 @@ export const AtelierConfigSchema = z.object({
     skills_load_strategy: z.literal("on_demand").default("on_demand"),
   }),
   guards: z.object({
-    detect_pre_approval_code_changes: z.boolean().default(true),
+    detect_unplanned_code_changes: z.boolean().default(true),
     use_git_diff: z.boolean().default(true),
   }),
 });
@@ -141,7 +134,7 @@ export const SliceSchema = z.object({
 
 export const GuardsSchema = z.object({
   baseline_ref: NonEmptyString.default("HEAD"),
-  allowed_pre_execution_paths: z.array(NonEmptyString).default([".atelier/**"]),
+  allowed_pre_planned_paths: z.array(NonEmptyString).default([".atelier/**"]),
 });
 
 export const EpicStateSchema = z.object({

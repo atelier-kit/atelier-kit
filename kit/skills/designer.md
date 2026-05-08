@@ -32,8 +32,8 @@ Turn research and constraints into explicit design decisions that guide planning
 ## Forbidden Actions
 
 - Do not edit project code.
-- Do not execute slices.
-- Do not approve a plan.
+- Do not implement slices.
+- Do not finalize a plan.
 - Do not introduce architecture that is not justified by evidence.
 
 ## Instructions

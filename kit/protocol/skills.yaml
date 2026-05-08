@@ -21,18 +21,13 @@ skills:
 
   planner:
     file: .atelier/skills/planner.md
-    allowed_states: [synthesis, planning, awaiting_approval]
+    allowed_states: [synthesis, planning, planned]
     writes: [synthesis.md, plan.md, state.json]
 
   designer:
     file: .atelier/skills/designer.md
     allowed_states: [design]
     writes: [decisions.md, design.md]
-
-  implementer:
-    file: .atelier/skills/implementer.md
-    allowed_states: [execution]
-    writes: [execution-log.md, state.json, project_code]
 
   reviewer:
     file: .atelier/skills/reviewer.md

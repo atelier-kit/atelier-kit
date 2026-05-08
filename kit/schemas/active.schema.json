@@ -23,13 +23,10 @@
         "synthesis",
         "design",
         "planning",
-        "awaiting_approval",
-        "approved",
-        "execution",
+        "planned",
         "review",
         "done",
         "blocked",
-        "paused",
         null
       ]
     },
@@ -42,7 +39,6 @@
         "business-analyst",
         "planner",
         "designer",
-        "implementer",
         "reviewer",
         null
       ]

@@ -2,8 +2,13 @@
 
 Atelier-Kit is an opt-in, filesystem-native Planning Protocol for coding agents.
 It extends an agent's native planning mode only when explicitly activated, then
-persists planning state, approval gates, skills, and slice execution under
+persists planning state, skills, native plan mirrors, and review artifacts under
 `.atelier/`.
+
+The CLI is deliberately small. It initializes protocol files, validates gates,
+renders adapter instructions, exports native plan files, and performs lifecycle
+state transitions; it does not run a separate planner, keep a second session
+context, or execute implementation work.
 
 Atelier-Kit is inactive by default:
 
@@ -20,9 +25,9 @@ When active, the source of truth is the active epic ledger:
 .atelier/epics/<epic-slug>/state.json
 ```
 
-Each epic moves through discovery, synthesis/design/planning, approval,
-execution, review, and done. Project code edits are forbidden before human
-approval and execution mode.
+Each epic moves through discovery, synthesis/design/planning, `planned`,
+optional review, and done. `planned` is the handoff boundary: the host agent
+implements using its own native workflow.
 
 In Atelier protocol mode, the key primitives are:
 
@@ -89,19 +94,25 @@ In agent chat, the equivalent activation is:
 
 The active epic ledger is created at `.atelier/epics/<epic-slug>/`.
 
-### Approval and execution
+### Finish planning and review implementation
 
-After the plan is reviewable and human-approved:
+After the plan is reviewable:
 
 ```bash
-atelier approve --by human
-atelier execute
 atelier done
-atelier next
 ```
 
-Execution runs one approved slice at a time. `atelier validate` reports invalid
-state, missing artifacts, bad gates, and project-code diffs before approval.
+`atelier done` finalizes the active planning task, moves the epic to `planned`,
+and exports the configured native plan mirror. Implement through Claude Code,
+Cursor, Kiro, Antigravity, Codex or another host-agent workflow. After
+implementation:
+
+```bash
+atelier review
+atelier done
+```
+
+`atelier review` records how the current implementation diff matches the plan.
 
 ## Planning protocol
 
@@ -119,8 +130,8 @@ explicit activation
   -> research artifacts
   -> design decisions
   -> plan.md with slices
-  -> awaiting_approval
-  -> approved execution, one slice at a time
+  -> planned
+  -> native agent implementation
   -> review
 ```
 
@@ -133,16 +144,14 @@ explicit activation
 | `atelier adapter install <name>` | Alias for adapter installation |
 | `atelier new "<goal>" --mode quick` | Create an active epic ledger |
 | `atelier status` | Show active protocol state |
-| `atelier validate` | Validate schemas, state, gates and premature diffs |
+| `atelier validate` | Validate schemas, state and planning gates |
+| `atelier validate --gate plan-ready` | Validate that the active plan can be finalized |
 | `atelier doctor` | Diagnose installation and state |
 | `atelier render-rules --adapter cursor` | Write adapter rules |
-| `atelier approve` | Approve only a reviewable `awaiting_approval` plan |
-| `atelier reject --reason "..."` | Reject the plan and return to planning |
-| `atelier execute` | Enter approved execution and focus the first slice |
-| `atelier next` | Focus the next ready slice |
-| `atelier done` | Complete the current slice and advance |
-| `atelier pause` | Pause Atelier and return agent behavior to native mode |
-| `atelier resume` | Resume a paused epic and reactivate the protocol |
+| `atelier export-plan --adapter claude-code` | Mirror the active `plan.md` to an agent-native plan file |
+| `atelier review` | Review the current implementation diff against the planned epic |
+| `atelier next` | Focus the next pending planning task |
+| `atelier done` | Complete a planning task, finalize a plan, or close a reviewed epic |
 | `atelier off` | Disable Atelier |
 
 ## Adapter outputs
@@ -164,6 +173,23 @@ selected host:
 | Generic | `generic` | `atelier-system-prompt.txt` |
 
 See [ADAPTERS.md](./ADAPTERS.md) for the adapter capability matrix.
+
+## Native plan mirrors
+
+Atelier's source of truth remains `.atelier/epics/<epic>/plan.md`. When a host
+agent has useful native planning tools, `atelier export-plan` can mirror that
+plan into the agent's expected location. The default Claude Code mirror is
+`~/.claude/plans/<epic>.md`; Cursor, Kiro and Antigravity use workspace-local
+mirror paths unless `--path` is provided.
+
+External review tools can be chained after export:
+
+```bash
+atelier export-plan --adapter claude-code --command 'plannotator annotate "$ATELIER_PLAN_PATH"'
+```
+
+Mirrors are derived files. If a native agent changes the plan, update the
+canonical Atelier `plan.md` explicitly before finalizing it again.
 
 ## License
 

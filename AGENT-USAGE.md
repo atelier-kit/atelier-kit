@@ -5,8 +5,8 @@ planning only when the user explicitly activates Atelier.
 
 ## Activation rules
 
-- `/plan ...` stays native. Do not create `.atelier/epics`, approval gates or
-  Atelier artifacts for native plan mode.
+- `/plan ...` stays native. Do not create `.atelier/epics` or Atelier artifacts
+  for native plan mode.
 - `/atelier quick ...`, `/atelier plan ...`, `/atelier deep ...` activate the
   protocol.
 - A natural-language request such as "Use Atelier-Kit for this feature" also
@@ -23,14 +23,12 @@ atelier init
 atelier new "Add payment endpoint" --mode quick
 atelier status
 atelier validate
+atelier validate --gate plan-ready
 atelier render-rules --adapter cursor
-atelier approve
-atelier reject --reason "Need smaller slices"
-atelier execute
+atelier export-plan --adapter claude-code
+atelier review
 atelier next
 atelier done
-atelier pause
-atelier resume
 atelier off
 ```
 
@@ -47,6 +45,18 @@ When Atelier is active, read:
 
 The active epic `state.json` is the source of truth.
 
+## Native plan mirrors
+
+Agents may use native planning surfaces when they help the user review a plan.
+Use `atelier export-plan --adapter <adapter>` to mirror
+`.atelier/epics/<active_epic>/plan.md` into an agent-native destination. The
+mirror is not protocol state; update the Atelier plan and ledger first, then
+export again.
+
+Claude Code exports to `~/.claude/plans/<epic>.md`; Cursor exports to
+`.cursor/plans/<epic>.md`. Kiro and Antigravity use workspace-local plan files.
+External tools can run through `atelier export-plan --command`.
+
 ## Recommended flows
 
 ### Native planning
@@ -60,7 +70,7 @@ Expected behavior:
 - use the host agent's native planning;
 - do not activate Atelier;
 - do not create an epic ledger;
-- do not enforce approval gates.
+- do not enforce Atelier gates.
 
 ### Atelier quick
 
@@ -73,8 +83,8 @@ Expected behavior:
 - create an epic ledger;
 - focus `questioner` first and replace generic `questions.md` placeholders;
 - create `research/repo.md` and `plan.md`;
-- stop in `awaiting_approval`;
-- wait for human approval before code changes.
+- finalize as `planned`;
+- let the native agent implement from the exported plan.
 
 ### Atelier standard
 
@@ -90,7 +100,7 @@ Expected behavior:
 - use business research when product/stakeholder impact is material;
 - write synthesis, decisions, design, and plan artifacts;
 - define slices with allowed files, acceptance criteria, and validation;
-- stop for approval.
+- finalize as `planned` and export the native plan mirror.
 
 ### Atelier deep
 
@@ -103,37 +113,17 @@ Expected behavior:
 - follow the standard flow;
 - require business research;
 - add risk register, rollback, test strategy, and critique artifacts;
-- require approval before execution.
+- finalize a high-confidence plan for native implementation.
 
-## Execution behavior
+## Review behavior
 
-After human approval:
+After the host agent implements from the native plan:
 
 ```bash
-atelier approve --by human
-atelier execute
+atelier review
 atelier done
 ```
 
-`atelier execute` focuses the first ready slice. `atelier done` marks the
-current slice done and either focuses the next ready slice automatically or
-moves the epic to `review`.
-
-## Pause and native behavior
-
-`atelier pause` preserves the active epic but writes:
-
-```json
-{
-  "active": false,
-  "mode": "native",
-  "active_phase": "paused"
-}
-```
-
-While paused, the agent should behave normally unless the user explicitly
-reactivates Atelier.
-
-`atelier resume` reactivates a paused epic. It sets `active: true`,
-`mode: "atelier"`, and restores the epic to `planning` so the agent can
-continue from where it left off.
+`atelier review` writes `.atelier/epics/<active_epic>/review.md` and sets the
+epic to `review`. It should compare the diff and validation evidence against
+the planned slices. `atelier done` closes the epic when the review is accepted.

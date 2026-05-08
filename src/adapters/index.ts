@@ -11,7 +11,6 @@ import { applyAntigravity } from "./antigravity.js";
 import { applyKiro } from "./kiro.js";
 import { applyKilo } from "./kilo.js";
 import { readAtelierConfig } from "../protocol/state.js";
-import { readAtelierRc } from "../state/atelierrc.js";
 
 export async function installAdapter(
   cwd: string,
@@ -62,12 +61,7 @@ export async function refreshFallbackAdapters(cwd: string): Promise<void> {
     const config = await readAtelierConfig(cwd);
     adapter = config.adapter as AdapterName;
   } catch {
-    try {
-      const rc = await readAtelierRc(cwd);
-      adapter = rc.adapter;
-    } catch {
-      return;
-    }
+    return;
   }
   if (
     adapter === "generic" ||

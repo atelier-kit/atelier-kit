@@ -5,14 +5,13 @@ export function atelierCommandProtocol(): string {
 - \`/atelier quick ...\`, \`/atelier plan ...\`, and \`/atelier deep ...\` activate Atelier.
 - Use \`atelier new "<goal>" --mode quick|standard|deep\` to create an epic ledger.
 - Read \`.atelier/active.json\` and \`.atelier/epics/<active_epic>/state.json\` when active.
-- At \`awaiting_approval\`, read \`.atelier/epics/<active_epic>/plan.md\`, present that Atelier plan in chat, and stop.
-- Use \`atelier approve\` only after the before_approval gate passes and the human approves the presented Atelier plan.
 - Use \`atelier next\` and \`atelier done\` to advance discovery/design/planning tasks.
-- Use \`atelier execute\`, \`atelier done\`, and \`atelier next\` to execute approved slices one at a time.`;
+- At \`planned\`, use the exported native plan mirror for implementation in the host agent.
+- After native implementation, run \`atelier review\` to compare changes against the Atelier plan.`;
 }
 
 export function atelierStateReminder(): string {
-  return "Use `active`, `active_epic`, `active_phase`, `active_skill`, `status`, `approval`, and `current_slice` as the protocol state.";
+  return "Use `active`, `active_epic`, `active_phase`, `active_skill`, and `status` as the protocol state.";
 }
 
 export function activationReminder(): string {
@@ -28,5 +27,5 @@ export function adapterInstruction(): string {
 
 ${atelierStateReminder()}
 
-When Atelier is active, load only the skill named by \`active_skill\` and do not edit project code unless the active epic is in \`execution\` with approved approval status.`;
+When Atelier is active, load only the skill named by \`active_skill\`. Once status is \`planned\`, implementation belongs to the host agent's native workflow.`;
 }

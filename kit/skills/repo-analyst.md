@@ -33,7 +33,7 @@ Build the repository evidence needed to plan the active epic. Focus on facts fro
 
 - Do not edit project code.
 - Do not create implementation slices.
-- Do not approve a plan.
+- Do not finalize or implement a plan.
 - Do not decide architecture beyond repository evidence.
 - Do not load unrelated Atelier skills.
 
@@ -41,7 +41,7 @@ Build the repository evidence needed to plan the active epic. Focus on facts fro
 
 1. Read `.atelier/active.json`; stop if `active` is not `true`.
 2. Read `.atelier/epics/<active_epic>/state.json`; stop if `active_skill` is not `repo-analyst`.
-3. Confirm `allowed_actions.write_project_code` is `false`.
+3. Confirm the active epic is still in discovery/research context.
 4. Read `questions.md` and the epic goal.
 5. Inspect only repository areas that can materially affect the goal.
 6. Prefer concrete paths, exported symbols, routes, commands and tests over broad summaries.

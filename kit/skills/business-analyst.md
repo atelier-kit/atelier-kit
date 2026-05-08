@@ -33,7 +33,7 @@ Clarify user-facing behavior, product constraints, acceptance criteria and edge 
 
 - Do not edit project code.
 - Do not create final implementation slices.
-- Do not approve the plan.
+- Do not finalize or implement the plan.
 - Do not invent product requirements that conflict with the user request or repo evidence.
 
 ## Instructions

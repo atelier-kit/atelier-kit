@@ -28,7 +28,6 @@ export const SKILLS: SkillName[] = [
   "business-analyst",
   "planner",
   "designer",
-  "implementer",
   "reviewer",
 ];
 
@@ -48,7 +47,7 @@ export function defaultAtelierConfig(
       skills_load_strategy: "on_demand",
     },
     guards: {
-      detect_pre_approval_code_changes: true,
+      detect_unplanned_code_changes: true,
       use_git_diff: true,
     },
   };
@@ -65,17 +64,6 @@ export function inactiveState(): ActiveState {
   };
 }
 
-export function pausedState(epicId: string): ActiveState {
-  return {
-    active: false,
-    mode: "native",
-    active_epic: epicId,
-    active_phase: "paused",
-    active_skill: null,
-    updated_at: new Date().toISOString(),
-  };
-}
-
 export function requiredArtifactsForMode(
   mode: Exclude<AtelierMode, "native">,
 ): string[] {
@@ -84,7 +72,6 @@ export function requiredArtifactsForMode(
       "questions.md",
       "research/repo.md",
       "plan.md",
-      "execution-log.md",
       "review.md",
     ];
   }
@@ -96,7 +83,6 @@ export function requiredArtifactsForMode(
     "decisions.md",
     "design.md",
     "plan.md",
-    "execution-log.md",
     "review.md",
   ];
   if (mode === "standard") return standard;
@@ -109,7 +95,6 @@ export function requiredArtifactsForMode(
     "test-strategy.md",
     "plan.md",
     "critique.md",
-    "execution-log.md",
     "review.md",
   ];
 }
@@ -148,7 +133,7 @@ export function defaultEpicState(params: {
     slices: [],
     guards: {
       baseline_ref: params.baselineRef ?? "HEAD",
-      allowed_pre_execution_paths: [".atelier/**"],
+      allowed_pre_planned_paths: [".atelier/**"],
     },
     violations: [],
   };
@@ -263,11 +248,10 @@ ${planMode}
 
 _Pending._
 
-## Approval
+## Native Implementation
 
-Status: pending
-
-Human approval required before implementation.
+When this plan is ready, Atelier finalizes the epic as \`planned\` and exports a
+native plan mirror for the host agent.
 `;
   }
   return `# ${heading}
@@ -301,10 +285,9 @@ When Atelier-Kit is active:
 2. Read \`.atelier/active.json\`.
 3. Read \`.atelier/epics/<active_epic>/state.json\`.
 4. Load only the skill required by \`active_skill\`.
-5. If \`allowed_actions.write_project_code\` is false, do not edit project code.
-6. If \`status\` is \`awaiting_approval\`, read \`.atelier/epics/<active_epic>/plan.md\`, present that Atelier plan in the chat for human approval, and stop.
-7. If \`status\` is \`execution\`, execute only \`current_slice\`.
-8. After each protocol step, update the corresponding artifact and \`state.json\`.
+5. If \`status\` is \`planned\`, use the exported native plan mirror for implementation.
+6. If \`status\` is \`review\`, compare the native implementation diff against \`plan.md\`.
+7. After each protocol step, update the corresponding artifact and \`state.json\`.
 
 Never invent missing state. If protocol state is missing or inconsistent, stop and request repair through \`atelier validate\` or \`atelier doctor\`.
 `;
@@ -324,8 +307,8 @@ When active:
 
 - Read \`.atelier/active.json\` and the active epic \`state.json\` before acting.
 - Load only the skill named by \`active_skill\`.
-- At \`awaiting_approval\`, present \`.atelier/epics/<active_epic>/plan.md\` in chat and stop.
-- Do not edit project code unless the active epic is in \`execution\` with approved approval status.
+- At \`planned\`, use the exported native plan mirror for implementation.
+- After native implementation, run \`atelier review\` to compare the diff with \`plan.md\`.
 `;
 }
 
@@ -436,7 +419,7 @@ Validate technical feasibility and dependency constraints.
 
 - Do not edit project code.
 - Do not create slices.
-- Do not approve implementation.
+- Do not finalize or implement the plan.
 
 ## Output format
 
@@ -519,8 +502,7 @@ Transform evidence into an executable plan.
 ## Forbidden actions
 
 - Do not edit project code.
-- Do not mark a plan as approved.
-- Do not execute slices.
+- Do not implement slices.
 
 ## Output format
 
@@ -561,7 +543,7 @@ Record architectural decisions and solution design.
 ## Forbidden actions
 
 - Do not edit project code.
-- Do not execute slices.
+- Do not implement slices.
 
 ## Output format
 
@@ -578,53 +560,15 @@ Write:
 
 Design decisions are traceable to evidence and ready for planning.
 `,
-    implementer: `# Implementer
-
-## Mission
-
-Execute only the current approved slice.
-
-## Inputs
-
-- Active epic \`state.json\`
-- Approved \`plan.md\`
-- \`current_slice\`
-
-## Allowed reads
-
-- Files needed to implement the current slice
-
-## Allowed writes
-
-- Project files included in \`current_slice.allowed_files\`
-- \`.atelier/epics/<epic>/execution-log.md\`
-- \`.atelier/epics/<epic>/state.json\`
-
-## Forbidden actions
-
-- Do not execute future slices.
-- Do not change files outside the slice scope unless needed and documented.
-- Do not alter the approved plan silently.
-- Do not mark unvalidated work as done.
-
-## Output format
-
-Update the execution log with implementation and validation notes.
-
-## Completion criteria
-
-The current slice is done, blocked, or needs review with validation recorded.
-`,
     reviewer: `# Reviewer
 
 ## Mission
 
-Review completed execution against the approved plan.
+Review native implementation against the planned epic.
 
 ## Inputs
 
-- Approved \`plan.md\`
-- \`execution-log.md\`
+- Planned \`plan.md\`
 - Current git diff and tests
 
 ## Allowed reads
@@ -641,7 +585,7 @@ Review completed execution against the approved plan.
 ## Forbidden actions
 
 - Do not implement new scope.
-- Do not approve your own unvalidated changes.
+- Do not hide failed or skipped validation.
 
 ## Output format
 
@@ -703,7 +647,7 @@ export function schemaJson(name: string): string {
         title: { type: "string", minLength: 1 },
         goal: { type: "string", minLength: 1 },
         mode: { enum: ["quick", "standard", "deep"] },
-        status: { enum: ["native", "idle", "discovery", "synthesis", "design", "planning", "awaiting_approval", "approved", "execution", "review", "done", "blocked", "paused"] },
+        status: { enum: ["native", "idle", "discovery", "synthesis", "design", "planning", "planned", "review", "done", "blocked"] },
         approval: { "$ref": "gate.schema.json#/definitions/approval" },
         slices: { type: "array", items: { "$ref": "slice.schema.json" } },
       },
@@ -716,7 +660,7 @@ export function schemaJson(name: string): string {
       properties: {
         id: { type: "string", minLength: 1 },
         title: { type: "string", minLength: 1 },
-        status: { enum: ["draft", "ready", "executing", "done", "blocked", "needs-review"] },
+        status: { enum: ["draft", "ready", "done", "blocked"] },
         goal: { type: "string", minLength: 1 },
         depends_on: { type: "array", items: { type: "string" } },
         allowed_files: { type: "array", items: { type: "string" } },
@@ -747,7 +691,7 @@ export function schemaJson(name: string): string {
       properties: {
         required_headings: {
           type: "array",
-          items: { enum: ["Goal", "Mode", "Evidence Summary", "Assumptions", "Risks", "Slices", "Approval"] },
+          items: { enum: ["Goal", "Mode", "Evidence Summary", "Assumptions", "Risks", "Slices", "Native Implementation"] },
         },
       },
     },
@@ -792,23 +736,14 @@ states:
   planning:
     can_write_project_code: false
     skills: [planner]
-    next: [awaiting_approval, blocked]
-  awaiting_approval:
-    can_write_project_code: false
-    requires_human_action: true
-    next: [approved, planning, blocked]
-  approved:
-    can_write_project_code: false
-    next: [execution]
-  execution:
+    next: [planned, blocked]
+  planned:
     can_write_project_code: true
-    skills: [implementer]
-    requires: [approval.status=approved, current_slice]
-    next: [execution, review, blocked]
+    next: [review, done, blocked]
   review:
     can_write_project_code: false
     skills: [reviewer]
-    next: [done, execution, blocked]
+    next: [done, planned, blocked]
   done:
     can_write_project_code: false
   blocked:
@@ -822,7 +757,6 @@ export const modesYaml = `modes:
       - questions.md
       - research/repo.md
       - plan.md
-      - execution-log.md
       - review.md
     research_tracks:
       repo: required
@@ -839,7 +773,6 @@ export const modesYaml = `modes:
       - decisions.md
       - design.md
       - plan.md
-      - execution-log.md
       - review.md
     research_tracks:
       repo: required
@@ -860,7 +793,6 @@ export const modesYaml = `modes:
       - test-strategy.md
       - plan.md
       - critique.md
-      - execution-log.md
       - review.md
     research_tracks:
       repo: required
@@ -870,34 +802,23 @@ export const modesYaml = `modes:
 `;
 
 export const gatesYaml = `gates:
-  before_code:
-    description: Project code cannot be edited unless execution is approved.
+  plan_ready:
+    description: Plan must be reviewable before native implementation.
     require:
       - active.active=true
-      - state.status=execution
-      - state.approval.status=approved
-      - state.allowed_actions.write_project_code=true
-      - state.current_slice!=null
-  before_approval:
-    description: Plan must be reviewable by a human.
-    require:
+      - state.status=planned
       - plan.md exists
       - plan_has_goal
       - plan_has_slices
+      - each_slice_has_goal
       - each_slice_has_acceptance_criteria
       - risks_are_documented
       - validation_steps_are_documented
-  before_execution:
-    description: Execution can only start after human approval.
+  after_review:
+    description: Review must compare native implementation with the plan.
     require:
-      - approval.status=approved
-      - state.status=approved
-      - at_least_one_slice_ready
-  after_slice:
-    description: Each slice must leave trace.
-    require:
-      - execution-log.md updated
-      - slice_status in [done, blocked, needs-review]
+      - review.md exists
+      - plan_compliance_recorded
       - validation_result_present
 `;
 
@@ -938,17 +859,15 @@ ${params.mode}
 
 | Risk | Impact | Mitigation |
 |---|---:|---|
-| Plan is not approved yet | High | Stop before execution and request human approval |
+| Native implementation may diverge from plan | Medium | Review diff against planned slices |
 
 ## Slices
 
 No slices defined yet.
 
-## Approval
+## Native Implementation
 
-Status: pending
-
-Human approval required before implementation.
+Use the exported native plan mirror after Atelier finalizes this epic as \`planned\`.
 `;
 }
 
@@ -967,16 +886,12 @@ export const skillsYaml = `skills:
     writes: [research/business.md]
   planner:
     file: .atelier/skills/planner.md
-    allowed_states: [synthesis, planning, awaiting_approval]
+    allowed_states: [synthesis, planning, planned]
     writes: [synthesis.md, plan.md]
   designer:
     file: .atelier/skills/designer.md
     allowed_states: [design]
     writes: [decisions.md, design.md]
-  implementer:
-    file: .atelier/skills/implementer.md
-    allowed_states: [execution]
-    writes: [execution-log.md, project_code]
   reviewer:
     file: .atelier/skills/reviewer.md
     allowed_states: [review]
@@ -1046,13 +961,10 @@ export function schemaFile(name: string): string {
             "synthesis",
             "design",
             "planning",
-            "awaiting_approval",
-            "approved",
-            "execution",
+            "planned",
             "review",
             "done",
             "blocked",
-            "paused",
           ],
         },
         approval: { type: "object" },
@@ -1070,7 +982,7 @@ export function schemaFile(name: string): string {
       properties: {
         id: { type: "string", minLength: 1 },
         title: { type: "string", minLength: 1 },
-        status: { enum: ["draft", "ready", "executing", "done", "blocked", "needs-review"] },
+        status: { enum: ["draft", "ready", "done", "blocked"] },
         goal: { type: "string", minLength: 1 },
         depends_on: { type: "array", items: { type: "string" } },
         allowed_files: { type: "array", items: { type: "string" } },

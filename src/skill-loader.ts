@@ -2,7 +2,7 @@ import matter from "gray-matter";
 import { readdir, readFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { z } from "zod";
-import type { ContextMeta, Phase, TaskType } from "./state/schema.js";
+import type { EpicState } from "./protocol/schema.js";
 
 const FrontSchema = z.object({
   name: z.string().optional(),
@@ -77,51 +77,6 @@ export function countInstructions(instructionBlock: string): number {
   return n;
 }
 
-/** Map runtime phase to skill name under .atelier/skills */
-export function phaseToSkillFolder(phase: Phase): string | null {
-  const map: Partial<Record<Phase, string>> = {
-    questions: "questions",
-    research: "researcher",
-    design: "designer",
-    outline: "designer",
-    plan: "planner",
-    implement: "implementer",
-    review: "reviewer",
-    learn: "chronicler",
-  };
-  return map[phase] ?? null;
-}
-
-export function taskTypeToSkillFolder(taskType: TaskType): string {
-  const map: Record<TaskType, string> = {
-    questions: "questioner",
-    repo: "repo-analyst",
-    tech: "tech-analyst",
-    business: "business-analyst",
-    synthesis: "planner",
-    implementation: "implementer",
-    decision: "designer",
-  };
-  return map[taskType];
-}
-
-export function activeSkillFolder(meta: ContextMeta): string | null {
-  if (meta.workflow === "planner" && meta.planner_state === "awaiting_approval") {
-    return "planner";
-  }
-  if (meta.workflow === "planner" && meta.current_task) {
-    const task = meta.tasks.find((entry) => entry.id === meta.current_task);
-    if (task) {
-      return taskTypeToSkillFolder(task.type);
-    }
-  }
-  if (
-    meta.workflow === "planner" &&
-    meta.current_slice &&
-    meta.phase === "implement" &&
-    meta.planner_state === "executing"
-  ) {
-    return "implementer";
-  }
-  return phaseToSkillFolder(meta.phase);
+export function activeSkillFolder(state: Pick<EpicState, "active_skill">): string | null {
+  return state.active_skill;
 }

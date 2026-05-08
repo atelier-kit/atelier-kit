@@ -42,9 +42,8 @@
     },
     "guards": {
       "type": "object",
-      "required": ["detect_pre_approval_code_changes", "use_git_diff"],
+      "required": ["use_git_diff"],
       "properties": {
-        "detect_pre_approval_code_changes": { "type": "boolean" },
         "use_git_diff": { "type": "boolean" }
       }
     }

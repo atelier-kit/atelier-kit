@@ -2,7 +2,8 @@
 
 Atelier-Kit is a filesystem-native Planning Protocol, not a planner-first
 runtime. The host coding agent keeps its native behavior until Atelier is
-explicitly activated.
+explicitly activated, and the agent remains responsible for analysis and plan
+authoring and implementation.
 
 ![Atelier mental execution flow](./assets/atelier-mental-execution-flow.png)
 
@@ -13,8 +14,13 @@ explicitly activated.
 3. **On-demand skills** in `.atelier/skills/`
 4. **Schemas** in `.atelier/schemas/`
 5. **Per-epic ledgers** in `.atelier/epics/<epic>/`
-6. **CLI helpers** that initialize, validate, render rules and move protocol
-   state
+6. **CLI helpers** that initialize, validate, render rules, export native plans
+   and move protocol state
+
+The methodology lives in the protocol files, schemas, rules, skills and epic
+ledger. The CLI is intentionally thin: it performs deterministic state
+transitions and validation, but it does not maintain a separate planner,
+workflow runtime, session context or implementation engine.
 
 ## Source of truth
 
@@ -33,15 +39,16 @@ Active epic state:
 The active epic `state.json` stores:
 
 - mode: `quick`, `standard` or `deep`
-- status: `discovery`, `planning`, `awaiting_approval`, `approved`,
-  `execution`, `review`, `done`, `blocked` or `paused`
+- status: `discovery`, `synthesis`, `design`, `planning`, `planned`, `review`,
+  `done` or `blocked`
 - active skill
-- approval status
-- allowed actions
 - required artifacts
 - slices
-- pre-execution diff guard baseline
+- guard metadata
 - violations
+
+No other file is operational state. Atelier does not use `.atelier/context.md`
+or `.atelier/plan/` as a second source of truth.
 
 ## Activation model
 
@@ -74,12 +81,10 @@ atelier status
 atelier validate
 atelier doctor
 atelier render-rules --adapter cursor
-atelier approve
-atelier reject --reason "Need smaller slices"
-atelier execute
+atelier export-plan --adapter claude-code
+atelier review
 atelier next
 atelier done
-atelier pause
 atelier off
 ```
 
@@ -94,21 +99,15 @@ native
   -> synthesis
   -> design
   -> planning
-  -> awaiting_approval
-  -> approved
-  -> execution
+  -> planned
+  -> native agent implementation
   -> review
   -> done
 ```
 
-Project code can be edited only when:
-
-```text
-state.status = execution
-state.approval.status = approved
-state.allowed_actions.write_project_code = true
-state.current_slice != null
-```
+`planned` is the handoff boundary. Atelier has produced a validated plan and a
+native mirror. The host agent can then implement with its own plan UI, tools and
+execution model.
 
 ## Validation
 
@@ -120,15 +119,14 @@ state.current_slice != null
 - active epic state
 - state/action coherence
 - required artifacts
-- reviewable plan shape for approval/execution states
+- reviewable plan shape for `planned`, `review` and `done`
 - slice goal, acceptance criteria and validation
-- premature project-code diffs before execution
+- native plan mirror configuration
 
-Approval-specific validation is enforced by `atelier approve`. It requires:
+`atelier validate --gate plan-ready` is enforced before `atelier done` can
+finalize planning. It requires:
 
 - active epic exists
-- `status=awaiting_approval`
-- approval is `none` or `pending`
 - `plan.md` exists
 - plan has slices
 - slices have goals, acceptance criteria and validation
@@ -144,8 +142,7 @@ Examples:
 - `questioner` writes `questions.md`
 - `repo-analyst` writes `research/repo.md`
 - `planner` writes `synthesis.md`, `plan.md` and state updates
-- `implementer` executes only `current_slice`
-- `reviewer` writes `review.md`
+- `reviewer` writes `review.md` after native implementation
 
 ## Adapter rendering
 

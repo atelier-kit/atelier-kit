@@ -22,9 +22,6 @@ export async function cmdStatus(cwd: string): Promise<void> {
     console.log(pc.bold("\nEpic"));
     console.log(`  title:         ${state.title}`);
     console.log(`  status:        ${state.status}`);
-    console.log(`  approval:      ${state.approval.status}`);
-    console.log(`  current_slice: ${state.current_slice ?? "—"}`);
-    console.log(`  can_write:     ${state.allowed_actions.write_project_code}`);
     console.log(`  slices:        ${state.slices.length}`);
     console.log(`  violations:    ${state.violations.length}`);
   } catch (error) {

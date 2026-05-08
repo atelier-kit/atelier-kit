@@ -34,8 +34,8 @@ Validate the technical constraints that could affect the active epic: framework 
 ## Forbidden Actions
 
 - Do not edit project code.
-- Do not approve a plan.
-- Do not execute slices.
+- Do not finalize a plan.
+- Do not implement slices.
 - Do not invent external API behavior from memory when current docs are needed.
 - Do not introduce new dependencies as a decision; only document feasibility.
 

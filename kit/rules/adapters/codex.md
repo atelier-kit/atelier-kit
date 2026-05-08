@@ -7,4 +7,4 @@ Use `AGENTS.md` as the persistent adapter instruction.
 - `/atelier plan <goal>` maps to `atelier new "<goal>" --mode standard`.
 - `/atelier deep <goal>` maps to `atelier new "<goal>" --mode deep`.
 - When active, read `.atelier/active.json`, then `.atelier/epics/<active_epic>/state.json`, then only the active skill file.
-- Do not edit project code until state is `execution` and approval is `approved`.
+- At `planned`, implement with Codex's native workflow from the exported plan, then run `atelier review`.

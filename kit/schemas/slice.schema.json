@@ -16,7 +16,7 @@
     "id": { "type": "string", "minLength": 1 },
     "title": { "type": "string", "minLength": 1 },
     "status": {
-      "enum": ["draft", "ready", "executing", "done", "blocked", "needs-review"]
+      "enum": ["draft", "ready", "done", "blocked"]
     },
     "goal": { "type": "string", "minLength": 1 },
     "depends_on": { "type": "array", "items": { "type": "string" } },

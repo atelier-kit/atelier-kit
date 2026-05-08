@@ -12,5 +12,3 @@ export function getKitRoot(): string {
 }
 
 export const ATELIER_DIR = ".atelier";
-export const CONTEXT_FILE = "context.md";
-export const CONFIG_FILE = ".atelierrc";

@@ -108,9 +108,8 @@ export async function createEpic(cwd: string, params: {
 
 export function skillForStatus(status: string): SkillName | null {
   if (status === "discovery") return "questioner";
-  if (status === "synthesis" || status === "planning" || status === "awaiting_approval") return "planner";
+  if (status === "synthesis" || status === "planning") return "planner";
   if (status === "design") return "designer";
-  if (status === "execution") return "implementer";
   if (status === "review") return "reviewer";
   return null;
 }
@@ -122,11 +121,10 @@ export function firstReadySlice(state: EpicState): ProtocolSlice | null {
 export function allowedActionsForStatus(
   status: EpicState["status"],
 ): EpicState["allowed_actions"] {
-  const executing = status === "execution";
   return {
     read_project_code: true,
-    write_project_code: executing,
+    write_project_code: false,
     write_atelier_files: true,
-    run_tests: executing || status === "review",
+    run_tests: status === "review",
   };
 }

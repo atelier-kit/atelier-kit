@@ -1,13 +1,13 @@
 ---
 name: planner
-description: Transform active epic evidence into an approval-ready, slice-based implementation plan.
+description: Transform active epic evidence into a native-agent implementation plan.
 ---
 
 # Planner
 
 ## Mission
 
-Transform available evidence into an executable plan with reviewable slices, allowed file scope, acceptance criteria and validation steps. The planner prepares work for human approval; it does not implement.
+Transform available evidence into a native-agent implementation plan with reviewable slices, allowed file scope, acceptance criteria and validation steps. The planner prepares work for native implementation; it does not implement.
 
 ## Inputs
 
@@ -35,8 +35,7 @@ Transform available evidence into an executable plan with reviewable slices, all
 ## Forbidden Actions
 
 - Do not edit project code.
-- Do not mark a plan as approved.
-- Do not execute slices.
+- Do not implement slices.
 - Do not bypass missing evidence; mark assumptions and risks.
 - Do not add unrelated feature ideas.
 
@@ -53,8 +52,8 @@ Transform available evidence into an executable plan with reviewable slices, all
 9. Each slice must have `id`, `title`, `goal`, `depends_on`, `allowed_files`, `acceptance_criteria` and `validation`.
 10. Keep slices small enough for one agent iteration.
 11. Reflect the same slices in `state.json` and `plan.md`.
-12. Set `approval.status` to `pending`, `status` to `awaiting_approval`, and `active_skill` to `planner` only when the plan is ready for human review.
-13. Stop and present `.atelier/epics/<active_epic>/plan.md` in chat when `status` is `awaiting_approval`.
+12. Set `status` to `planned` and `active_skill` to `null` only when the plan is ready for native implementation.
+13. Export the native plan mirror with `atelier export-plan --adapter <adapter>` when needed.
 
 ## Output Format
 
@@ -67,7 +66,7 @@ Write `.atelier/epics/<active_epic>/plan.md` with:
 5. `## Assumptions`
 6. `## Risks`
 7. `## Slices`
-8. `## Approval`
+8. `## Native Implementation`
 
 Each slice section must include:
 
@@ -78,8 +77,7 @@ Each slice section must include:
 
 ## Completion Criteria
 
-- `plan.md` passes `atelier validate --gate before-approval`.
+- `plan.md` passes `atelier validate --gate plan-ready`.
 - `state.json` has at least one ready slice.
 - Every slice has allowed files, acceptance criteria and validation.
-- Approval is pending, not approved.
 - No project code was edited.

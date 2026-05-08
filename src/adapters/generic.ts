@@ -22,9 +22,6 @@ active_skill: ${active.active_skill ?? "null"}
 
 === Active epic ===
 status: ${state?.status ?? "none"}
-approval: ${state?.approval.status ?? "none"}
-current_slice: ${state?.current_slice ?? "null"}
-can_write_project_code: ${state?.allowed_actions.write_project_code ?? false}
 
 === Rules ===
 ${rules}

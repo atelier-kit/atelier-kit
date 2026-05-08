@@ -26,7 +26,6 @@ describe("init", () => {
     await access(join(path, ".atelier", "skills", "business-analyst.md"));
     await access(join(path, ".atelier", "skills", "planner.md"));
     await access(join(path, ".atelier", "skills", "designer.md"));
-    await access(join(path, ".atelier", "skills", "implementer.md"));
     await access(join(path, ".atelier", "skills", "reviewer.md"));
     await access(join(path, ".atelier", "schemas", "task.schema.json"));
     await access(join(path, ".atelier", "METHOD.md"));

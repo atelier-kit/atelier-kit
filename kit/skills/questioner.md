@@ -34,7 +34,7 @@ Turn the user's goal into concrete investigation questions before repository or 
 - Do not perform deep research.
 - Do not decide architecture.
 - Do not create implementation slices.
-- Do not approve or execute a plan.
+- Do not implement a plan.
 
 ## Instructions
 

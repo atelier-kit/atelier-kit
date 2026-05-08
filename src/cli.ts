@@ -8,16 +8,9 @@ import { cmdValidate } from "./commands/validate.js";
 import { cmdInstallAdapter } from "./commands/install-adapter.js";
 import { cmdNew } from "./commands/new.js";
 import { cmdRenderRules } from "./commands/rules.js";
-import {
-  cmdApprove,
-  cmdDone,
-  cmdExecute,
-  cmdNext,
-  cmdOff,
-  cmdPause,
-  cmdReject,
-  cmdResume,
-} from "./commands/lifecycle.js";
+import { cmdExportPlan } from "./commands/export-plan.js";
+import { cmdReview } from "./commands/review.js";
+import { cmdDone, cmdNext, cmdOff } from "./commands/lifecycle.js";
 
 const program = new Command();
 program
@@ -59,7 +52,7 @@ program
 program
   .command("validate")
   .description("Validate Atelier schemas, gates and protocol violations")
-  .option("--gate <name>", "Run a specific gate: before-approval | before-execution")
+  .option("--gate <name>", "Run a specific gate: plan-ready")
   .action(async (opts: { gate?: string }) => {
     await cmdValidate(processCwd(), opts);
   });
@@ -74,27 +67,28 @@ program
   });
 
 program
-  .command("approve")
-  .description("Mark a pending plan approved")
-  .option("--by <name>", "Approver name")
-  .option("--notes <text>", "Approval notes")
-  .action(async (opts: { by?: string; notes?: string }) => {
-    await cmdApprove(processCwd(), opts);
+  .command("export-plan")
+  .description("Export the active Atelier plan to an agent-native mirror file")
+  .option("--adapter <name>", "claude-code|cursor|kiro|antigravity|generic")
+  .option("--path <path>", "Target path; supports {cwd}, {home}, {epic_id}, {title}")
+  .option("--command <command>", "Optional shell command to run after export; receives ATELIER_PLAN_PATH")
+  .option("--if-planned", "Skip unless the active epic is planned")
+  .option("--quiet", "Suppress non-error output")
+  .action(async (opts: {
+    adapter?: string;
+    path?: string;
+    command?: string;
+    ifPlanned?: boolean;
+    quiet?: boolean;
+  }) => {
+    await cmdExportPlan(processCwd(), opts);
   });
 
 program
-  .command("reject")
-  .description("Reject the active plan and return to planning")
-  .requiredOption("-r, --reason <text>", "Reason for rejection")
-  .action(async (opts: { reason: string }) => {
-    await cmdReject(processCwd(), opts.reason);
-  });
-
-program
-  .command("execute")
-  .description("Start execution after approval")
+  .command("review")
+  .description("Create a review scaffold comparing implementation against the Atelier plan")
   .action(async () => {
-    await cmdExecute(processCwd());
+    await cmdReview(processCwd());
   });
 
 program
@@ -106,23 +100,9 @@ program
 
 program
   .command("done")
-  .description("Mark current slice done and advance to review or next slice")
+  .description("Mark current planning/review task done")
   .action(async () => {
     await cmdDone(processCwd());
-  });
-
-program
-  .command("pause")
-  .description("Pause Atelier without deleting the active epic")
-  .action(async () => {
-    await cmdPause(processCwd());
-  });
-
-program
-  .command("resume")
-  .description("Resume a paused Atelier epic")
-  .action(async () => {
-    await cmdResume(processCwd());
   });
 
 program

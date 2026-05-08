@@ -24,7 +24,6 @@ Each epic ledger owns its artifacts:
 ├── decisions.md
 ├── design.md
 ├── plan.md
-├── execution-log.md
 └── review.md
 ```
 
@@ -37,8 +36,9 @@ Each epic ledger owns its artifacts:
 
 ## Gates
 
-Project code edits are forbidden until the active epic is in `execution`, the
-plan is approved, and `current_slice` is set.
+Atelier owns the workflow through `planned`. A planned epic has a validated
+`plan.md`, structured slices, and an exported native plan mirror.
 
-`awaiting_approval` is a valid waiting state. Present the plan and stop until
-human approval is provided.
+Implementation happens in the host agent's native workflow. After
+implementation, run `atelier review` to compare the diff and validation evidence
+against the planned slices.

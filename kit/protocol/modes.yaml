@@ -5,7 +5,6 @@ modes:
       - questions.md
       - research/repo.md
       - plan.md
-      - execution-log.md
       - review.md
     research_tracks:
       repo: required
@@ -23,7 +22,6 @@ modes:
       - decisions.md
       - design.md
       - plan.md
-      - execution-log.md
       - review.md
     research_tracks:
       repo: required
@@ -45,7 +43,6 @@ modes:
       - test-strategy.md
       - plan.md
       - critique.md
-      - execution-log.md
       - review.md
     research_tracks:
       repo: required

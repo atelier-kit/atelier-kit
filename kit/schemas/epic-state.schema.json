@@ -33,13 +33,10 @@
         "synthesis",
         "design",
         "planning",
-        "awaiting_approval",
-        "approved",
-        "execution",
+        "planned",
         "review",
         "done",
-        "blocked",
-        "paused"
+        "blocked"
       ]
     },
     "active_skill": {
@@ -51,7 +48,6 @@
         "business-analyst",
         "planner",
         "designer",
-        "implementer",
         "reviewer",
         null
       ]
@@ -84,10 +80,10 @@
     },
     "guards": {
       "type": "object",
-      "required": ["baseline_ref", "allowed_pre_execution_paths"],
+      "required": ["baseline_ref", "allowed_pre_planned_paths"],
       "properties": {
         "baseline_ref": { "type": "string", "minLength": 1 },
-        "allowed_pre_execution_paths": {
+        "allowed_pre_planned_paths": {
           "type": "array",
           "items": { "type": "string", "minLength": 1 }
         }

@@ -29,34 +29,19 @@ states:
   planning:
     can_write_project_code: false
     skills: [planner]
-    next: [awaiting_approval, blocked]
+    next: [planned, blocked]
 
-  awaiting_approval:
-    can_write_project_code: false
-    requires_human_action: true
-    next: [approved, planning, blocked]
-
-  approved:
-    can_write_project_code: false
-    next: [execution]
-
-  execution:
+  planned:
     can_write_project_code: true
-    skills: [implementer]
-    requires: [approval.status=approved, current_slice]
-    next: [execution, review, blocked]
+    next: [review, done, blocked]
 
   review:
     can_write_project_code: false
     skills: [reviewer]
-    next: [done, execution, blocked]
+    next: [done, planned, blocked]
 
   done:
     can_write_project_code: false
 
   blocked:
     can_write_project_code: false
-
-  paused:
-    atelier_active: false
-    can_write_project_code: true

@@ -6,9 +6,11 @@ import { applyCodex } from "./codex.js";
 import { applyWindsurf } from "./windsurf.js";
 import { applyGeneric } from "./generic.js";
 import { applyCline } from "./cline.js";
-import { applyKilo } from "./kilo.js";
+import { applyGeminiCli } from "./gemini-cli.js";
 import { applyAntigravity } from "./antigravity.js";
-import { readAtelierRc } from "../state/atelierrc.js";
+import { applyKiro } from "./kiro.js";
+import { applyKilo } from "./kilo.js";
+import { readAtelierConfig } from "../protocol/state.js";
 
 export async function installAdapter(
   cwd: string,
@@ -16,6 +18,7 @@ export async function installAdapter(
 ): Promise<void> {
   const base = atelierDir(cwd);
   switch (adapter) {
+    case "claude-code":
     case "claude":
       await applyClaude(cwd, base);
       break;
@@ -25,17 +28,23 @@ export async function installAdapter(
     case "codex":
       await applyCodex(cwd, base);
       break;
+    case "gemini-cli":
+      await applyGeminiCli(cwd, base);
+      break;
+    case "antigravity":
+      await applyAntigravity(cwd, base);
+      break;
+    case "kiro":
+      await applyKiro(cwd, base);
+      break;
+    case "kilo":
+      await applyKilo(cwd, base);
+      break;
     case "windsurf":
       await applyWindsurf(cwd, base);
       break;
     case "cline":
       await applyCline(cwd, base);
-      break;
-    case "kilo":
-      await applyKilo(cwd, base);
-      break;
-    case "antigravity":
-      await applyAntigravity(cwd);
       break;
     case "generic":
       await applyGeneric(cwd, base);
@@ -45,12 +54,12 @@ export async function installAdapter(
   }
 }
 
-/** Re-run fallback generators after phase or planner focus changes. */
+/** Re-run fallback generators after protocol state changes. */
 export async function refreshFallbackAdapters(cwd: string): Promise<void> {
   let adapter: AdapterName;
   try {
-    const rc = await readAtelierRc(cwd);
-    adapter = rc.adapter;
+    const config = await readAtelierConfig(cwd);
+    adapter = config.adapter as AdapterName;
   } catch {
     return;
   }
@@ -59,8 +68,10 @@ export async function refreshFallbackAdapters(cwd: string): Promise<void> {
     adapter === "windsurf" ||
     adapter === "codex" ||
     adapter === "cline" ||
-    adapter === "kilo" ||
-    adapter === "antigravity"
+    adapter === "gemini-cli" ||
+    adapter === "antigravity" ||
+    adapter === "kiro" ||
+    adapter === "kilo"
   ) {
     await installAdapter(cwd, adapter);
   }

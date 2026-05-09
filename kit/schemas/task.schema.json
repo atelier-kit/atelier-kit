@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Atelier protocol task",
+  "type": "object",
+  "required": ["id", "type", "status", "artifact"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "type": {
+      "enum": [
+        "questions",
+        "repo",
+        "tech",
+        "business",
+        "synthesis",
+        "design",
+        "planning",
+        "review"
+      ]
+    },
+    "status": { "enum": ["pending", "in_progress", "done", "blocked"] },
+    "artifact": { "type": "string", "minLength": 1 }
+  }
+}

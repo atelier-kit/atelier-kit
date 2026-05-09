@@ -1,19 +1,31 @@
-export function plannerCommandProtocol(): string {
-  return `Planner protocol:
+export function atelierCommandProtocol(): string {
+  return `Atelier protocol:
 
-- When the user says \`/planner <goal>\`, prefer \`atelier-kit planner autoplan "<goal>"\`, then read \`.atelier/context.md\` again and continue until the planner reaches approval presentation.
-- When the user says \`/planner next\`, run \`atelier-kit planner next\`, then re-read \`.atelier/context.md\`.
-- When the user says \`/planner done\`, run \`atelier-kit planner done\`, then re-read \`.atelier/context.md\`.
-- When the user says \`/planner present\`, run \`atelier-kit planner present\`.
-- When the user says \`/planner approve\`, run \`atelier-kit planner approve\`, then re-read \`.atelier/context.md\`.
-- When the user says \`/planner reject\`, run \`atelier-kit planner reject --reason "<reason>"\`, then re-read \`.atelier/context.md\`.
-- When the user says \`/planner execute\`, run \`atelier-kit planner execute\`, then re-read \`.atelier/context.md\`.
-- When the user says \`/planner status\`, run \`atelier-kit status\`.
-- When the user says \`/planner focus <id>\`, choose \`atelier-kit planner task focus <id>\` or \`atelier-kit planner slice focus <id>\` based on the current planner state, then re-read \`.atelier/context.md\`.
-- When the user says \`/slice start\`, focus the next ready slice with \`atelier-kit planner next\` and continue in implementer mode if a slice becomes active.
-- After every planner command that mutates state, re-read \`.atelier/context.md\` before taking further action.`;
+- \`/plan ...\` stays native—host agent planning only.
+- \`/atelier quick ...\`, \`/atelier plan ...\`, and \`/atelier deep ...\` turn Atelier on.
+- Use \`atelier new "<goal>" --mode quick|standard|deep\` to create an epic ledger.
+- Read \`.atelier/active.json\` and \`.atelier/epics/<active_epic>/state.json\` when active.
+- Use \`atelier next\` and \`atelier done\` to advance discovery/design/planning tasks.
+- At \`planned\`, use the exported native plan mirror for implementation in the host agent.
+- After native implementation, run \`atelier review\` to compare changes against the Atelier plan.`;
 }
 
-export function plannerStateReminder(): string {
-  return "Use `workflow`, `planner_mode`, `planner_state`, `approval_status`, `current_task`, and `current_slice` together as the state machine.";
+export function atelierStateReminder(): string {
+  return "Use `active`, `active_epic`, `active_phase`, `active_skill`, and `status` as the protocol state.";
+}
+
+export function activationReminder(): string {
+  return `Atelier-Kit is inactive by default.
+
+- \`/plan ...\` stays native—host agent planning only.
+- \`/atelier quick ...\`, \`/atelier plan ...\`, and \`/atelier deep ...\` turn Atelier on.
+- When inactive, do not create Atelier artifacts or enforce Atelier gates.`;
+}
+
+export function adapterInstruction(): string {
+  return `${atelierCommandProtocol()}
+
+${atelierStateReminder()}
+
+When Atelier is active, load only the skill named by \`active_skill\`. Once status is \`planned\`, implementation belongs to the host agent's native workflow.`;
 }

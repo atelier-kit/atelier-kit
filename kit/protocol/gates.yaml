@@ -1,0 +1,20 @@
+gates:
+  plan_ready:
+    description: Plan must be reviewable before native implementation.
+    require:
+      - active.active=true
+      - state.status=planned
+      - plan.md exists
+      - plan_has_goal
+      - plan_has_slices
+      - each_slice_has_goal
+      - each_slice_has_acceptance_criteria
+      - risks_are_documented
+      - validation_steps_are_documented
+
+  after_review:
+    description: Review must compare native implementation with the plan.
+    require:
+      - review.md exists
+      - plan_compliance_recorded
+      - validation_result_present

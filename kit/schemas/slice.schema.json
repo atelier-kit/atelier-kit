@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Atelier slice",
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "status",
+    "goal",
+    "depends_on",
+    "allowed_files",
+    "acceptance_criteria",
+    "validation"
+  ],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "title": { "type": "string", "minLength": 1 },
+    "status": {
+      "enum": ["draft", "ready", "done", "blocked"]
+    },
+    "goal": { "type": "string", "minLength": 1 },
+    "depends_on": { "type": "array", "items": { "type": "string" } },
+    "allowed_files": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "acceptance_criteria": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "validation": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  }
+}

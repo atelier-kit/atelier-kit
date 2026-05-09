@@ -11,6 +11,12 @@ import { cmdRenderRules } from "./commands/rules.js";
 import { cmdExportPlan } from "./commands/export-plan.js";
 import { cmdReview } from "./commands/review.js";
 import { cmdDone, cmdNext, cmdOff } from "./commands/lifecycle.js";
+import { cmdHostPlanFinalize, cmdHostPlanStart } from "./commands/host-plan.js";
+import {
+  cmdNativePlanClaudeExitPlanHook,
+  cmdNativePlanClaudePromptHook,
+  cmdNativePlanClaudeToolEvidenceHook,
+} from "./commands/native-plan.js";
 
 const program = new Command();
 program
@@ -110,6 +116,49 @@ program
   .description("Disable Atelier and return to native mode")
   .action(async () => {
     await cmdOff(processCwd());
+  });
+
+const hostPlan = program
+  .command("host-plan")
+  .description("Thin helpers for host-native planning");
+
+hostPlan
+  .command("start <goal>")
+  .description("Create a V2 planning epic for host-native plan mode")
+  .action(async (goal: string) => {
+    await cmdHostPlanStart(processCwd(), goal);
+  });
+
+hostPlan
+  .command("finalize")
+  .description("Validate the host-authored plan and export the native mirror")
+  .action(async () => {
+    await cmdHostPlanFinalize(processCwd());
+  });
+
+const nativePlan = program
+  .command("native-plan")
+  .description("Hook entrypoints for host-native plan mode");
+
+nativePlan
+  .command("claude-prompt-hook")
+  .description("Claude Code UserPromptSubmit hook")
+  .action(async () => {
+    await cmdNativePlanClaudePromptHook();
+  });
+
+nativePlan
+  .command("claude-exit-plan-hook")
+  .description("Claude Code ExitPlanMode hook")
+  .action(async () => {
+    await cmdNativePlanClaudeExitPlanHook();
+  });
+
+nativePlan
+  .command("claude-tool-evidence-hook")
+  .description("Claude Code tool evidence hook")
+  .action(async () => {
+    await cmdNativePlanClaudeToolEvidenceHook();
   });
 
 program

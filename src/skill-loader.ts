@@ -2,7 +2,7 @@ import matter from "gray-matter";
 import { readdir, readFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { z } from "zod";
-import type { EpicState } from "./protocol/schema.js";
+import type { EpicState, SkillName } from "./protocol/schema.js";
 
 const FrontSchema = z.object({
   name: z.string().optional(),
@@ -79,4 +79,24 @@ export function countInstructions(instructionBlock: string): number {
 
 export function activeSkillFolder(state: Pick<EpicState, "active_skill">): string | null {
   return state.active_skill;
+}
+
+export function taskTypeToSkillFolder(taskType: EpicState["tasks"][number]["type"]): SkillName {
+  switch (taskType) {
+    case "questions":
+      return "questioner";
+    case "repo":
+      return "repo-analyst";
+    case "tech":
+      return "tech-analyst";
+    case "business":
+      return "business-analyst";
+    case "design":
+      return "designer";
+    case "review":
+      return "reviewer";
+    case "synthesis":
+    case "planning":
+      return "planner";
+  }
 }

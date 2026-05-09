@@ -263,7 +263,8 @@ _Pending for ${title}._
 export function coreRule(): string {
   return `# Atelier-Kit Planning Protocol
 
-Treat Atelier as **off** unless one of these is true:
+Atelier-Kit is inactive by default. Treat Atelier as **off** unless one of
+these is true:
 
 1. The user explicitly uses \`/atelier\`.
 2. The user asks to use Atelier-Kit.
@@ -299,7 +300,7 @@ export function adapterRule(adapter: AdapterName): string {
 
 Same protocol as everywhere else—this file just spells out how **${label}** should behave.
 
-- \`/plan ...\` stays native—built-in planner only; skip Atelier artifacts.
+- \`/plan ...\` stays host-native; native-plan hooks may activate Atelier V2 and nudge the same artifact flow.
 - \`/atelier quick ...\`, \`/atelier plan ...\`, and \`/atelier deep ...\` turn Atelier on.
 - "Use Atelier-Kit for this feature" counts too.
 

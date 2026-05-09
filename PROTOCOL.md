@@ -6,9 +6,11 @@ before you call a plan finished.
 
 ## Activation
 
-- `/plan ...` is unchanged—still the host's built-in planner; skip `.atelier/`.
 - `/atelier quick ...`, `/atelier plan ...`, `/atelier deep ...` turn Atelier on.
 - Saying "Use Atelier-Kit for this feature" counts too.
+- `/plan ...` remains host-native by default. If native-plan hooks are installed,
+  plan mode can bootstrap an Atelier V2 epic and nudge the host agent through the
+  same artifact flow.
 
 While inactive, leave Atelier alone—no epics, no skills, no gates.
 
@@ -30,8 +32,9 @@ The protocol does not stash operational state in a separate chat/session dump fi
 
 ## CLI
 
-The `atelier` commands scaffold folders, tick validation boxes and bump lifecycle
-statuses. They do not replace your agent's judgement about what to build or how.
+The `atelier` commands are intentionally small. They scaffold folders, install
+adapter rules, validate gates, export mirrors, and provide optional lifecycle
+helpers. They do not replace the agent-led skill flow.
 
 ```bash
 atelier init
@@ -42,6 +45,8 @@ atelier validate --gate plan-ready
 atelier doctor
 atelier render-rules --adapter cursor
 atelier export-plan --adapter claude-code
+atelier host-plan start "Add payment endpoint"
+atelier host-plan finalize
 atelier review
 atelier next
 atelier done
@@ -62,9 +67,9 @@ derived artifacts. Canonical plan:
 Plannotator after the file is written, with `ATELIER_PLAN_PATH` pointing at the
 mirror file.
 
-When `atelier done` finalizes the planning task, the epic becomes `planned` and
-the configured native mirror is exported automatically. The user can then let
-the host agent implement from that native plan.
+When a plan is finalized, the epic becomes `planned` and the configured native
+mirror should be exported. The user can then let the host agent implement from
+that native plan.
 
 ## Planning order
 
@@ -77,6 +82,10 @@ questioner -> repo-analyst -> tech-analyst -> [business-analyst] -> designer -> 
 `questioner` writes `questions.md` before research starts. The file may be
 refined later, but it cannot remain as the generic seed questions once the
 questions task is marked done.
+
+In the simplified flow, the active skill may update `state.json` directly after
+writing its artifact. `atelier next` and `atelier done` remain optional helpers,
+not the core planning engine.
 
 ## Planning gate
 

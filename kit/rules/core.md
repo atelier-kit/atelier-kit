@@ -1,6 +1,7 @@
 # Atelier-Kit Planning Protocol
 
-Treat Atelier as **off** unless one of these is true:
+Atelier-Kit is inactive by default. Treat Atelier as **off** unless one of
+these is true:
 
 1. The user explicitly uses `/atelier`.
 2. The user asks to use Atelier-Kit.

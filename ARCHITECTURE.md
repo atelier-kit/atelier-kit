@@ -4,11 +4,11 @@ Atelier-Kit is a **planning protocol**: a convention for where artifacts
 live under `.atelier/` and how an epic moves from questions to a finished plan.
 It does **not** sit between you and the agent as an extra planner or executor.
 
-Until someone turns Atelier on (`/atelier ...` or an equivalent explicit cue),
-the coding agent works like always—same commands, same habits. After activation,
-the agent still does the thinking: reading the repo, drafting research and
-`plan.md`, and later implementing. Atelier mostly structures outputs and tracks
-state; it does not substitute for those steps.
+Until someone turns Atelier on (`/atelier ...`, an equivalent explicit cue, or a
+native plan hook), the coding agent works like always—same commands, same
+habits. After activation, the agent still does the thinking: reading the repo,
+drafting research and `plan.md`, and later implementing. Atelier mostly
+structures outputs and tracks state; it does not substitute for those steps.
 
 ![Atelier-Kit planning protocol architecture](./assets/atelier-architecture-flow.png)
 
@@ -20,12 +20,13 @@ state; it does not substitute for those steps.
 4. **Schemas** in `.atelier/schemas/`
 5. **Per-epic ledgers** in `.atelier/epics/<epic>/`
 6. **CLI helpers** that initialize, validate, render rules, export native plans
-   and move protocol state
+   and optionally move protocol state
 
 The interesting rules live in those protocol files, schemas, rules and skills.
-The CLI stays small on purpose: it moves state and checks invariants. You will
-not find a hidden orchestrator, session store or implementation runner inside
-it.
+The CLI stays small on purpose: it scaffolds state and checks invariants. The
+agent-led skill flow may update the active epic ledger directly; you will not
+find a hidden orchestrator, session store or implementation runner inside the
+CLI.
 
 ## Source of truth
 
@@ -63,7 +64,9 @@ Atelier is inactive by default.
 /plan add this endpoint
 ```
 
-Same as always: native planning only—no epic, no Atelier artifacts.
+Without native-plan hooks, same as always: native planning only. With hooks, the
+host plan mode can create a V2 epic and inject the active framework step while
+the plan remains host-native.
 
 Atelier activates only through explicit requests:
 
@@ -86,6 +89,8 @@ atelier validate
 atelier doctor
 atelier render-rules --adapter cursor
 atelier export-plan --adapter claude-code
+atelier host-plan start "Add payment endpoint"
+atelier host-plan finalize
 atelier review
 atelier next
 atelier done

@@ -1,8 +1,9 @@
 # Atelier-Kit Planning Protocol
 
-By default Atelier is off. Treat `.atelier/active.json` with `"active": false` as
-your cue to ignore this kit unless the user invokes `/atelier ...`, asks for
-Atelier-Kit by name, or you already know the task belongs to an active epic.
+Atelier-Kit v2 is inactive by default. Treat `.atelier/active.json` with
+`"active": false` as your cue to ignore this kit unless the user invokes
+`/atelier ...`, asks for Atelier-Kit by name, or you already know the task
+belongs to an active epic.
 
 ## Source of truth
 
@@ -29,7 +30,9 @@ Each epic ledger owns its artifacts:
 
 ## Activation
 
-- `/plan ...` is native agent planning. Do not create Atelier artifacts.
+- `/plan ...` is host-native planning. Without native-plan hooks, do not create
+  Atelier artifacts; with hooks, persist the same V2 artifacts under the active
+  epic.
 - `/atelier quick ...` creates a quick epic.
 - `/atelier plan ...` creates a standard epic.
 - `/atelier deep ...` creates a deep epic.
@@ -37,7 +40,8 @@ Each epic ledger owns its artifacts:
 ## Gates
 
 Atelier guides you through `planned`: by then `plan.md` should stand scrutiny,
-slices should be spelled out, and the usual mirror export can happen.
+slices should be spelled out, and the native mirror should be exported for the
+host agent.
 
 Coding ships via whatever workflow you already use for this agent. When changes
 exist on disk, `atelier review` captures how closely reality matches the plan.

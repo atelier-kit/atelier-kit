@@ -1,12 +1,14 @@
 # atelier-kit agent usage
 
-Use Atelier **only when the user asks**. Outside that, behave like the host tool
-already tells you to—especially for `/plan ...`, which stays native.
+Use Atelier **only when the user asks** or when a native plan hook has already
+activated an Atelier V2 epic for the host's plan mode. Outside that, behave like
+the host tool already tells you to.
 
 ## Activation rules
 
-- `/plan ...` stays native. Do not create `.atelier/epics` or Atelier artifacts
-  for native plan mode.
+- `/plan ...` stays host-native unless an installed native-plan hook activates a
+  V2 epic. When that happens, keep using the host plan UI but persist work in
+  `.atelier/epics/<active_epic>/`.
 - `/atelier quick ...`, `/atelier plan ...`, `/atelier deep ...` activate the
   protocol.
 - A natural-language request such as "Use Atelier-Kit for this feature" also
@@ -14,9 +16,11 @@ already tells you to—especially for `/plan ...`, which stays native.
 - `.atelier/active.json` with `"active": true` means the current task belongs
   to an active Atelier epic.
 
-## CLI commands
+## CLI helpers
 
-Agents can use:
+Prefer the active skill instructions and update the active epic ledger directly.
+Use the CLI only for setup, validation, mirror export, review, or optional
+lifecycle help:
 
 ```bash
 atelier init
@@ -26,6 +30,8 @@ atelier validate
 atelier validate --gate plan-ready
 atelier render-rules --adapter cursor
 atelier export-plan --adapter claude-code
+atelier host-plan start "Add payment endpoint"
+atelier host-plan finalize
 atelier review
 atelier next
 atelier done
@@ -67,10 +73,11 @@ External tools can run through `atelier export-plan --command`.
 
 Expected behavior:
 
-- use the host agent's native planning;
-- do not activate Atelier;
-- do not create an epic ledger;
-- do not enforce Atelier gates.
+- without native-plan hooks, use the host agent's native planning and do not
+  create Atelier artifacts;
+- with native-plan hooks, create or reuse a V2 epic, follow the active skill,
+  and persist artifacts under `.atelier/epics/<active_epic>/`;
+- continue only through `planned`; implementation remains native.
 
 ### Atelier quick
 
@@ -80,10 +87,11 @@ Expected behavior:
 
 Expected behavior:
 
-- create an epic ledger;
+- create or reuse the active V2 epic ledger;
 - focus `questioner` first and replace generic `questions.md` placeholders;
 - create `research/repo.md` and `plan.md`;
-- finalize as `planned`;
+- finalize as `planned` by making `plan.md` and `state.json.slices` pass the
+  plan-ready gate;
 - let the native agent implement from the exported plan.
 
 ### Atelier standard

@@ -2,7 +2,7 @@
 
 Use `CLAUDE.md` and generated command files under `.claude/commands/`.
 
-- `/plan ...` is unchanged—still Claude Code's built-in planner; do not activate Atelier.
+- `/plan ...` stays Claude Code-native; native-plan hooks may activate Atelier V2 and nudge the same artifact flow.
 - `/atelier quick <goal>` maps to `atelier new "<goal>" --mode quick`.
 - `/atelier plan <goal>` maps to `atelier new "<goal>" --mode standard`.
 - `/atelier deep <goal>` maps to `atelier new "<goal>" --mode deep`.

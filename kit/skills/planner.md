@@ -53,7 +53,7 @@ Transform available evidence into a native-agent implementation plan with review
 10. Keep slices small enough for one agent iteration.
 11. Reflect the same slices in `state.json` and `plan.md`.
 12. Set `status` to `planned` and `active_skill` to `null` only when the plan is ready for native implementation.
-13. Export the native plan mirror with `atelier export-plan --adapter <adapter>` when needed.
+13. Export the native plan mirror with `atelier export-plan --adapter <adapter>` after the epic reaches `planned`.
 
 ## Output Format
 

@@ -4,10 +4,11 @@ Atelier-Kit adds **structure around planning** when you ask for it: artifacts
 under `.atelier/`, a ledger per epic, optional mirrors into your agent's native
 plan files, and a short review pass after implementation.
 
-Nothing happens until you opt in. `/plan ...` is unchanged—that is still your
-agent's built-in planning. `/atelier ...` (or explicitly asking to use
+Nothing happens until you opt in. `/atelier ...` (or explicitly asking to use
 Atelier-Kit) turns the protocol on; until then there are no `.atelier/` writes,
-no skills loaded, no gates.
+no skills loaded, no gates. Hosts that install native plan hooks can also let
+the host's `/plan ...` mode bootstrap a V2 epic and receive framework nudges
+while the agent writes the same `.atelier/epics/<epic>/` artifacts.
 
 While an epic is active, treat these two files as authoritative:
 
@@ -36,9 +37,9 @@ Vocabulary you will see:
 npm install -g @atelier-kit/atelier-kit
 ```
 
-`atelier-kit` is intended to be used as a command-line tool. A global install
-makes the `atelier` command available in your shell. The legacy `atelier-kit`
-binary remains available.
+`atelier-kit` ships a small command-line helper. It initializes the protocol,
+installs adapter rules, validates gates, and exports native plan mirrors; the
+agent and skills do the planning work.
 
 ## Quickstart
 
@@ -60,13 +61,15 @@ rules, skills, schemas, and adapter instructions. `active.json` starts inactive:
 }
 ```
 
-### Use native plan mode
+### Use host-native plan mode
 
 ```text
 /plan add this endpoint
 ```
 
-Here you want ordinary agent planning—no Atelier ledger, no `.atelier/` churn.
+Without hooks this remains ordinary host planning. With Atelier native-plan hooks
+installed, the first plan-mode prompt creates a V2 epic and injects the active
+framework step so the host agent fills `.atelier/epics/<epic>/` through `planned`.
 
 ### Activate Atelier explicitly
 
@@ -88,16 +91,18 @@ The active epic ledger is created at `.atelier/epics/<epic-slug>/`.
 
 ### Finish planning and review implementation
 
-After the plan is reviewable:
+After the plan is reviewable, the agent marks the active epic `planned` and
+exports a native mirror. The CLI helper can also do the final gate/export step:
 
 ```bash
 atelier done
 ```
 
-`atelier done` finalizes the active planning task, moves the epic to `planned`,
-and exports the configured native plan mirror. Implement through Claude Code,
-Cursor, Kiro, Antigravity, Codex or another host-agent workflow. After
-implementation:
+`atelier done` finalizes the active planning task when you are using the CLI
+lifecycle. In the simplified agent-led flow, the active skill updates
+`state.json` directly and `atelier validate --gate plan-ready` checks the result.
+After `planned`, implement through Claude Code, Cursor, Kiro, Antigravity, Codex
+or another host-agent workflow. After implementation:
 
 ```bash
 atelier review
@@ -127,7 +132,7 @@ explicit activation
   -> review
 ```
 
-## Core CLI
+## Small CLI Surface
 
 | Command | Purpose |
 |---------|---------|
@@ -142,8 +147,10 @@ explicit activation
 | `atelier render-rules --adapter cursor` | Write adapter rules |
 | `atelier export-plan --adapter claude-code` | Mirror the active `plan.md` to an agent-native plan file |
 | `atelier review` | Review the current implementation diff against the planned epic |
-| `atelier next` | Focus the next pending planning task |
-| `atelier done` | Complete a planning task, finalize a plan, or close a reviewed epic |
+| `atelier next` | Optional helper to focus the next pending planning task |
+| `atelier done` | Optional helper to complete a planning/review task |
+| `atelier host-plan start "<goal>"` | Thin helper to create a V2 epic for host-native plan mode |
+| `atelier host-plan finalize` | Validate a host-authored plan and export the native mirror |
 | `atelier off` | Disable Atelier |
 
 ## Adapter outputs

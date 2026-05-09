@@ -63,4 +63,4 @@ Write `.atelier/epics/<active_epic>/questions.md` with:
 - `questions.md` contains project-specific questions or an explicit no-open-questions section.
 - Critical unknowns are visible before research starts.
 - No project code was edited.
-- The questions task can be marked done by `atelier done`.
+- The questions task is marked done in `state.json`; `atelier done` is only an optional helper.

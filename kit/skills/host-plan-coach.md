@@ -34,24 +34,28 @@ epic ledger.
 4. Follow the active task order recorded in `tasks`.
 5. Load only the skill named by `active_skill` for the current task.
 6. Keep all planning artifacts under `.atelier/epics/<active_epic>/`.
-7. Do not edit application source files while the epic is before `planned`.
-8. Replace generic `questions.md` seed questions before marking the questions task done.
-9. Record repository evidence in `research/repo.md` with concrete files and symbols.
-10. Record current external technical evidence in `research/tech.md` when the task exists.
-11. Record product, rollout, and UX evidence in `research/business.md` when the task exists.
-12. Use `synthesis.md`, `decisions.md`, and `design.md` to narrow tradeoffs before final planning.
-13. Write `plan.md` as the reviewable plan the user should approve.
-14. `plan.md` must include `## Goal`, `## Risks`, and `## Slices`.
-15. Each slice must have `### Slice N`, `**Goal:**`, `**Acceptance criteria:**`, and `**Validation:**`.
-16. Mirror the same slices in `state.json.slices`.
-17. When the plan is ready, set `status` to `planned` and `active_skill` to `null`.
-18. Keep `.atelier/active.json.active_phase` and `.atelier/active.json.active_skill` synchronized with the epic state.
-19. Export a native plan mirror with `atelier export-plan --adapter <adapter>` after the epic reaches `planned`.
-20. After `planned`, implementation belongs to the host agent workflow.
-21. After implementation, run or request `atelier review` to compare the diff against `plan.md`.
-22. If `plannotator` is available, open each planning artifact after you write it:
-    `plannotator annotate <artifact-path>`. Work any notes from Plannotator into
-    that same artifact before marking its task done.
+7. Work on one phase at a time. Do not draft `research/tech.md`, `design.md`,
+   `decisions.md`, or `plan.md` until the matching task is active.
+8. Do not edit application source files while the epic is before `planned`.
+9. Replace generic `questions.md` seed questions before marking the questions task done.
+10. Record repository evidence in `research/repo.md` with concrete files and symbols.
+11. Record current external technical evidence in `research/tech.md` when the task exists.
+12. Record product, rollout, and UX evidence in `research/business.md` when the task exists.
+13. Use `synthesis.md`, `decisions.md`, and `design.md` to narrow tradeoffs before final planning.
+14. Write `plan.md` as the final planning artifact.
+15. `plan.md` must include `## Goal`, `## Risks`, and `## Slices`.
+16. Each slice must have `### Slice N`, `**Goal:**`, `**Acceptance criteria:**`, and `**Validation:**`.
+17. Mirror the same slices in `state.json.slices`.
+18. Before you mark a task done, run `command -v plannotator`. If it exists,
+    open the task's artifact with `plannotator annotate <artifact-path>` and work
+    any notes back into that same artifact first. Do not ask for chat review or
+    stop at `atelier status` instead of this step.
+19. When the plan is ready and Plannotator notes have been handled, set `status`
+    to `planned` and `active_skill` to `null`.
+20. Keep `.atelier/active.json.active_phase` and `.atelier/active.json.active_skill` synchronized with the epic state.
+21. Export a native plan mirror with `atelier export-plan --adapter <adapter>` after the epic reaches `planned`.
+22. After `planned`, implementation belongs to the host agent workflow.
+23. After implementation, run or request `atelier review` to compare the diff against `plan.md`.
 
 ## Completion Criteria
 

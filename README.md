@@ -29,6 +29,20 @@ Vocabulary you will see:
 - **task**: one chunk of the protocol (questions, a research track, planning, etc.)
 - **slice**: a vertical cut inside `plan.md` with scope, acceptance checks and validation
 
+## Plannotator
+
+Atelier-Kit keeps the CLI small. When
+[Plannotator](https://github.com/backnotprop/plannotator) is installed, the
+agent uses it directly as a review surface for planning artifacts. Before a
+phase is marked done, the active artifact is opened with:
+
+```bash
+plannotator annotate .atelier/epics/<epic>/<artifact>.md
+```
+
+Any notes from Plannotator are folded back into that artifact before `state.json`
+advances. There is no separate Atelier command for this flow.
+
 **Not affiliated with HumanLayer.** See [CREDITS.md](./CREDITS.md).
 
 ## Install
@@ -188,10 +202,11 @@ atelier export-plan --adapter claude-code --command 'plannotator annotate "$ATEL
 ```
 
 During the normal artifact flow, the agent does not need another Atelier command.
-If Plannotator is installed, it can open the file it just wrote:
+Before a phase is marked done, it should open that phase's artifact when
+Plannotator is installed:
 `plannotator annotate .atelier/epics/<epic>/<artifact>.md`. Any notes that come
-back from Plannotator should be folded into that same artifact before the task is
-advanced in `state.json`.
+back from Plannotator should be folded into that same artifact before `state.json`
+is advanced or `atelier done` is run.
 
 Mirrors are derived files. If a native agent changes the plan, update the
 canonical Atelier `plan.md` explicitly before finalizing it again.

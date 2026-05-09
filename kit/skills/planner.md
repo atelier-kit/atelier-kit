@@ -52,11 +52,12 @@ Transform available evidence into a native-agent implementation plan with review
 9. Each slice must have `id`, `title`, `goal`, `depends_on`, `allowed_files`, `acceptance_criteria` and `validation`.
 10. Keep slices small enough for one agent iteration.
 11. Reflect the same slices in `state.json` and `plan.md`.
-12. Set `status` to `planned` and `active_skill` to `null` only when the plan is ready for native implementation.
-13. Export the native plan mirror with `atelier export-plan --adapter <adapter>` after the epic reaches `planned`.
-14. If `plannotator` is available, open `plan.md` with
-    `plannotator annotate .atelier/epics/<active_epic>/plan.md` and fold in any
-    notes before finalizing the epic as `planned`.
+12. Before finalizing the epic as `planned`, run `command -v plannotator`. If it
+    exists, run `plannotator annotate .atelier/epics/<active_epic>/plan.md` and
+    fold any notes back into `plan.md`. Do not ask for chat review as a
+    substitute.
+13. Set `status` to `planned` and `active_skill` to `null` only when the plan is ready for native implementation.
+14. Export the native plan mirror with `atelier export-plan --adapter <adapter>` after the epic reaches `planned`.
 
 ## Output Format
 
@@ -83,4 +84,5 @@ Each slice section must include:
 - `plan.md` passes `atelier validate --gate plan-ready`.
 - `state.json` has at least one ready slice.
 - Every slice has allowed files, acceptance criteria and validation.
+- `command -v plannotator` was checked; Plannotator notes were handled when present.
 - No project code was edited.

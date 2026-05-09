@@ -43,8 +43,11 @@ Review completed native implementation against the planned epic and current diff
 4. Inspect current diff and validation evidence.
 5. Compare completed slices against acceptance criteria.
 6. Record missing validation, incomplete acceptance criteria and risks.
-7. If all criteria are met, set status to `done` only when appropriate.
-8. If more work is needed, leave the epic in `review` or set `blocked` with a clear reason.
+7. Before marking the epic done, run `command -v plannotator`. If it exists, run
+   `plannotator annotate .atelier/epics/<active_epic>/review.md` and fold any
+   notes back into `review.md`. Do not ask for chat review as a substitute.
+8. If all criteria are met, set status to `done` only when appropriate.
+9. If more work is needed, leave the epic in `review` or set `blocked` with a clear reason.
 
 ## Output Format
 
@@ -63,4 +66,5 @@ Write `review.md` with:
 - Review covers every planned slice.
 - Validation status is explicit.
 - Remaining risks and follow-ups are clear.
+- `command -v plannotator` was checked; Plannotator notes were handled when present.
 - `state.json` reflects the recommended next protocol state.

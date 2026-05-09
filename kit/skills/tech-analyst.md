@@ -48,7 +48,11 @@ Validate the technical constraints that could affect the active epic: framework 
 5. Verify external API or library behavior from official docs when unstable or version-sensitive.
 6. Identify security, compatibility, migration and rollback concerns.
 7. Record feasible implementation constraints, not a final implementation plan.
-8. Update the tech research task status when complete or blocked.
+8. Before marking tech research done, run `command -v plannotator`. If it exists,
+   run `plannotator annotate .atelier/epics/<active_epic>/research/tech.md` and
+   fold any notes back into `research/tech.md`. Do not ask for chat review as a
+   substitute.
+9. Update the tech research task status when complete or blocked.
 
 ## Output Format
 
@@ -68,4 +72,5 @@ Write `.atelier/epics/<active_epic>/research/tech.md` with:
 - Version-sensitive facts are sourced or marked unknown.
 - Technical constraints are specific enough for design and planning.
 - No project code was edited.
+- `command -v plannotator` was checked; Plannotator notes were handled when present.
 - `state.json` reflects whether the tech research task is done or blocked.

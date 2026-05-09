@@ -46,7 +46,12 @@ Turn research and constraints into explicit design decisions that guide planning
 6. Define relevant data, API and integration contracts.
 7. Include rollback and migration considerations when relevant.
 8. Do not mark the design task done until both `decisions.md` and `design.md` contain non-placeholder content.
-9. Update design task status when complete or blocked.
+9. Before marking design done, run `command -v plannotator`. If it exists, run
+   `plannotator annotate .atelier/epics/<active_epic>/decisions.md` and
+   `plannotator annotate .atelier/epics/<active_epic>/design.md`, then fold any
+   notes back into the matching artifact. Do not ask for chat review as a
+   substitute.
+10. Update design task status when complete or blocked.
 
 ## Output Format
 
@@ -73,4 +78,5 @@ Write `design.md` with:
 - `decisions.md` and `design.md` are both complete; neither may remain as `Pending`.
 - Planner can create slices without inventing architecture.
 - No project code was edited.
+- `command -v plannotator` was checked; Plannotator notes were handled when present.
 - `state.json` reflects whether design is done or blocked.

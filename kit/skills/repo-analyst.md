@@ -49,7 +49,11 @@ Build the repository evidence needed to plan the active epic. Focus on facts fro
 8. Identify relevant validation commands and test gaps.
 9. Update `questions.md` with project-specific open questions discovered during repository research; keep the generic placeholders only as seed prompts, not as the final question set.
 10. Record unknowns explicitly instead of guessing.
-11. Update the repo research task status when evidence is complete or blocked.
+11. Before marking repo research done, run `command -v plannotator`. If it
+    exists, run `plannotator annotate .atelier/epics/<active_epic>/research/repo.md`
+    and fold any notes back into `research/repo.md`. Do not ask for chat review
+    as a substitute.
+12. Update the repo research task status when evidence is complete or blocked.
 
 ## Output Format
 
@@ -71,4 +75,5 @@ Write `.atelier/epics/<active_epic>/research/repo.md` with:
 - `questions.md` contains project-specific questions or explicitly says no open questions remain.
 - Every significant claim cites a path, symbol, command or observable repo fact.
 - No project code was edited.
+- `command -v plannotator` was checked; Plannotator notes were handled when present.
 - `state.json` reflects whether the repo research task is done or blocked.

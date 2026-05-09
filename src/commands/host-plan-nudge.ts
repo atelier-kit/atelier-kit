@@ -29,7 +29,6 @@ export function formatHostPlanFrameworkNudge(input: HostPlanNudgeState | EpicSta
     ``,
     `- **Epic directory:** \`${base}/\``,
     `- **Source of truth:** \`${base}/state.json\``,
-    `- **Plannotator:** if \`plannotator\` is available, open the artifact you just wrote with \`plannotator annotate <artifact-path>\`, then fold in any notes before advancing.`,
   ];
 
   const task =
@@ -51,6 +50,8 @@ export function formatHostPlanFrameworkNudge(input: HostPlanNudgeState | EpicSta
     `- **Task:** \`${task.id}\` (${task.type})`,
     `- **Status:** \`${task.status}\``,
     `- **Skill:** \`.atelier/skills/${skill}.md\` (host planning checklist: \`.atelier/skills/host-plan-coach.md\` when installed)`,
+    `- **Boundary:** work only on this task; do not fill later artifacts early.`,
+    `- **Plannotator:** before marking this task done, run \`command -v plannotator\`; if present, run \`plannotator annotate ${base}/${task.artifact}\` and fold in any notes. Do not stop at \`atelier status\` or ask for chat review instead.`,
     ``,
     `### Do now`,
     ``,

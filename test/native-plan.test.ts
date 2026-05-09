@@ -58,6 +58,7 @@ describe("native-plan Claude hooks", () => {
     expect(nudge).toContain(".atelier/epics/");
     expect(nudge).toContain("questions.md");
     expect(nudge).toContain("state.json");
+    expect(nudge).toContain("plannotator annotate <artifact-path>");
     expect(nudge).not.toContain(".atelier/context.md");
     expect(nudge).not.toContain(".atelier/plan/");
   });

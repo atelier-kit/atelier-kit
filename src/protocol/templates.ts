@@ -287,6 +287,9 @@ When Atelier-Kit is active:
 5. If \`status\` is \`planned\`, use the exported native plan mirror for implementation.
 6. If \`status\` is \`review\`, compare the native implementation diff against \`plan.md\`.
 7. After each protocol step, update the corresponding artifact and \`state.json\`.
+8. If \`plannotator\` is available, open the planning artifact you just wrote with
+   \`plannotator annotate .atelier/epics/<active_epic>/<artifact>.md\`. Fold any
+   notes from Plannotator back into that artifact before advancing the task.
 
 If anything in \`.atelier/\` disagrees with reality, pause and fix it with \`atelier validate\` or \`atelier doctor\` instead of guessing.
 

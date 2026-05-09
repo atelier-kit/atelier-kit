@@ -49,6 +49,9 @@ epic ledger.
 19. Export a native plan mirror with `atelier export-plan --adapter <adapter>` after the epic reaches `planned`.
 20. After `planned`, implementation belongs to the host agent workflow.
 21. After implementation, run or request `atelier review` to compare the diff against `plan.md`.
+22. If `plannotator` is available, open each planning artifact after you write it:
+    `plannotator annotate <artifact-path>`. Work any notes from Plannotator into
+    that same artifact before marking its task done.
 
 ## Completion Criteria
 

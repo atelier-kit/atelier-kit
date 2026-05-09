@@ -29,6 +29,7 @@ export function formatHostPlanFrameworkNudge(input: HostPlanNudgeState | EpicSta
     ``,
     `- **Epic directory:** \`${base}/\``,
     `- **Source of truth:** \`${base}/state.json\``,
+    `- **Plannotator:** if \`plannotator\` is available, open the artifact you just wrote with \`plannotator annotate <artifact-path>\`, then fold in any notes before advancing.`,
   ];
 
   const task =

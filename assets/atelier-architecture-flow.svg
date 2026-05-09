@@ -1,194 +1,156 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1400" height="980" viewBox="0 0 1400 980" role="img" aria-labelledby="title desc">
-  <title id="title">Atelier-Kit planning protocol architecture</title>
-  <desc id="desc">Atelier-Kit is native by default, activates explicitly, stores a local plan ledger, exports native plan mirrors, lets the host agent implement, then reviews the implementation against the plan.</desc>
+  <title id="title">Atelier-Kit agent-led planning architecture</title>
+  <desc id="desc">Atelier-Kit is host-native by default, can activate through explicit Atelier requests or native plan hooks, lets the agent and skills drive planning phases, stores V2 state under .atelier/epics, exports a native plan mirror at planned, then reviews implementation against the plan.</desc>
   <defs>
     <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#0f5bd8"/>
       <stop offset="1" stop-color="#083b8c"/>
     </linearGradient>
-    <linearGradient id="purple" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#5d18b8"/>
-      <stop offset="1" stop-color="#28006f"/>
-    </linearGradient>
-    <linearGradient id="green" x1="0" y1="0" x2="1" y2="1">
+    <linearGradient id="teal" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#0f8f6b"/>
       <stop offset="1" stop-color="#03624a"/>
+    </linearGradient>
+    <linearGradient id="violet" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5d18b8"/>
+      <stop offset="1" stop-color="#28006f"/>
     </linearGradient>
     <linearGradient id="red" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#d93434"/>
       <stop offset="1" stop-color="#9d1111"/>
     </linearGradient>
-    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
-      <feDropShadow dx="0" dy="7" stdDeviation="10" flood-color="#0f172a" flood-opacity="0.12"/>
+    <filter id="shadow" x="-12%" y="-12%" width="124%" height="136%">
+      <feDropShadow dx="0" dy="8" stdDeviation="11" flood-color="#0f172a" flood-opacity="0.13"/>
     </filter>
+    <marker id="arrow-blue" markerWidth="14" markerHeight="14" refX="12" refY="7" orient="auto" markerUnits="strokeWidth">
+      <path d="M2 2 L12 7 L2 12 Z" fill="#1556c5"/>
+    </marker>
+    <marker id="arrow-teal" markerWidth="14" markerHeight="14" refX="12" refY="7" orient="auto" markerUnits="strokeWidth">
+      <path d="M2 2 L12 7 L2 12 Z" fill="#08775d"/>
+    </marker>
     <style>
-      .bg { fill: #f8fbff; }
-      .title { font: 800 78px Arial, Helvetica, sans-serif; fill: #28006f; letter-spacing: 0; }
-      .subtitle { font: 700 32px Arial, Helvetica, sans-serif; fill: #0f4fb0; letter-spacing: 0; }
-      .section { fill: #ffffff; stroke: #1057c8; stroke-width: 2; rx: 16; filter: url(#shadow); }
-      .section-purple { fill: #ffffff; stroke: #4f149d; stroke-width: 2; rx: 16; filter: url(#shadow); }
-      .section-red { fill: #fffafa; stroke: #c51616; stroke-width: 2; rx: 16; filter: url(#shadow); }
-      .ribbon { fill: url(#blue); }
-      .ribbon-purple { fill: url(#purple); }
-      .ribbon-green { fill: url(#green); }
-      .ribbon-red { fill: url(#red); }
-      .ribbon-text { font: 800 24px Arial, Helvetica, sans-serif; fill: #ffffff; letter-spacing: 0; }
-      .card { fill: #ffffff; stroke: #1a5cc9; stroke-width: 1.7; rx: 11; }
-      .card-purple { fill: #ffffff; stroke: #5a18ad; stroke-width: 1.7; rx: 11; }
-      .card-green { fill: #ffffff; stroke: #0a7c60; stroke-width: 1.7; rx: 11; }
-      .card-red { fill: #ffffff; stroke: #c51616; stroke-width: 1.7; rx: 11; }
-      .card-title { font: 800 22px Arial, Helvetica, sans-serif; fill: #0f4fb0; letter-spacing: 0; }
-      .card-title-purple { font: 800 22px Arial, Helvetica, sans-serif; fill: #4b1295; letter-spacing: 0; }
-      .card-title-green { font: 800 22px Arial, Helvetica, sans-serif; fill: #08775d; letter-spacing: 0; }
-      .card-title-red { font: 800 22px Arial, Helvetica, sans-serif; fill: #bd1212; letter-spacing: 0; }
-      .body { font: 18px Arial, Helvetica, sans-serif; fill: #111827; letter-spacing: 0; }
-      .body-small { font: 15px Arial, Helvetica, sans-serif; fill: #1f2937; letter-spacing: 0; }
-      .mono { font: 16px "SFMono-Regular", Consolas, "Liberation Mono", monospace; fill: #111827; letter-spacing: 0; }
-      .mono-small { font: 14px "SFMono-Regular", Consolas, "Liberation Mono", monospace; fill: #111827; letter-spacing: 0; }
-      .muted { fill: #526075; }
-      .icon-circle { fill: url(#blue); }
-      .icon-circle-purple { fill: url(#purple); }
-      .icon-circle-green { fill: url(#green); }
-      .icon-circle-red { fill: url(#red); }
-      .icon-stroke { stroke: #ffffff; stroke-width: 5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-      .arrow { fill: #1556c5; }
-      .dash { stroke: #b6c9e8; stroke-width: 1.5; stroke-dasharray: 3 4; }
+      .bg { fill: #f7faff; }
+      .title { font: 800 58px Arial, Helvetica, sans-serif; fill: #28006f; letter-spacing: 0; }
+      .subtitle { font: 700 25px Arial, Helvetica, sans-serif; fill: #0f4fb0; letter-spacing: 0; }
+      .section { fill: #ffffff; stroke: #1556c5; stroke-width: 2; rx: 16; filter: url(#shadow); }
+      .section-violet { fill: #ffffff; stroke: #4f149d; stroke-width: 2; rx: 16; filter: url(#shadow); }
+      .section-teal { fill: #f8fffc; stroke: #08775d; stroke-width: 2; rx: 16; filter: url(#shadow); }
+      .section-red { fill: #fffafa; stroke: #bd1212; stroke-width: 2; rx: 16; filter: url(#shadow); }
+      .label { font: 800 20px Arial, Helvetica, sans-serif; fill: #ffffff; letter-spacing: 0; }
+      .card { fill: #ffffff; stroke: #1a5cc9; stroke-width: 1.7; rx: 10; }
+      .card-violet { fill: #ffffff; stroke: #5a18ad; stroke-width: 1.7; rx: 10; }
+      .card-teal { fill: #ffffff; stroke: #0a7c60; stroke-width: 1.7; rx: 10; }
+      .card-red { fill: #ffffff; stroke: #c51616; stroke-width: 1.7; rx: 10; }
+      .h1 { font: 800 21px Arial, Helvetica, sans-serif; fill: #0f4fb0; letter-spacing: 0; }
+      .h1-violet { font: 800 21px Arial, Helvetica, sans-serif; fill: #4b1295; letter-spacing: 0; }
+      .h1-teal { font: 800 21px Arial, Helvetica, sans-serif; fill: #08775d; letter-spacing: 0; }
+      .h1-red { font: 800 21px Arial, Helvetica, sans-serif; fill: #bd1212; letter-spacing: 0; }
+      .body { font: 17px Arial, Helvetica, sans-serif; fill: #111827; letter-spacing: 0; }
+      .small { font: 14px Arial, Helvetica, sans-serif; fill: #334155; letter-spacing: 0; }
+      .mono { font: 15px "SFMono-Regular", Consolas, "Liberation Mono", monospace; fill: #111827; letter-spacing: 0; }
+      .mono-small { font: 13px "SFMono-Regular", Consolas, "Liberation Mono", monospace; fill: #111827; letter-spacing: 0; }
+      .muted { fill: #64748b; }
+      .pill-blue { fill: url(#blue); rx: 18; }
+      .pill-violet { fill: url(#violet); rx: 18; }
+      .pill-teal { fill: url(#teal); rx: 18; }
+      .pill-red { fill: url(#red); rx: 18; }
+      .arrow { stroke: #1556c5; stroke-width: 4; fill: none; marker-end: url(#arrow-blue); stroke-linecap: round; }
+      .arrow-teal { stroke: #08775d; stroke-width: 4; fill: none; marker-end: url(#arrow-teal); stroke-linecap: round; }
+      .dash { stroke: #c8d7ef; stroke-width: 1.5; stroke-dasharray: 3 5; }
       .footer { fill: url(#blue); rx: 16; }
-      .footer-text { font: 800 25px Arial, Helvetica, sans-serif; fill: #ffffff; letter-spacing: 0; }
+      .footer-text { font: 800 23px Arial, Helvetica, sans-serif; fill: #ffffff; letter-spacing: 0; }
     </style>
   </defs>
 
   <rect class="bg" width="1400" height="980"/>
 
-  <text x="700" y="86" text-anchor="middle" class="title">Atelier-Kit</text>
-  <text x="700" y="128" text-anchor="middle" class="subtitle">Planning Protocol Architecture</text>
-  <line x1="74" y1="62" x2="322" y2="62" stroke="#4b1295" stroke-width="4" stroke-linecap="round"/>
-  <line x1="1078" y1="62" x2="1326" y2="62" stroke="#4b1295" stroke-width="4" stroke-linecap="round"/>
+  <text id="main-title" x="700" y="70" text-anchor="middle" class="title">Atelier-Kit</text>
+  <text x="700" y="108" text-anchor="middle" class="subtitle">Agent-led planning protocol with native implementation</text>
 
-  <rect x="28" y="155" width="1344" height="182" class="section-purple"/>
-  <path d="M28 155 h240 l24 28 l-24 28 h-240 z" class="ribbon-purple"/>
-  <text x="86" y="191" class="ribbon-text">Core idea</text>
-  <circle cx="54" cy="183" r="32" class="icon-circle-purple"/>
-  <path class="icon-stroke" d="M46 191 h16 M54 169 v-8 M40 176 l-6 -6 M68 176 l6 -6 M43 187 c0 -11 22 -11 22 0 c0 6 -5 9 -7 13 h-8 c-2 -4 -7 -7 -7 -13z"/>
+  <rect x="34" y="138" width="1332" height="182" class="section-violet"/>
+  <rect x="58" y="158" width="210" height="36" class="pill-violet"/>
+  <text x="82" y="183" class="label">Activation model</text>
 
-  <rect x="72" y="210" width="270" height="92" class="card-purple"/>
-  <circle cx="112" cy="256" r="28" class="icon-circle-purple"/>
-  <path class="icon-stroke" d="M102 256 c10 -18 26 -18 36 0 M112 242 v28 M98 270 h28"/>
-  <text x="158" y="239" class="card-title-purple">Native by default</text>
-  <text x="158" y="267" class="mono">/plan ...</text>
-  <text x="158" y="292" class="body-small">unchanged—host-native planning</text>
+  <rect x="70" y="214" width="278" height="76" class="card-violet"/>
+  <text x="94" y="242" class="h1-violet">Host-native by default</text>
+  <text x="94" y="267" class="mono">/plan ...</text>
+  <text x="94" y="286" class="small">No Atelier state unless activated.</text>
 
-  <path d="M370 251 h31 v-19 l41 32 l-41 32 v-19 h-31z" class="arrow"/>
+  <path d="M365 252 H440" class="arrow"/>
 
-  <rect x="470" y="210" width="305" height="92" class="card-purple"/>
-  <circle cx="510" cy="256" r="28" class="icon-circle-purple"/>
-  <path class="icon-stroke" d="M510 238 v36 M492 256 h36 M499 245 l-8 -8 M521 245 l8 -8 M499 267 l-8 8 M521 267 l8 8"/>
-  <text x="556" y="237" class="card-title-purple">Explicit activation</text>
-  <text x="556" y="264" class="mono">/atelier quick|plan|deep</text>
-  <text x="556" y="291" class="body-small">or "Use Atelier-Kit"</text>
+  <rect x="462" y="214" width="370" height="76" class="card-violet"/>
+  <text x="486" y="242" class="h1-violet">Two activation paths</text>
+  <text x="486" y="267" class="mono">/atelier quick|plan|deep</text>
+  <text x="486" y="286" class="small">or native-plan hook during host plan mode.</text>
 
-  <path d="M807 251 h31 v-19 l41 32 l-41 32 v-19 h-31z" class="arrow"/>
+  <path d="M850 252 H925" class="arrow"/>
 
-  <rect x="910" y="210" width="390" height="92" class="card-purple"/>
-  <circle cx="950" cy="256" r="28" class="icon-circle-purple"/>
-  <path class="icon-stroke" d="M935 244 c0 10 30 10 30 0 c0 -10 -30 -10 -30 0z M935 244 v25 c0 10 30 10 30 0 v-25 M935 257 c0 10 30 10 30 0"/>
-  <text x="996" y="237" class="card-title-purple">Local source of truth</text>
-  <text x="996" y="264" class="mono">.atelier/active.json</text>
-  <text x="996" y="291" class="mono">.atelier/epics/&lt;epic&gt;/state.json</text>
-  <text x="110" y="326" class="body-small muted">When inactive: no epic ledger, no Atelier skills, no Atelier gates.</text>
+  <rect x="948" y="214" width="356" height="76" class="card-violet"/>
+  <text x="972" y="242" class="h1-violet">V2 source of truth</text>
+  <text x="972" y="266" class="mono">.atelier/active.json</text>
+  <text x="972" y="286" class="mono">.atelier/epics/&lt;epic&gt;/state.json</text>
 
-  <rect x="28" y="362" width="1344" height="420" class="section"/>
-  <path d="M486 342 h428 l28 34 l-28 34 h-428 l-28 -34 z" class="ribbon"/>
-  <text x="700" y="385" text-anchor="middle" class="ribbon-text">Architecture core</text>
+  <rect x="34" y="350" width="1332" height="300" class="section"/>
+  <rect x="58" y="370" width="260" height="36" class="pill-blue"/>
+  <text x="82" y="395" class="label">Planning engine</text>
 
-  <rect x="52" y="426" width="185" height="292" class="card"/>
-  <circle cx="145" cy="426" r="24" class="icon-circle"/>
-  <text x="145" y="435" text-anchor="middle" class="ribbon-text">A</text>
-  <path class="icon-circle" d="M112 480 h66 a18 18 0 0 1 18 18 v52 h-102 v-52 a18 18 0 0 1 18 -18z" opacity="0.12"/>
-  <path d="M145 504 a28 28 0 1 0 0 -1 M104 593 c7 -44 75 -44 82 0" stroke="#0f4fb0" stroke-width="5" fill="none" stroke-linecap="round"/>
-  <text x="145" y="627" text-anchor="middle" class="card-title">Host agent</text>
-  <line x1="72" y1="648" x2="217" y2="648" class="dash"/>
-  <text x="72" y="678" class="body-small">Claude Code, Cursor,</text>
-  <text x="72" y="701" class="body-small">Codex, Kiro, Antigravity,</text>
-  <text x="72" y="724" class="body-small">Windsurf, Cline, Generic</text>
+  <rect x="70" y="430" width="240" height="146" class="card"/>
+  <text x="94" y="462" class="h1">Host agent</text>
+  <text x="94" y="492" class="body">Does the reasoning,</text>
+  <text x="94" y="516" class="body">reads the repo, and</text>
+  <text x="94" y="540" class="body">writes the artifacts.</text>
+  <line x1="94" y1="554" x2="286" y2="554" class="dash"/>
+  <text x="94" y="573" class="mono-small">Claude, Cursor, Codex, Kiro...</text>
 
-  <path d="M247 555 h32 v-19 l39 32 l-39 32 v-19 h-32z" class="arrow"/>
+  <path d="M328 502 H404" class="arrow"/>
 
-  <rect x="330" y="426" width="185" height="292" class="card"/>
-  <circle cx="423" cy="426" r="24" class="icon-circle"/>
-  <text x="423" y="435" text-anchor="middle" class="ribbon-text">B</text>
-  <path d="M392 486 h62 l20 20 v70 h-82z" stroke="#0f4fb0" stroke-width="5" fill="none" stroke-linejoin="round"/>
-  <path d="M454 486 v22 h20 M407 524 h48 M407 548 h48" stroke="#0f4fb0" stroke-width="4" fill="none" stroke-linecap="round"/>
-  <text x="423" y="627" text-anchor="middle" class="card-title">Adapter rules</text>
-  <line x1="350" y1="648" x2="495" y2="648" class="dash"/>
-  <text x="350" y="678" class="mono-small">CLAUDE.md</text>
-  <text x="350" y="703" class="mono-small">AGENTS.md</text>
-  <text x="350" y="728" class="mono-small">.cursor/rules/*.mdc</text>
+  <rect x="426" y="430" width="330" height="146" class="card"/>
+  <text x="450" y="462" class="h1">Skills drive phases</text>
+  <text x="450" y="492" class="mono-small">questioner -> repo-analyst</text>
+  <text x="450" y="516" class="mono-small">tech/business -> designer</text>
+  <text x="450" y="540" class="mono-small">planner -> reviewer</text>
+  <line x1="450" y1="554" x2="732" y2="554" class="dash"/>
+  <text x="450" y="573" class="small">No CLI required between phases.</text>
 
-  <path d="M526 555 h32 v-19 l39 32 l-39 32 v-19 h-32z" class="arrow"/>
+  <path d="M774 502 H850" class="arrow"/>
 
-  <rect x="610" y="426" width="250" height="292" class="card"/>
-  <circle cx="735" cy="426" r="24" class="icon-circle"/>
-  <text x="735" y="435" text-anchor="middle" class="ribbon-text">C</text>
-  <rect x="676" y="488" width="118" height="66" rx="10" stroke="#0f4fb0" stroke-width="5" fill="none"/>
-  <path d="M696 510 l20 12 l-20 12 M725 537 h38" stroke="#0f4fb0" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="735" y="627" text-anchor="middle" class="card-title">CLI control plane</text>
-  <line x1="632" y1="648" x2="838" y2="648" class="dash"/>
-  <text x="635" y="678" class="mono-small">atelier init</text>
-  <text x="635" y="703" class="mono-small">atelier new / next / done</text>
-  <text x="635" y="728" class="mono-small">validate --gate plan-ready</text>
-  <text x="635" y="753" class="mono-small">export-plan / review</text>
+  <rect x="872" y="430" width="230" height="146" class="card-teal"/>
+  <text x="896" y="462" class="h1-teal">Epic ledger</text>
+  <text x="896" y="492" class="mono-small">questions.md</text>
+  <text x="896" y="516" class="mono-small">research/*.md</text>
+  <text x="896" y="540" class="mono-small">design.md / plan.md</text>
+  <line x1="896" y1="554" x2="1078" y2="554" class="dash"/>
+  <text x="896" y="573" class="mono-small">state.json slices</text>
 
-  <path d="M873 555 h32 v-19 l39 32 l-39 32 v-19 h-32z" class="arrow"/>
+  <path d="M1120 502 H1196" class="arrow-teal"/>
 
-  <rect x="956" y="426" width="205" height="292" class="card"/>
-  <circle cx="1059" cy="426" r="24" class="icon-circle"/>
-  <text x="1059" y="435" text-anchor="middle" class="ribbon-text">D</text>
-  <path d="M1014 510 h90 l18 18 v64 h-108z M1014 510 v-22 h42 l14 22" stroke="#0f4fb0" stroke-width="5" fill="none" stroke-linejoin="round"/>
-  <text x="1059" y="627" text-anchor="middle" class="card-title">Filesystem</text>
-  <line x1="976" y1="648" x2="1142" y2="648" class="dash"/>
-  <text x="976" y="678" class="mono-small">.atelier/atelier.json</text>
-  <text x="976" y="703" class="mono-small">active.json</text>
-  <text x="976" y="728" class="mono-small">protocol/ rules/ skills/</text>
-  <text x="976" y="753" class="mono-small">schemas/ epics/</text>
+  <rect x="1218" y="430" width="116" height="146" class="card-teal"/>
+  <text x="1276" y="462" text-anchor="middle" class="h1-teal">Plan</text>
+  <text x="1276" y="492" text-anchor="middle" class="mono-small">planned</text>
+  <text x="1276" y="516" text-anchor="middle" class="mono-small">mirror</text>
+  <text x="1276" y="540" text-anchor="middle" class="mono-small">native</text>
+  <text x="1276" y="570" text-anchor="middle" class="small">ready</text>
 
-  <path d="M1173 555 h32 v-19 l39 32 l-39 32 v-19 h-32z" class="arrow"/>
+  <rect x="72" y="608" width="1232" height="30" class="card"/>
+  <text x="92" y="628" class="small">Phase path: questions -> research -> synthesis/design -> plan.md with slices -> status=planned -> export native mirror</text>
 
-  <rect x="1255" y="426" width="105" height="292" class="card"/>
-  <circle cx="1308" cy="426" r="24" class="icon-circle"/>
-  <text x="1308" y="435" text-anchor="middle" class="ribbon-text">E</text>
-  <path d="M1279 496 h48 v84 h-48z M1289 512 h28 M1289 535 h28 M1289 558 h20" stroke="#0f4fb0" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="1308" y="627" text-anchor="middle" class="card-title">Epic</text>
-  <text x="1308" y="653" text-anchor="middle" class="card-title">ledger</text>
-  <line x1="1270" y1="674" x2="1346" y2="674" class="dash"/>
-  <text x="1270" y="703" class="mono-small">state</text>
-  <text x="1270" y="728" class="mono-small">plan</text>
-  <text x="1270" y="753" class="mono-small">review</text>
+  <rect x="34" y="684" width="632" height="166" class="section-teal"/>
+  <rect x="58" y="704" width="238" height="36" class="pill-teal"/>
+  <text x="82" y="729" class="label">Minimal CLI helpers</text>
+  <text x="72" y="772" class="body">The CLI scaffolds, validates, exports, and reviews.</text>
+  <text x="72" y="802" class="mono-small">init / install-adapter / validate / doctor</text>
+  <text x="72" y="826" class="mono-small">export-plan / review / host-plan finalize</text>
+  <text x="72" y="844" class="small">next/done remain optional lifecycle helpers.</text>
 
-  <rect x="40" y="808" width="620" height="118" class="section-purple"/>
-  <path d="M40 808 h272 l26 30 l-26 30 h-272 z" class="ribbon-purple"/>
-  <text x="96" y="846" class="ribbon-text">Skills on demand</text>
-  <circle cx="66" cy="838" r="26" class="icon-circle-purple"/>
-  <path class="icon-stroke" d="M56 838 h20 M66 828 v20"/>
-  <text x="76" y="892" class="body">discovery</text>
-  <text x="238" y="892" class="body-small">questioner / repo-analyst / tech-analyst / business-analyst</text>
-  <text x="76" y="920" class="body">design</text>
-  <text x="238" y="920" class="body-small">designer</text>
-  <text x="76" y="948" class="body">planning + review</text>
-  <text x="238" y="948" class="body-small">planner / reviewer</text>
+  <rect x="734" y="684" width="632" height="166" class="section-red"/>
+  <rect x="758" y="704" width="238" height="36" class="pill-red"/>
+  <text x="782" y="729" class="label">Boundary invariant</text>
+  <text x="772" y="772" class="body">Atelier stops at </text>
+  <text x="890" y="772" class="mono">planned</text>
+  <text x="966" y="772" class="body"> and exports the native plan mirror.</text>
+  <text x="772" y="802" class="body">Implementation stays in the host agent workflow.</text>
+  <text x="772" y="832" class="body">Review compares diff and validation against </text>
+  <text x="1100" y="832" class="mono-small">.atelier/epics/&lt;epic&gt;/plan.md</text>
 
-  <rect x="704" y="808" width="656" height="118" class="section-red"/>
-  <path d="M704 808 h318 l26 30 l-26 30 h-318 z" class="ribbon-red"/>
-  <text x="760" y="846" class="ribbon-text">Boundary invariant</text>
-  <circle cx="730" cy="838" r="26" class="icon-circle-red"/>
-  <path class="icon-stroke" d="M720 837 l8 8 l17 -20"/>
-  <text x="732" y="892" class="body">Atelier stops at</text>
-  <text x="862" y="892" class="mono">planned</text>
-  <text x="942" y="892" class="body">and exports native mirrors.</text>
-  <text x="732" y="920" class="body">Implementation is native; review reconciles diff, tests, and</text>
-  <text x="732" y="948" class="body">acceptance criteria against</text>
-  <text x="970" y="948" class="mono">.atelier/epics/&lt;epic&gt;/plan.md</text>
-
-  <rect x="40" y="944" width="1320" height="24" class="footer"/>
-  <text x="700" y="963" text-anchor="middle" class="footer-text">Atelier-Kit = explicit local planning + native agent implementation + plan-based review</text>
+  <rect x="34" y="884" width="1332" height="52" class="footer"/>
+  <text x="700" y="917" text-anchor="middle" class="footer-text">Ask for planning -> agent follows skills -> final plan -> native mirror -> native implementation -> review</text>
 </svg>

@@ -145,7 +145,7 @@ explicit activation
 | `atelier validate --gate plan-ready` | Validate that the active plan can be finalized |
 | `atelier doctor` | Diagnose installation and state |
 | `atelier render-rules --adapter cursor` | Write adapter rules |
-| `atelier export-plan --adapter claude-code` | Mirror the active `plan.md` to an agent-native plan file |
+| `atelier export-plan --adapter claude-code` | Copy the active `plan.md` to the host's plan location |
 | `atelier review` | Review the current implementation diff against the planned epic |
 | `atelier next` | Optional helper to focus the next pending planning task |
 | `atelier done` | Optional helper to complete a planning/review task |
@@ -181,11 +181,17 @@ convenience, not authority. The default Claude Code mirror is
 `~/.claude/plans/<epic>.md`; Cursor, Kiro and Antigravity use workspace-local
 mirror paths unless `--path` is provided.
 
-External review tools can be chained after export:
+External review tools can still be chained after export:
 
 ```bash
 atelier export-plan --adapter claude-code --command 'plannotator annotate "$ATELIER_PLAN_PATH"'
 ```
+
+During the normal artifact flow, the agent does not need another Atelier command.
+If Plannotator is installed, it can open the file it just wrote:
+`plannotator annotate .atelier/epics/<epic>/<artifact>.md`. Any notes that come
+back from Plannotator should be folded into that same artifact before the task is
+advanced in `state.json`.
 
 Mirrors are derived files. If a native agent changes the plan, update the
 canonical Atelier `plan.md` explicitly before finalizing it again.

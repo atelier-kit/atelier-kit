@@ -7,7 +7,7 @@ description: Review native implementation against the planned epic.
 
 ## Mission
 
-Review completed native implementation against the planned epic and current diff. Identify gaps, validation status and whether the epic can be completed or needs more work.
+**Compare what was delivered against what was promised.** Review the implementation diff against each planned slice: check file boundaries, verify acceptance criteria, run validation, and identify drift. This is where the plan becomes enforceable.
 
 ## Inputs
 
@@ -39,32 +39,67 @@ Review completed native implementation against the planned epic and current diff
 
 1. Read `.atelier/active.json`; stop if `active` is not `true`.
 2. Read active epic `state.json`; stop if `active_skill` is not `reviewer`.
-3. Read the planned `plan.md`.
-4. Inspect current diff and validation evidence.
-5. Compare completed slices against acceptance criteria.
-6. Record missing validation, incomplete acceptance criteria and risks.
-7. Before marking the epic done, run `command -v plannotator`. If it exists, run
-   `plannotator annotate .atelier/epics/<active_epic>/review.md` and fold any
-   notes back into `review.md`. Do not ask for chat review as a substitute.
-8. If all criteria are met, set status to `done` only when appropriate.
-9. If more work is needed, leave the epic in `review` or set `blocked` with a clear reason.
+3. Read `plan.md` in full. This is the contract you will evaluate against.
+4. For each planned slice:
+   - **Check file boundary**: Did the implementation respect `allowed_files`? Any violations?
+   - **Check acceptance criteria**: Run or evaluate each criterion. Pass? Fail? Partial?
+   - **Check validation**: Did the agent run the validation commands? What is the result?
+   - **Check completeness**: Is the work done or is it unfinished?
+5. Record results in `review.md`:
+   - Slice by slice: what was delivered, what was skipped, what failed validation.
+   - Drift from plan: if the implementation changed scope or files, explain why and whether it is justified.
+   - Risks: any new risks introduced by implementation choices?
+6. Produce a recommendation: mark epic `done`, continue implementation, or stay in `review` pending fixes.
+7. Before marking done, run `command -v plannotator`. If found, annotate `review.md` and fold notes back.
+8. Update `state.json` with final status: `done` only if all slices pass all criteria, otherwise `review` or `blocked`.
 
 ## Output Format
 
-Write `review.md` with:
+Write `.atelier/epics/<active_epic>/review.md`:
 
-1. Summary of completed slices.
-2. Plan compliance.
-3. Validation performed.
-4. Findings.
-5. Risks remaining.
-6. Required follow-ups.
-7. Recommendation: done, continue native implementation or blocked.
+```markdown
+# Review: [Epic Title]
+
+## Summary
+[Overview of what was implemented, what remains, overall status.]
+
+## Slice Compliance
+
+### Slice 1: [Name]
+- **Files modified**: [List of actual changes]
+- **Allowed files constraint**: ✓ Pass / ✗ Fail / ⚠ Violation: [Details]
+- **Acceptance criteria**:
+  - Criterion 1: ✓ Pass / ✗ Fail
+  - Criterion 2: ✓ Pass / ✗ Fail
+  - Criterion 3: ✓ Pass / ✗ Fail
+- **Validation result**: [Test output or manual check result]
+- **Status**: Complete / Incomplete / Unstarted
+
+### Slice 2: [Name]
+[Continue...]
+
+## Drift from Plan
+[Did the implementation deviate from `allowed_files`, acceptance criteria, or scope? Was the deviation justified?]
+
+## Validation Evidence
+[Test results, logs, screenshots, or manual verification.]
+
+## Risks Remaining
+[New risks introduced, unfinished work, corner cases not covered.]
+
+## Recommendation
+- **Epic status**: done / continue implementation / review / blocked
+- **Next steps**: [Clear action if not done]
+```
 
 ## Completion Criteria
 
-- Review covers every planned slice.
-- Validation status is explicit.
-- Remaining risks and follow-ups are clear.
-- `command -v plannotator` was checked; Plannotator notes were handled when present.
-- `state.json` reflects the recommended next protocol state.
+- Every planned slice is reviewed (pass/fail on each criterion).
+- File boundary violations (if any) are flagged.
+- Validation was actually run (not assumed).
+- Drift from plan is explicit and justified or flagged as a problem.
+- Recommendation is clear: mark `done` only if all criteria pass.
+- No guessing; only observable facts.
+- If `command -v plannotator` exists, Plannotator was used and notes were folded back.
+  Otherwise, skill proceeds without Plannotator.
+- State is updated to the recommended next status.

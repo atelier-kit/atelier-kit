@@ -7,7 +7,7 @@ description: Convert the active epic goal into product behavior, edge cases and 
 
 ## Mission
 
-Clarify user-facing behavior, product constraints, acceptance criteria and edge cases for the active epic. Translate the goal into outcomes that can be validated after implementation.
+**Define observable product behavior.** Clarify what users will see or experience, what edge cases exist, what success looks like, and what must be validated after implementation. This research helps design and planning produce slices with concrete acceptance criteria.
 
 ## Inputs
 
@@ -40,34 +40,42 @@ Clarify user-facing behavior, product constraints, acceptance criteria and edge 
 
 1. Read `.atelier/active.json`; stop if `active` is not `true`.
 2. Read active epic `state.json`; stop if `active_skill` is not `business-analyst`.
-3. Restate the goal in user/business terms.
-4. Identify happy paths, error paths and edge cases.
-5. Look for existing product language, tests or flows that constrain expected behavior.
-6. Draft acceptance criteria candidates that planner can turn into slice criteria.
-7. Separate confirmed requirements from assumptions.
-8. Before marking business research done, run `command -v plannotator`. If it
-   exists, run `plannotator annotate .atelier/epics/<active_epic>/research/business.md`
-   and fold any notes back into `research/business.md`. Do not ask for chat
-   review as a substitute.
-9. Update the business research task status when complete or blocked.
+3. Read the epic goal and `questions.md` to understand scope.
+4. Describe the goal in user or product terms (not technical).
+5. Identify and describe:
+   - **Happy path**: What does the user do to succeed? What do they see?
+   - **Error paths**: What happens if something goes wrong? How should the system respond?
+   - **Edge cases**: Boundary conditions, unusual user behavior, scale, permissions, timing.
+6. Look for existing product language, tests, or flows in the repository that already define behavior.
+7. Define observable success criteria (things that can be tested or verified):
+   - E.g., "User can see their saved preferences after logout and login" (not "preferences work").
+8. Separate what is confirmed from what is assumed or deferred.
+9. Before marking done, run `command -v plannotator`. If found, annotate `business.md` and fold notes back.
+10. Update task status when complete or blocked.
 
 ## Output Format
 
-Write `.atelier/epics/<active_epic>/research/business.md` with:
+Write `.atelier/epics/<active_epic>/research/business.md`:
 
-1. User/business goal.
-2. Personas or actors if visible from context.
-3. Happy path.
-4. Error paths.
-5. Edge cases.
-6. Acceptance criteria candidates.
-7. Non-goals and out-of-scope items.
-8. Product risks and open questions.
+1. **Goal (in user/product terms)** — restate what the user will be able to do or see.
+2. **Personas or actors** — who is affected? (if multiple user types, list them).
+3. **Happy path** — step-by-step user journey when everything works. What does the user see?
+4. **Error paths** — what happens when X goes wrong? How should the system fail gracefully?
+5. **Edge cases** — unusual inputs, boundary conditions, scale limits, permission constraints, timing issues.
+6. **Observable success criteria** — things that can be tested:
+   - E.g., "After submitting the form, the success message appears within 2 seconds"
+   - E.g., "Users without edit permission cannot see the delete button"
+7. **Non-goals and scope limits** — what is explicitly NOT in scope?
+8. **Product risks** — what could this break for users? What do we need to test?
+9. **Open assumptions** — things we assume but haven't verified.
 
 ## Completion Criteria
 
-- Acceptance criteria candidates cover happy path, failures and edge cases.
-- Product assumptions are explicit.
+- Success criteria are observable and testable (not vague).
+- Happy path, error paths, and edge cases are documented.
+- Assumptions are explicit; confirmed facts are distinguished.
+- Planner can extract concrete acceptance criteria from this research.
 - No project code was edited.
-- `command -v plannotator` was checked; Plannotator notes were handled when present.
-- `state.json` reflects whether the business research task is done or blocked.
+- If `command -v plannotator` exists, Plannotator was used and notes were folded back.
+  Otherwise, skill proceeds without Plannotator.
+- Task status reflects done or blocked in `state.json`.

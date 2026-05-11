@@ -7,7 +7,9 @@ description: Transform active epic evidence into a native-agent implementation p
 
 ## Mission
 
-Transform available evidence into a native-agent implementation plan with reviewable slices, allowed file scope, acceptance criteria and validation steps. The planner prepares work for native implementation; it does not implement.
+**Turn design into a verifiable implementation contract.** Produce `plan.md` with clear slices that deliver end-to-end value, respect file boundaries, define acceptance criteria, and include validation steps. This plan becomes the contract against which implementation is reviewed.
+
+A slice is not a task. It is a vertical cut through the system that produces something testable and reviewable.
 
 ## Inputs
 
@@ -43,46 +45,85 @@ Transform available evidence into a native-agent implementation plan with review
 
 1. Read `.atelier/active.json`; stop if `active` is not `true`.
 2. Read active epic `state.json`; stop if `active_skill` is not `planner`.
-3. Confirm project code writes are disabled.
-4. Read required artifacts for the current mode.
-5. For quick mode, repo research may be enough; for standard mode, check repo and tech research and use business research when present; for deep mode, check repo, tech and business research.
-6. In standard and deep modes, do not start final planning until `design.md` and `decisions.md` are complete.
-7. Write or update `synthesis.md` when evidence needs consolidation.
-8. Create vertical slices that produce end-to-end value.
-9. Each slice must have `id`, `title`, `goal`, `depends_on`, `allowed_files`, `acceptance_criteria` and `validation`.
-10. Keep slices small enough for one agent iteration.
-11. Reflect the same slices in `state.json` and `plan.md`.
-12. Before finalizing the epic as `planned`, run `command -v plannotator`. If it
-    exists, run `plannotator annotate .atelier/epics/<active_epic>/plan.md` and
-    fold any notes back into `plan.md`. Do not ask for chat review as a
-    substitute.
-13. Set `status` to `planned` and `active_skill` to `null` only when the plan is ready for native implementation.
-14. Export the native plan mirror with `atelier export-plan --adapter <adapter>` after the epic reaches `planned`.
+3. Read artifacts required by mode:
+   - **quick**: `questions.md` + `research/repo.md`
+   - **standard**: `questions.md` + research + `synthesis.md` + `decisions.md` + `design.md`
+   - **deep**: all of standard + `research/business.md` + risk analysis
+4. If design is not complete (for standard/deep), stop and block with a clear reason.
+5. Consolidate evidence in `synthesis.md` if needed (findings, conflicts, key insights).
+6. Plan slices:
+   - Each slice delivers **end-to-end value** (user-visible, testable outcome), not a technical task.
+   - Each slice is small enough for one agent iteration (rough heuristic: 1-3 file changes per slice).
+   - Slices have dependencies defined (`depends_on` field) and can be reviewed independently.
+   - `allowed_files` lists **exactly** which files this slice may modify (read-only access to others is OK).
+   - `allowed_files` is a contract, not a suggestion; violations fail the gate.
+7. For each slice:
+   - Write a concrete goal (e.g., "Add user preference table and UI to select theme").
+   - Define acceptance criteria that are observable and testable (not vague).
+   - Define validation steps (test commands, manual checks) that prove criteria met.
+8. Ensure risks identified in research are either mitigated by slices or explicitly documented.
+9. Before finalizing as `planned`, run `command -v plannotator`. If found, annotate `plan.md` and fold notes back.
+10. Set `status` to `planned` and `active_skill` to `null` only when the plan passes `atelier validate --gate plan-ready`.
+11. Do NOT export native mirror; that is done separately after gate passes.
 
 ## Output Format
 
-Write `.atelier/epics/<active_epic>/plan.md` with:
+Write `.atelier/epics/<active_epic>/plan.md`:
 
-1. `# Plan: <Epic Title>`
-2. `## Goal`
-3. `## Mode`
-4. `## Evidence Summary`
-5. `## Assumptions`
-6. `## Risks`
-7. `## Slices`
-8. `## Native Implementation`
+```markdown
+# Plan: [Epic Title]
 
-Each slice section must include:
+## Goal
+[Restate the epic goal clearly.]
 
-- `**Goal:**`
-- `**Allowed files:**`
-- `**Acceptance criteria:**`
-- `**Validation:**`
+## Mode
+quick / standard / deep
+
+## Evidence Summary
+[Key findings from research, synthesis, design. ~2-3 bullets.]
+
+## Assumptions
+[Explicit assumptions the plan rests on.]
+
+## Risks
+[Known risks and mitigation strategies, or acceptance of risk.]
+
+## Slices
+
+### Slice 1: [Name]
+
+**Goal:** [End-to-end outcome. E.g., "Persist user theme choice and apply on load."]
+
+**Allowed files:**
+- path/file-1.ts
+- path/file-2.ts
+- path/test.spec.ts
+
+**Acceptance criteria:**
+- [Observable criterion 1]
+- [Observable criterion 2]
+- [Observable criterion 3]
+
+**Validation:**
+- [Test command or manual check]
+- [Boundary check: confirm no files outside allowed_files changed]
+
+### Slice 2: [Name]
+[Continue...]
+
+## Native Implementation
+After `plan-ready` gate approval, the plan will be exported to the agent's native location.
+```
 
 ## Completion Criteria
 
-- `plan.md` passes `atelier validate --gate plan-ready`.
-- `state.json` has at least one ready slice.
-- Every slice has allowed files, acceptance criteria and validation.
-- `command -v plannotator` was checked; Plannotator notes were handled when present.
+- `plan.md` passes `atelier validate --gate plan-ready` (goal, assumptions, risks, slices with all required fields).
+- Every slice goal is end-to-end and testable, not a technical subtask.
+- Every slice's `allowed_files` is explicit and respected by acceptance criteria.
+- Acceptance criteria are observable and measurable (not vague).
+- Validation includes test commands that are runnable.
+- Risks from research are either addressed by slices or explicitly accepted.
 - No project code was edited.
+- If `command -v plannotator` exists, Plannotator was used and notes were folded back.
+  Otherwise, skill proceeds without Plannotator.
+- Task status is `planned` in `state.json`; `active_skill` is `null`.

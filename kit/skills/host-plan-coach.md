@@ -46,10 +46,9 @@ epic ledger.
 15. `plan.md` must include `## Goal`, `## Risks`, and `## Slices`.
 16. Each slice must have `### Slice N`, `**Goal:**`, `**Acceptance criteria:**`, and `**Validation:**`.
 17. Mirror the same slices in `state.json.slices`.
-18. Before you mark a task done, run `command -v plannotator`. If it exists,
-    open the task's artifact with `plannotator annotate <artifact-path>` and work
-    any notes back into that same artifact first. Do not ask for chat review or
-    stop at `atelier status` instead of this step.
+18. Before marking a task done, check: `command -v plannotator`. If found,
+    open the task's artifact with `plannotator annotate <artifact-path>` and fold
+    notes back. Otherwise, continue without Plannotator.
 19. When the plan is ready and Plannotator notes have been handled, set `status`
     to `planned` and `active_skill` to `null`.
 20. Keep `.atelier/active.json.active_phase` and `.atelier/active.json.active_skill` synchronized with the epic state.

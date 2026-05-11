@@ -7,7 +7,9 @@ description: Record solution design and decisions for the active Atelier epic be
 
 ## Mission
 
-Turn research and constraints into explicit design decisions that guide planning without editing project code.
+**Convert evidence into reviewable decisions.** Take research findings and constraints and produce explicit, justified architectural decisions that guide planning. This is the point where humans review and approve the approach before tactical planning begins.
+
+Design is not speculation. Every decision must trace back to evidence from research.
 
 ## Inputs
 
@@ -40,43 +42,67 @@ Turn research and constraints into explicit design decisions that guide planning
 
 1. Read `.atelier/active.json`; stop if `active` is not `true`.
 2. Read active epic `state.json`; stop if `active_skill` is not `designer`.
-3. Read repository and technical research; read business research when present or required by deep mode.
-4. Identify decisions that materially affect implementation.
-5. Record alternatives considered and why they were rejected.
-6. Define relevant data, API and integration contracts.
-7. Include rollback and migration considerations when relevant.
-8. Do not mark the design task done until both `decisions.md` and `design.md` contain non-placeholder content.
-9. Before marking design done, run `command -v plannotator`. If it exists, run
-   `plannotator annotate .atelier/epics/<active_epic>/decisions.md` and
-   `plannotator annotate .atelier/epics/<active_epic>/design.md`, then fold any
-   notes back into the matching artifact. Do not ask for chat review as a
-   substitute.
-10. Update design task status when complete or blocked.
+3. Read all available research artifacts: `questions.md`, `research/repo.md`, `research/tech.md`, and `research/business.md` (if present).
+4. For each material decision:
+   - State the decision clearly.
+   - Cite the research evidence that justifies it (file path, finding).
+   - List alternatives considered and why they were rejected **based on evidence.**
+   - Identify risks or unknowns that remain.
+5. Define contracts and boundaries:
+   - Data models and persistence changes.
+   - API or module contracts that must be honored.
+   - Integration points with external systems.
+6. Include operational concerns:
+   - Deployment impact, rollback strategy.
+   - Migration path for existing data.
+   - Backward compatibility requirements.
+7. Explicitly mark decisions that carry risk or require human review.
+8. Do not advance beyond this phase to planning until both `decisions.md` and `design.md` are complete and non-placeholder.
+9. Before marking done, run `command -v plannotator`. If found, annotate both `decisions.md` and `design.md`, fold notes back.
+10. Update task status when complete or blocked.
 
 ## Output Format
 
-Write `decisions.md` with:
+Write `decisions.md` with sections for each material decision:
 
-1. Decision.
-2. Status.
-3. Context.
-4. Alternatives.
-5. Consequences.
+```markdown
+## Decision: [Name]
+
+**Status**: Decided / Approved / Pending human review
+
+**Evidence**: [Citation from research artifact, e.g., "From research/repo.md: ..."]
+
+**Alternatives considered**:
+- Option A: [Description]. Rejected because [evidence].
+- Option B: [Description]. Rejected because [evidence].
+
+**Chosen approach**: [The decision].
+
+**Consequences**: [What changes because of this decision].
+
+**Risks**: [What could go wrong].
+```
 
 Write `design.md` with:
 
-1. Chosen design.
-2. Contracts and interfaces.
-3. Data or persistence changes.
-4. Operational concerns.
-5. Rollback/migration notes.
-6. Design risks.
+1. **Overview** — how the pieces fit together.
+2. **Chosen architecture** — modules, boundaries, data flow.
+3. **Contracts and interfaces** — what modules expose, what they require.
+4. **Data model changes** — new tables, columns, relationships, migrations.
+5. **Integration points** — external APIs, webhooks, queues, caches.
+6. **Operational concerns** — deployment order, backward compatibility, feature flags.
+7. **Rollback strategy** — can we safely undo this? Data migration risks?
+8. **Design risks** — decisions that carry high uncertainty or impact.
 
 ## Completion Criteria
 
-- Design decisions are traceable to evidence.
-- `decisions.md` and `design.md` are both complete; neither may remain as `Pending`.
-- Planner can create slices without inventing architecture.
+- Every decision traces back to research evidence (not speculation).
+- Alternatives considered include evidence-based rejection reasons.
+- `decisions.md` lists all material decisions; none are deferred or marked "TBD".
+- `design.md` describes the target state concretely; no vague architectural sketches.
+- Planner can create slices directly from this design; no architectural surprises.
+- Risks are explicit; no hidden assumptions.
 - No project code was edited.
-- `command -v plannotator` was checked; Plannotator notes were handled when present.
-- `state.json` reflects whether design is done or blocked.
+- If `command -v plannotator` exists, Plannotator was used and notes were folded back.
+  Otherwise, skill proceeds without Plannotator.
+- Task status reflects done or blocked in `state.json`.

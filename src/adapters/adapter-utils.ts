@@ -10,12 +10,13 @@ export async function renderAdapterBody(
   adapter: AdapterName,
   title: string,
 ): Promise<string> {
-  const rules = await readRule(cwd, adapter === "claude" ? "claude-code" : adapter);
+  const resolvedAdapter = adapter === "claude" ? "claude-code" : adapter;
+  const rules = await readRule(cwd, resolvedAdapter);
   return `# ${title}
 
 Atelier-Kit is an opt-in planning protocol.
 
-${atelierCommandReference()}
+${atelierCommandReference(resolvedAdapter)}
 
 ${rules}
 `;

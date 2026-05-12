@@ -284,8 +284,14 @@ When Atelier-Kit is active:
 2. Read \`.atelier/active.json\`.
 3. Read \`.atelier/epics/<active_epic>/state.json\`.
 4. Load only the skill required by \`active_skill\`.
-5. Work on only the active task. Do not fill later artifacts early; later phases
-   must wait until their task is active in \`state.json\`.
+5. **Phase gate**: \`active_skill\` in \`state.json\` defines the only work permitted
+   right now. The mandatory planning order is:
+
+   \`questioner → repo-analyst → tech-analyst → [business-analyst] → designer → planner → reviewer\`
+
+   Do not fill later artifacts early. If the user requests something that belongs
+   to a later phase, respond: "Atelier phase gate: current skill is \`<active_skill>\`.
+   Finish \`<artifact>\` before advancing." Then resume the current skill.
 6. Before marking a planning task done, advancing to the next task, or telling
    the user the phase is ready for review, check for Plannotator with
    \`command -v plannotator\`. If it exists, run
@@ -734,7 +740,7 @@ states:
     next: [discovery]
   discovery:
     can_write_project_code: false
-    skills: [repo-analyst, tech-analyst, business-analyst]
+    skills: [questioner, repo-analyst, tech-analyst, business-analyst]
     next: [synthesis, planning, blocked]
   synthesis:
     can_write_project_code: false
@@ -883,6 +889,10 @@ Use the exported native plan mirror after Atelier finalizes this epic as \`plann
 }
 
 export const skillsYaml = `skills:
+  questioner:
+    file: .atelier/skills/questioner.md
+    allowed_states: [discovery]
+    writes: [questions.md]
   repo-analyst:
     file: .atelier/skills/repo-analyst.md
     allowed_states: [discovery]

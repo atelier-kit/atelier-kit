@@ -7,89 +7,70 @@ description: Validate technical feasibility, dependency constraints and external
 
 ## Mission
 
-**Identify technical constraints and blockers.** Validate framework behavior, dependency versions, external APIs, security boundaries, performance limits, and migration concerns that are version-sensitive or could cause implementation to fail.
-
-This research answers technical questions and surfaces blockers **before design commits to an approach.**
+Validate the technical constraints that could affect the active epic: framework behavior, dependency versions, external APIs, security boundaries, compatibility risks, performance constraints and migration concerns.
 
 ## Inputs
 
 - `.atelier/active.json`
 - `.atelier/epics/<active_epic>/state.json`
-- `.atelier/epics/<active_epic>/questions.md` (particularly tech and integration questions)
+- `.atelier/epics/<active_epic>/questions.md`
 - `.atelier/epics/<active_epic>/research/repo.md`
-- Project dependency manifests, lockfiles, config files
-- Official documentation for frameworks and APIs
+- Dependency manifests and framework configuration
+- Current official documentation when dependency/API facts may have changed
 
 ## Allowed Reads
 
 - `.atelier/atelier.json`
 - `.atelier/active.json`
 - `.atelier/epics/<active_epic>/**`
-- Dependency manifests, lockfiles, integration code
-- Official docs (framework sites, API documentation, security advisories)
+- Dependency manifests, lockfiles, config and integration code
+- Official external documentation when needed for current technical facts
 
 ## Allowed Writes
 
 - `.atelier/epics/<active_epic>/research/tech.md`
-- `.atelier/epics/<active_epic>/state.json` (task status or blocker notes only)
+- `.atelier/epics/<active_epic>/state.json` only to update task status, active phase or blocker notes
 
 ## Forbidden Actions
 
 - Do not edit project code.
-- Do not propose implementation.
-- Do not finalize the plan.
-- Do not invent API behavior from memory; verify against current docs.
-- Do not introduce new dependencies without evidence.
+- Do not finalize a plan.
+- Do not implement slices.
+- Do not invent external API behavior from memory when current docs are needed.
+- Do not introduce new dependencies as a decision; only document feasibility.
 
 ## Instructions
 
 1. Read `.atelier/active.json`; stop if `active` is not `true`.
-2. Read `.atelier/epics/<active_epic>/state.json`; stop if `active_skill` is not `tech-analyst`.
-3. Read `questions.md` for technical and integration questions that need answering.
-4. Read repo research to understand what exists.
-5. For each version-sensitive dependency:
-   - Record the current version and lockfile constraint.
-   - Verify known behavior/limitations from official docs.
-   - Identify breaking changes in newer versions.
-   - Identify compatibility concerns with other dependencies.
-6. For each external API or library in the plan:
-   - Verify current behavior from official documentation (not memory).
-   - Record version, API stability, deprecation warnings, rate limits.
-   - Identify breaking changes or sunset timelines.
-7. Identify security, compliance, data integrity and performance constraints:
-   - Does this change require audit logging?
-   - Are there compliance (GDPR, SOC 2, etc.) implications?
-   - Performance constraints that affect design choices?
-   - Concurrency or transaction concerns?
-8. Identify migration and rollback concerns:
-   - Can database migrations be rolled back safely?
-   - Are there data migration risks?
-   - Backward compatibility requirements?
-9. Mark **blocking constraints**: those that invalidate proposed solutions (e.g., "This framework version does not support X").
-10. Before marking done, run `command -v plannotator`. If found, run `plannotator annotate .atelier/epics/<active_epic>/research/tech.md` and fold notes back.
-11. Update task status when complete or blocked.
+2. Read active epic `state.json`; if `active_skill` is not `tech-analyst`, skip this
+   skill and follow the active skill instead.
+3. Read repository research first when it exists.
+4. Inspect dependency versions and relevant config.
+5. Verify external API or library behavior from official docs when unstable or version-sensitive.
+6. Identify security, compatibility, migration and rollback concerns.
+7. Record feasible implementation constraints, not a final implementation plan.
+8. Before marking tech research done, run `command -v plannotator`. If it exists,
+   run `plannotator annotate .atelier/epics/<active_epic>/research/tech.md` and
+   fold any notes back into `research/tech.md`.
+9. Update the tech research task status when complete or blocked.
 
 ## Output Format
 
 Write `.atelier/epics/<active_epic>/research/tech.md` with:
 
-1. **Scope of technical research** — which questions from `questions.md` are answered here?
-2. **Dependency versions and constraints** — current versions, lockfile rules, known limitations.
-3. **Framework behavior and APIs** — verified from official docs, with version caveats.
-4. **Blocking constraints** — version-sensitive facts that invalidate certain approaches.
-5. **Security and compliance** — audit, data exposure, regulatory concerns.
-6. **Performance and scalability** — concurrency, transaction handling, rate limits.
-7. **Migration and rollback** — data migration risks, backward compatibility, undo paths.
-8. **Test and validation commands** — how to verify technical assumptions.
-9. **Unknowns and deferred questions** — technical facts that could not be verified.
+1. Technical scope.
+2. Dependencies, versions and framework constraints.
+3. Relevant external API/library facts with source notes.
+4. Security and privacy constraints.
+5. Performance, concurrency or data integrity risks.
+6. Migration and rollback considerations.
+7. Validation commands or test strategy implications.
+8. Open technical questions.
 
 ## Completion Criteria
 
-- Every version-sensitive claim cites official documentation or a source.
-- Blocking constraints are identified and justified.
-- Constraints are specific enough that design can make informed decisions.
-- No unknowns are hidden; deferred questions are explicit.
+- Version-sensitive facts are sourced or marked unknown.
+- Technical constraints are specific enough for design and planning.
 - No project code was edited.
-- If `command -v plannotator` exists, Plannotator was used and notes were folded back.
-  Otherwise, skill proceeds without Plannotator.
-- Task status reflects done or blocked in `state.json`.
+- `command -v plannotator` was checked; Plannotator notes were handled when present.
+- `state.json` reflects whether the tech research task is done or blocked.

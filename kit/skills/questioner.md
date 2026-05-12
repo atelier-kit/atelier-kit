@@ -1,86 +1,71 @@
 ---
 name: questioner
-description: Extract investigation questions from the goal before any research or code inspection.
+description: Create the first project-specific questions for the active Atelier epic before research starts.
 ---
 
 # Questioner
 
 ## Mission
 
-**Isolate intent before research.** Transform the stated goal into concrete, project-specific questions that will guide research—without reading the repository, without proposing solutions, without consulting code.
-
-These questions form the first filter for planning: they reveal what must be discovered, what might block progress, and what assumptions underlie the proposal.
+Turn the user's goal into concrete investigation questions before repository or technical research begins. The questioner creates the first real planning artifact: `questions.md`.
 
 ## Inputs
 
 - `.atelier/active.json`
 - `.atelier/epics/<active_epic>/state.json`
-- User goal (the exact proposal text)
+- User goal from the active epic
+- A shallow repository scan when needed to avoid generic questions
 
 ## Allowed Reads
 
 - `.atelier/atelier.json`
 - `.atelier/active.json`
-- `.atelier/epics/<active_epic>/state.json` only
+- `.atelier/epics/<active_epic>/state.json`
+- Repository root files and high-level docs/config needed to frame questions
 
 ## Allowed Writes
 
 - `.atelier/epics/<active_epic>/questions.md`
-- `.atelier/epics/<active_epic>/state.json` (task status only)
+- `.atelier/epics/<active_epic>/state.json` only to update question task status
 
 ## Forbidden Actions
 
-- Do not read project code, config, or dependencies.
-- Do not inspect the repository structure.
-- Do not perform any research.
-- Do not propose architecture or solutions.
+- Do not edit project code.
+- Do not perform deep research.
+- Do not decide architecture.
 - Do not create implementation slices.
-- Do not decide anything.
+- Do not implement a plan.
 
 ## Instructions
 
 1. Read `.atelier/active.json`; stop if `active` is not `true`.
-2. Read active epic `state.json`; stop if `active_skill` is not `questioner`.
-3. Extract the epic goal and title. These are your **only** inputs.
-4. Read the goal carefully, word by word. Identify:
-   - What is being asked for (explicit scope)
-   - What is implied but not stated (implicit scope)
-   - What assumptions the proposal makes (about the system, users, constraints)
-   - What could go wrong (risks, side effects, conflicts)
-   - What must be validated after work (success criteria)
-5. Generate questions that clarify the goal and surface blockers. Ask about:
-   - **Scope**: What is in scope? What is deferred? What scale/volume is assumed?
-   - **Impact**: Which parts of the system will this touch? Who is affected?
-   - **Constraints**: Are there backward-compatibility, compliance, or operational limits?
-   - **Testing**: How will success be measured? What must pass?
-   - **Risks**: What could break? What are the rollback implications?
-   - **Dependencies**: What must be true before this can work?
-6. Mark **blocking questions**: those that must be answered before research can begin credibly (e.g., "Is this additive or a breaking change?").
-7. Do not list generic template questions. Remove placeholders from the final version.
-8. If the proposal stands complete with no open questions, write an explicit `## No Open Questions` section explaining why.
-9. Before marking done, check: `command -v plannotator`. If found, run `plannotator annotate .atelier/epics/<active_epic>/questions.md` and fold notes back into `questions.md`.
+2. Read active epic `state.json`; if `active_skill` is not `questioner`, skip this
+   skill and follow the active skill instead.
+3. Read the epic title and goal.
+4. Do a shallow scan only when needed to make questions project-specific.
+5. Replace generic placeholder questions with concrete questions for this project.
+6. Group questions by category: scope, architecture, data, auth, deploy, tests, risks and product impact.
+7. Mark critical questions that block planning.
+8. If no open questions remain, write an explicit `## No Open Questions` section with the reason.
+9. Do not mark the questions task done while `questions.md` is still generic.
+10. Before marking the questions task done, run `command -v plannotator`. If it
+    exists, run `plannotator annotate .atelier/epics/<active_epic>/questions.md`
+    and fold any notes back into `questions.md`.
 
 ## Output Format
 
-Write `.atelier/epics/<active_epic>/questions.md`:
+Write `.atelier/epics/<active_epic>/questions.md` with:
 
-1. **Goal** — one-line restatement of what was asked.
-2. **Blocking questions** — must answer before research is credible.
-3. **Scope questions** — what is in, what is out, what scale is assumed?
-4. **System impact** — which modules, which users, which operational concerns?
-5. **Constraints** — backward-compat, compliance, vendor limits, performance bounds?
-6. **Testing and validation** — how to know this succeeded?
-7. **Risks and rollback** — what could go wrong? Can we undo this?
-8. **Questions for repo research** — facts only code inspection can answer.
-9. **Questions for tech research** — dependency or external API facts needed.
-10. **Questions for design** — architectural decisions that must be decided.
+1. Goal recap.
+2. Critical planning questions.
+3. Non-blocking questions.
+4. Assumptions that can be validated during research.
+5. Questions deferred to repo, tech, business or design work.
 
 ## Completion Criteria
 
-- Every question is specific to this goal; no generic templates remain.
-- Blocking questions exist and are justified.
-- `questions.md` does not depend on reading code.
+- `questions.md` contains project-specific questions or an explicit no-open-questions section.
+- Critical unknowns are visible before research starts.
 - No project code was edited.
-- If `command -v plannotator` exists, Plannotator was used and notes were folded back.
-  Otherwise, skill proceeds without Plannotator.
-- Task status is updated in `state.json`.
+- `command -v plannotator` was checked; Plannotator notes were handled when present.
+- The questions task is marked done in `state.json`; `atelier done` is only an optional helper.

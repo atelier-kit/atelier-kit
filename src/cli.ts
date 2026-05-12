@@ -44,8 +44,9 @@ program
 program
   .command("status")
   .description("Show active Atelier protocol state")
-  .action(async () => {
-    await cmdStatus(processCwd());
+  .option("--inject", "Output compact state for agent context injection")
+  .action(async (opts: { inject?: boolean }) => {
+    await cmdStatus(processCwd(), opts);
   });
 
 program

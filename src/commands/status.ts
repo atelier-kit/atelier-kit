@@ -1,7 +1,12 @@
 import pc from "picocolors";
 import { readActiveEpic, readAtelierConfig } from "../protocol/state.js";
 
-export async function cmdStatus(cwd: string): Promise<void> {
+export async function cmdStatus(cwd: string, opts: { inject?: boolean } = {}): Promise<void> {
+  if (opts.inject) {
+    await cmdStatusInject(cwd);
+    return;
+  }
+
   try {
     const config = await readAtelierConfig(cwd);
     const { active, state } = await readActiveEpic(cwd);
@@ -27,5 +32,34 @@ export async function cmdStatus(cwd: string): Promise<void> {
   } catch (error) {
     console.error(pc.red((error as Error).message));
     process.exitCode = 1;
+  }
+}
+
+async function cmdStatusInject(cwd: string): Promise<void> {
+  try {
+    const { active, state } = await readActiveEpic(cwd);
+    if (!active.active || !state) {
+      process.stdout.write("[atelier-kit]\nactive: false\n");
+      return;
+    }
+    const activeTask =
+      state.tasks.find((t) => t.status === "in_progress") ??
+      state.tasks.find((t) => t.status === "pending") ??
+      null;
+    const lines = [
+      "[atelier-kit]",
+      `active: true`,
+      `epic: ${state.epic_id} | phase: ${state.status}`,
+    ];
+    if (state.active_skill) {
+      lines.push(`active_skill: ${state.active_skill}`);
+      lines.push(`skill_file: .atelier/skills/${state.active_skill}.md`);
+    }
+    if (activeTask) {
+      lines.push(`artifact: .atelier/epics/${state.epic_id}/${activeTask.artifact}`);
+    }
+    process.stdout.write(`${lines.join("\n")}\n`);
+  } catch {
+    process.stdout.write("[atelier-kit]\nactive: false\n");
   }
 }

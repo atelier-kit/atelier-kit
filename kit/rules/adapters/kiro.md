@@ -2,6 +2,7 @@
 
 Use `.kiro/steering/atelier.md` as the persistent steering file.
 
+- At session start, run `atelier status --inject` if `.atelier/` exists; use its output to load the correct skill.
 - Planning stays Kiro-native until someone explicitly runs `/atelier ...`.
 - `/atelier quick <goal>` maps to `atelier new "<goal>" --mode quick`.
 - `/atelier plan <goal>` maps to `atelier new "<goal>" --mode standard`.

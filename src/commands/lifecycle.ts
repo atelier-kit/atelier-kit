@@ -6,6 +6,7 @@ import { epicDir } from "../protocol/paths.js";
 import { inactiveState } from "../protocol/templates.js";
 import { validatePlanReady } from "../protocol/validator.js";
 import { exportActivePlan } from "./export-plan.js";
+import { refreshFallbackAdapters } from "../adapters/index.js";
 import type { AtelierStatus, EpicState, SkillName } from "../protocol/schema.js";
 
 type ProtocolTask = EpicState["tasks"][number];
@@ -145,7 +146,7 @@ async function assertTaskArtifactComplete(cwd: string, state: EpicState, task: P
 }
 
 export async function cmdNext(cwd: string): Promise<void> {
-  await runLifecycle(cwd, "next", (state) => {
+  const ok = await runLifecycle(cwd, "next", (state) => {
     if (state.status === "planned") {
       throw new Error("Plan is already exported. Let the native agent implement it, then run `atelier review`.");
     }
@@ -157,6 +158,7 @@ export async function cmdNext(cwd: string): Promise<void> {
     }
     focusTask(state, next);
   });
+  if (ok) await refreshFallbackAdapters(cwd).catch(() => {});
 }
 
 export async function cmdDone(cwd: string): Promise<void> {
@@ -197,18 +199,22 @@ export async function cmdDone(cwd: string): Promise<void> {
       state.active_skill = "planner";
     }
   });
-  if (!ok || !shouldExportPlan) return;
-  try {
-    const config = await readAtelierConfig(cwd);
-    const { path } = await exportActivePlan(cwd, { adapter: config.adapter, ifPlanned: true });
-    console.log(pc.dim(`Plan mirror exported: ${path}`));
-  } catch (error) {
-    console.error(pc.red(`Plan mirror export failed: ${(error as Error).message}`));
-    process.exitCode = 1;
+  if (!ok) return;
+  if (shouldExportPlan) {
+    try {
+      const config = await readAtelierConfig(cwd);
+      const { path } = await exportActivePlan(cwd, { adapter: config.adapter, ifPlanned: true });
+      console.log(pc.dim(`Plan mirror exported: ${path}`));
+    } catch (error) {
+      console.error(pc.red(`Plan mirror export failed: ${(error as Error).message}`));
+      process.exitCode = 1;
+    }
   }
+  await refreshFallbackAdapters(cwd).catch(() => {});
 }
 
 export async function cmdOff(cwd: string): Promise<void> {
   await writeActiveState(cwd, inactiveState());
+  await refreshFallbackAdapters(cwd).catch(() => {});
   console.log(pc.green("Atelier disabled; native agent behavior is active."));
 }

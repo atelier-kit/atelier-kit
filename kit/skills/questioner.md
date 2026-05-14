@@ -48,9 +48,8 @@ Turn the user's goal into concrete investigation questions before repository or 
 7. Mark critical questions that block planning.
 8. If no open questions remain, write an explicit `## No Open Questions` section with the reason.
 9. Do not mark the questions task done while `questions.md` is still generic.
-10. Before marking the questions task done, run `command -v plannotator`. If it
-    exists, run `plannotator annotate .atelier/epics/<active_epic>/questions.md`
-    and fold any notes back into `questions.md`.
+10. Before updating `state.json`, follow the "Plannotator (optional, per phase)"
+    section of `core.md` against `questions.md`.
 
 ## Output Format
 
@@ -67,5 +66,5 @@ Write `.atelier/epics/<active_epic>/questions.md` with:
 - `questions.md` contains project-specific questions or an explicit no-open-questions section.
 - Critical unknowns are visible before research starts.
 - No project code was edited.
-- `command -v plannotator` was checked; Plannotator notes were handled when present.
+- The Plannotator boundary check in `core.md` was followed (run or skipped per host capability).
 - The questions task is marked done in `state.json`; `atelier done` is only an optional helper.

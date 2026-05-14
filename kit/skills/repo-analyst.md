@@ -47,9 +47,8 @@ Answer the questions asked by the questioner using repository evidence. Inspect 
 5. Identify existing conventions the implementation should follow.
 6. Identify relevant validation commands and test gaps.
 7. Record unknowns explicitly instead of guessing.
-8. Before marking repo research done, run `command -v plannotator`. If it
-   exists, run `plannotator annotate .atelier/epics/<active_epic>/research/repo.md`
-   and fold any notes back into `research/repo.md`.
+8. Before updating `state.json`, follow the "Plannotator (optional, per phase)"
+   section of `core.md` against `research/repo.md`.
 9. Update the repo research task status when evidence is complete or blocked.
 
 ## Output Format
@@ -71,5 +70,5 @@ Write `.atelier/epics/<active_epic>/research/repo.md` with:
 - Repository evidence is enough for planner/designer work without guessing.
 - Every significant claim cites a path, symbol, command or observable repo fact.
 - No project code was edited.
-- `command -v plannotator` was checked; Plannotator notes were handled when present.
+- The Plannotator boundary check in `core.md` was followed (run or skipped per host capability).
 - Task status reflects done or blocked in `state.json`.

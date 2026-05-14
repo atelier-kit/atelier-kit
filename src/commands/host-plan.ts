@@ -1,5 +1,5 @@
 import pc from "picocolors";
-import { refreshFallbackAdapters } from "../adapters/index.js";
+import { refreshAdapter } from "../adapters/index.js";
 import { createEpic } from "../protocol/epic.js";
 import {
   readActiveEpic,
@@ -13,7 +13,7 @@ import { exportActivePlan } from "./export-plan.js";
 export async function cmdHostPlanStart(cwd: string, goal: string): Promise<void> {
   try {
     const state = await createEpic(cwd, { title: goal, goal, mode: "standard" });
-    await refreshFallbackAdapters(cwd);
+    await refreshAdapter(cwd);
     console.log(
       pc.green(
         `Host plan started for "${goal}" status=${state.status} skill=${state.active_skill}`,
@@ -55,7 +55,7 @@ export async function cmdHostPlanFinalize(cwd: string): Promise<void> {
     });
     const config = await readAtelierConfig(cwd);
     const mirror = await exportActivePlan(cwd, { adapter: config.adapter, ifPlanned: true });
-    await refreshFallbackAdapters(cwd);
+    await refreshAdapter(cwd);
     console.log(
       pc.green(
         `Host plan finalized: ${state.epic_id} status=${state.status}`,

@@ -41,7 +41,7 @@ describe("agent adapters include planner protocol", () => {
       join(path, ".cursor", "rules", "atelier-core.mdc"),
       "utf8",
     );
-    expect(cursorRules).toContain("Atelier-Kit is inactive by default");
+    expect(cursorRules).toContain("Atelier is **off** unless");
     expect(cursorRules).toContain("/atelier plan");
   });
 
@@ -57,7 +57,7 @@ describe("agent adapters include planner protocol", () => {
       join(path, ".cursor", "rules", "atelier-core.mdc"),
       "utf8",
     );
-    expect(cursorRules).toContain("Atelier-Kit is inactive by default");
+    expect(cursorRules).toContain("Atelier is **off** unless");
     expect(cursorRules).toContain("/plan ...");
   });
 
@@ -70,7 +70,7 @@ describe("agent adapters include planner protocol", () => {
     await cmdRenderRules(path, "generic");
 
     const agents = await readFile(join(path, "atelier-system-prompt.txt"), "utf8");
-    expect(agents).toContain("Atelier-Kit is inactive by default");
+    expect(agents).toContain("Atelier is **off** unless");
     expect(agents).toContain("/atelier quick");
   });
 

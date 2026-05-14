@@ -46,9 +46,8 @@ Clarify user-facing behavior, product constraints, acceptance criteria and edge 
 5. Look for existing product language, tests or flows that constrain expected behavior.
 6. Draft acceptance criteria candidates that planner can turn into slice criteria.
 7. Separate confirmed requirements from assumptions.
-8. Before marking business research done, run `command -v plannotator`. If it
-   exists, run `plannotator annotate .atelier/epics/<active_epic>/research/business.md`
-   and fold any notes back into `research/business.md`.
+8. Before updating `state.json`, follow the "Plannotator (optional, per phase)"
+   section of `core.md` against `research/business.md`.
 9. Update the business research task status when complete or blocked.
 
 ## Output Format
@@ -69,5 +68,5 @@ Write `.atelier/epics/<active_epic>/research/business.md` with:
 - Acceptance criteria candidates cover happy path, failures and edge cases.
 - Product assumptions are explicit.
 - No project code was edited.
-- `command -v plannotator` was checked; Plannotator notes were handled when present.
+- The Plannotator boundary check in `core.md` was followed (run or skipped per host capability).
 - `state.json` reflects whether the business research task is done or blocked.

@@ -55,9 +55,8 @@ Transform available evidence into a native-agent implementation plan with review
    `goal`, `depends_on`, `allowed_files`, `acceptance_criteria` and `validation`.
 9. Keep slices small enough for one agent iteration.
 10. Reflect the same slices in `state.json` and `plan.md`.
-11. Before finalizing the epic as `planned`, run `command -v plannotator`. If it
-    exists, run `plannotator annotate .atelier/epics/<active_epic>/plan.md` and
-    fold any notes back into `plan.md`.
+11. Before updating `state.json` to `planned`, follow the "Plannotator (optional,
+    per phase)" section of `core.md` against `plan.md`.
 12. Set `status` to `planned` and `active_skill` to `null` only when the plan passes
     `atelier validate --gate plan-ready`.
 
@@ -86,5 +85,5 @@ Each slice section must include:
 - `plan.md` passes `atelier validate --gate plan-ready`.
 - `state.json` has at least one ready slice.
 - Every slice has allowed files, acceptance criteria and validation.
-- `command -v plannotator` was checked; Plannotator notes were handled when present.
+- The Plannotator boundary check in `core.md` was followed (run or skipped per host capability).
 - No project code was edited.

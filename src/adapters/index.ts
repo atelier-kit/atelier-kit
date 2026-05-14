@@ -54,8 +54,9 @@ export async function installAdapter(
   }
 }
 
-/** Re-run fallback generators after protocol state changes. */
-export async function refreshFallbackAdapters(cwd: string): Promise<void> {
+/** Re-run the configured adapter after protocol state changes so the
+ *  injected status block reflects current state for every host. */
+export async function refreshAdapter(cwd: string): Promise<void> {
   let adapter: AdapterName;
   try {
     const config = await readAtelierConfig(cwd);
@@ -63,16 +64,8 @@ export async function refreshFallbackAdapters(cwd: string): Promise<void> {
   } catch {
     return;
   }
-  if (
-    adapter === "generic" ||
-    adapter === "windsurf" ||
-    adapter === "codex" ||
-    adapter === "cline" ||
-    adapter === "gemini-cli" ||
-    adapter === "antigravity" ||
-    adapter === "kiro" ||
-    adapter === "kilo"
-  ) {
-    await installAdapter(cwd, adapter);
-  }
+  await installAdapter(cwd, adapter);
 }
+
+/** @deprecated Use refreshAdapter. Kept as alias for transition. */
+export const refreshFallbackAdapters = refreshAdapter;

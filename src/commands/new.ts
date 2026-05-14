@@ -1,7 +1,7 @@
 import pc from "picocolors";
 import { AtelierModeSchema } from "../protocol/schema.js";
 import { createEpic } from "../protocol/epic.js";
-import { refreshFallbackAdapters } from "../adapters/index.js";
+import { refreshAdapter } from "../adapters/index.js";
 
 type CommandMode = "quick" | "standard" | "deep";
 
@@ -24,7 +24,7 @@ export async function cmdNew(
       goal: opts.goal,
       mode,
     });
-    await refreshFallbackAdapters(cwd).catch(() => {});
+    await refreshAdapter(cwd).catch(() => {});
     console.log(pc.green(`Atelier epic created: ${state.epic_id}`));
     console.log(pc.dim(`mode=${state.mode} status=${state.status} skill=${state.active_skill}`));
     console.log(pc.dim(`source of truth: .atelier/epics/${state.epic_id}/state.json`));

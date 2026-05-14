@@ -6,7 +6,7 @@ import { epicDir } from "../protocol/paths.js";
 import { inactiveState } from "../protocol/templates.js";
 import { validatePlanReady } from "../protocol/validator.js";
 import { exportActivePlan } from "./export-plan.js";
-import { refreshFallbackAdapters } from "../adapters/index.js";
+import { refreshAdapter } from "../adapters/index.js";
 import type { AtelierStatus, EpicState, SkillName } from "../protocol/schema.js";
 
 type ProtocolTask = EpicState["tasks"][number];
@@ -158,7 +158,7 @@ export async function cmdNext(cwd: string): Promise<void> {
     }
     focusTask(state, next);
   });
-  if (ok) await refreshFallbackAdapters(cwd).catch(() => {});
+  if (ok) await refreshAdapter(cwd).catch(() => {});
 }
 
 export async function cmdDone(cwd: string): Promise<void> {
@@ -210,11 +210,11 @@ export async function cmdDone(cwd: string): Promise<void> {
       process.exitCode = 1;
     }
   }
-  await refreshFallbackAdapters(cwd).catch(() => {});
+  await refreshAdapter(cwd).catch(() => {});
 }
 
 export async function cmdOff(cwd: string): Promise<void> {
   await writeActiveState(cwd, inactiveState());
-  await refreshFallbackAdapters(cwd).catch(() => {});
+  await refreshAdapter(cwd).catch(() => {});
   console.log(pc.green("Atelier disabled; native agent behavior is active."));
 }

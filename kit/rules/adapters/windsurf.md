@@ -2,7 +2,7 @@
 
 Use `.windsurfrules` as the persistent adapter rule.
 
-- At session start, run `atelier status --inject` if `.atelier/` exists; use its output to load the correct skill.
+- Current state is injected in the `atelier:status` block above (rendered by `atelier render-rules`); trust it instead of running status commands.
 - Planning stays Windsurf-native until someone explicitly runs `/atelier ...`.
 - `/atelier quick|plan|deep ...` activates Atelier through the `atelier` CLI.
 - When active, read `.atelier/active.json`, the active epic `state.json`, and only `.atelier/skills/<active_skill>.md`.

@@ -1,17 +1,29 @@
 import pc from "picocolors";
-import { AdapterSchema } from "../protocol/schema.js";
+import { AdapterSchema, type AdapterName } from "../protocol/schema.js";
 import { installAdapter } from "../adapters/index.js";
+import { readRule } from "../protocol/init.js";
 import { readAtelierConfig, writeAtelierConfig } from "../protocol/state.js";
 import type { AdapterName as LegacyAdapterName } from "../adapters/types.js";
 
 export async function cmdInstallAdapter(
   cwd: string,
   name: string,
+  opts: { stdout?: boolean } = {},
 ): Promise<void> {
   const parsed = AdapterSchema.safeParse(name);
   if (!parsed.success) {
     console.error(pc.red(`Invalid adapter: ${name}`));
     process.exitCode = 1;
+    return;
+  }
+  if (opts.stdout) {
+    try {
+      const rendered = await readRule(cwd, parsed.data as AdapterName);
+      process.stdout.write(rendered);
+    } catch (error) {
+      console.error(pc.red((error as Error).message));
+      process.exitCode = 1;
+    }
     return;
   }
   const config = await readAtelierConfig(cwd);

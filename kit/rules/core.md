@@ -35,6 +35,6 @@ When Atelier-Kit is active:
 10. After each protocol step and Plannotator pass, update the corresponding
     artifact and `state.json`.
 
-If anything in `.atelier/` disagrees with reality, pause and fix it with `atelier validate` or `atelier doctor` instead of guessing.
+If anything in `.atelier/` disagrees with reality, pause and fix it with `atelier validate` (use `--verbose` for installation checks) instead of guessing.
 
 The ledger file is `.atelier/epics/<active_epic>/state.json`. Ignore `.atelier/context.md` for v2 authority—it is not the source of truth.

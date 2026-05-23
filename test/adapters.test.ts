@@ -3,7 +3,6 @@ import { access, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { cmdInit } from "../src/commands/init.js";
 import { cmdInstallAdapter } from "../src/commands/install-adapter.js";
-import { cmdRenderRules } from "../src/commands/rules.js";
 import { tempDir, kitPath } from "./helpers.js";
 import { cmdNew } from "../src/commands/new.js";
 
@@ -27,7 +26,7 @@ describe("agent adapters include planner protocol", () => {
     const prompt = await readFile(join(path, "atelier-system-prompt.txt"), "utf8");
     expect(prompt).toContain("/atelier quick");
     expect(prompt).toContain(".atelier/active.json");
-    expect(prompt).toContain("active_skill: questioner");
+    expect(prompt).toContain("active_skill: researcher");
   });
 
   test("cursor adapter renders workspace rules", async () => {
@@ -45,33 +44,30 @@ describe("agent adapters include planner protocol", () => {
     expect(cursorRules).toContain("/atelier plan");
   });
 
-  test("render-rules writes adapter files", async () => {
+  test("install-adapter --stdout prints the rendered rule body without writing files", async () => {
     const { path, cleanup: c } = await tempDir();
     cleanup = c;
     process.env.ATELIER_KIT_ROOT = kitPath();
 
     await cmdInit(path, { yes: true });
-    await cmdRenderRules(path, "cursor");
 
-    const cursorRules = await readFile(
-      join(path, ".cursor", "rules", "atelier-core.mdc"),
-      "utf8",
-    );
-    expect(cursorRules).toContain("Atelier-Kit is inactive by default");
-    expect(cursorRules).toContain("/plan ...");
-  });
+    const chunks: string[] = [];
+    const originalWrite = process.stdout.write.bind(process.stdout);
+    process.stdout.write = ((chunk: string | Uint8Array) => {
+      chunks.push(typeof chunk === "string" ? chunk : Buffer.from(chunk).toString("utf8"));
+      return true;
+    }) as typeof process.stdout.write;
+    try {
+      await cmdInstallAdapter(path, "cursor", { stdout: true });
+    } finally {
+      process.stdout.write = originalWrite;
+    }
 
-  test("render-rules writes generic agent instructions", async () => {
-    const { path, cleanup: c } = await tempDir();
-    cleanup = c;
-    process.env.ATELIER_KIT_ROOT = kitPath();
-
-    await cmdInit(path, { yes: true });
-    await cmdRenderRules(path, "generic");
-
-    const agents = await readFile(join(path, "atelier-system-prompt.txt"), "utf8");
-    expect(agents).toContain("Atelier-Kit is inactive by default");
-    expect(agents).toContain("/atelier quick");
+    const output = chunks.join("");
+    expect(output).toContain("Atelier-Kit is inactive by default");
+    await expect(
+      access(join(path, ".cursor", "rules", "atelier-core.mdc")),
+    ).rejects.toThrow();
   });
 
   test("claude adapter installs command spec and mirrored skills", async () => {

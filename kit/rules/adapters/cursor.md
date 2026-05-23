@@ -2,7 +2,7 @@
 
 Use `.cursor/rules/atelier-core.mdc` as the persistent workspace rule.
 
-- `/plan ...` stays Cursor-native; native-plan hooks may activate Atelier V2 and nudge the same artifact flow.
+- `/plan ...` stays Cursor-native; Atelier never intercepts host plan mode.
 - `/atelier quick <goal>` maps to `atelier new "<goal>" --mode quick`.
 - `/atelier plan <goal>` maps to `atelier new "<goal>" --mode standard`.
 - `/atelier deep <goal>` maps to `atelier new "<goal>" --mode deep`.

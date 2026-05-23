@@ -7,6 +7,7 @@ import {
   readAtelierConfig,
   readEpicState,
 } from "./state.js";
+import { adapterInstalledPaths } from "../adapters/install.js";
 import type { ActiveState, AdapterName, EpicState } from "./schema.js";
 
 export type ValidationReport = {
@@ -77,14 +78,13 @@ function expectedTaskArtifacts(taskType: EpicState["tasks"][number]["type"]): st
 function expectedSkillForStatus(status: EpicState["status"]): string[] {
   switch (status) {
     case "discovery":
-      return ["questioner", "repo-analyst", "tech-analyst", "business-analyst"];
+      return ["researcher"];
     case "synthesis":
     case "planning":
+    case "review":
       return ["planner"];
     case "design":
       return ["designer"];
-    case "review":
-      return ["reviewer"];
     case "planned":
     case "done":
     case "native":
@@ -112,20 +112,86 @@ function questionsLookGenericOnly(content: string): boolean {
   return hasSeedRepo && hasSeedTech && hasSeedBusiness && !hasExplicitNoOpen && !hasSpecificQuestionSection;
 }
 
+export type PlanReadyReport = {
+  errors: string[];
+  warnings: string[];
+};
+
+// A pattern is "catch-all" when the framework cannot meaningfully tell whether
+// a change belongs to the slice or to drift. Heuristic: any pattern that is a
+// pure wildcard, or a single top-level segment followed by recursive glob
+// (e.g. "src/star-star"). Anything more constrained passes.
+function isCatchAllPattern(pattern: string): boolean {
+  const segments = pattern.split("/").filter((s) => s.length > 0);
+  if (segments.length === 0) return true;
+  if (segments.length === 1 && (segments[0] === "*" || segments[0] === "**")) return true;
+  const nonWildcard = segments.filter((s) => s !== "**" && s !== "*");
+  return segments.includes("**") && nonWildcard.length <= 1;
+}
+
+const VAGUE_CRITERION = /\b(works?|is\s+correct|is\s+implemented|is\s+done|works?\s+correctly|complete[ds]?)\b/i;
+
+function isCriterionVague(criterion: string): boolean {
+  const trimmed = criterion.trim();
+  const wordCount = trimmed.split(/\s+/).length;
+  if (wordCount < 8) return true;
+  return VAGUE_CRITERION.test(trimmed) && wordCount < 12;
+}
+
+// Names that suggest a shell-executable validation step. Order doesn't matter;
+// any match means at least one entry in the slice's validation list could be
+// run by `atelier review`.
+const EXECUTABLE_HINT = /\b(npm|pnpm|yarn|node|bun|deno|python|pip|pytest|tox|cargo|go|rake|mvn|gradle|make|sh|bash|zsh|fish|docker|kubectl|helm|terraform|jest|vitest|mocha|playwright|cypress|tsc|eslint|prettier|ruff|mypy|black|psql|sqlite3|curl|wget|http|hurl|atelier)\b/i;
+
+function looksExecutable(step: string): boolean {
+  return EXECUTABLE_HINT.test(step);
+}
+
+/**
+ * `## Risks` is "empty" when the section is missing, blank, or contains only
+ * placeholder boilerplate (`_None._`, `_Pending_`, `_TBD_`, or table rows whose
+ * only content is one of those markers).
+ */
+function risksAreEmpty(plan: string): boolean {
+  const match = plan.match(/##\s+Risks\b([\s\S]*?)(?=\n##\s|\n#\s|$)/i);
+  if (!match) return true;
+  const body = match[1].trim();
+  if (!body) return true;
+  // Strip markdown emphasis and lowercase for placeholder detection.
+  const stripped = body.replace(/[*_`]/g, "").toLowerCase();
+  // Remove table header/separator rows so a header-only Risks table reads empty.
+  const informative = stripped
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) =>
+      line &&
+      !/^[|:\-\s]+$/.test(line) &&
+      !/^\|\s*risk\s*\|.*impact.*\|.*mitigation\s*\|?$/i.test(line),
+    );
+  if (informative.length === 0) return true;
+  // Every remaining line is a placeholder marker → still empty.
+  return informative.every((line) =>
+    /\b(none|pending|tbd|todo|n\/a)\b\.?$/.test(line.replace(/\|/g, " ").trim()) ||
+    /^(none|pending|tbd|todo|n\/a)\b/i.test(line.replace(/^\|+\s*/, "").trim()),
+  );
+}
+
 export async function validatePlanReady(
   cwd: string,
   state: EpicState,
-): Promise<string[]> {
+): Promise<PlanReadyReport> {
   const errors: string[] = [];
+  const warnings: string[] = [];
   if (state.status !== "planned") {
     errors.push("Plan can only be finalized when status is planned");
   }
   const planPath = join(epicDir(cwd, state.epic_id), "plan.md");
+  let planText: string | null = null;
   if (!(await exists(planPath))) {
     errors.push("planning requires plan.md");
   } else {
-    const plan = await readFile(planPath, "utf8");
-    errors.push(...planHasReviewableShape(plan, true));
+    planText = await readFile(planPath, "utf8");
+    errors.push(...planHasReviewableShape(planText, true));
   }
   if (state.slices.length === 0) {
     errors.push("planning requires at least one slice");
@@ -138,8 +204,37 @@ export async function validatePlanReady(
     if (slice.validation.length === 0) {
       errors.push(`slice ${slice.id} missing validation steps`);
     }
+    if (slice.allowed_files.length === 0) {
+      errors.push(
+        `slice ${slice.id} missing allowed_files (declare which paths this slice may modify)`,
+      );
+    } else {
+      const catchAll = slice.allowed_files.find(isCatchAllPattern);
+      if (catchAll) {
+        errors.push(
+          `slice ${slice.id} allowed_files pattern "${catchAll}" is too broad for review; restrict to specific files or sub-paths (e.g. "src/auth/**" or "src/auth/login.ts")`,
+        );
+      }
+    }
+    for (const criterion of slice.acceptance_criteria) {
+      if (isCriterionVague(criterion)) {
+        warnings.push(
+          `slice ${slice.id} acceptance criterion is vague: "${criterion}" — rewrite as an observable condition (≥8 words, avoid "works"/"is correct")`,
+        );
+      }
+    }
+    if (slice.validation.length > 0 && !slice.validation.some(looksExecutable)) {
+      warnings.push(
+        `slice ${slice.id} validation has no recognizable executable command (atelier review cannot run prose like "${slice.validation[0]}"); include at least one shell-runnable step`,
+      );
+    }
   }
-  return errors;
+  if (state.mode === "deep" && planText && risksAreEmpty(planText)) {
+    errors.push(
+      "deep mode requires a populated ## Risks section in plan.md (placeholders like _None._ or _Pending_ are not enough)",
+    );
+  }
+  return { errors, warnings };
 }
 
 function validateStateCoherence(state: EpicState): string[] {
@@ -271,18 +366,10 @@ export async function doctorProtocol(cwd: string): Promise<ValidationReport> {
     adapter = null;
   }
   for (const path of [
-    "protocol/workflow.yaml",
-    "protocol/gates.yaml",
-    "protocol/modes.yaml",
-    "protocol/skills.yaml",
     "rules/core.md",
-    "skills/questioner.md",
-    "skills/repo-analyst.md",
-    "skills/tech-analyst.md",
-    "skills/business-analyst.md",
-    "skills/planner.md",
+    "skills/researcher.md",
     "skills/designer.md",
-    "skills/reviewer.md",
+    "skills/planner.md",
     "schemas/atelier.schema.json",
     "schemas/active.schema.json",
     "schemas/epic-state.schema.json",
@@ -295,20 +382,7 @@ export async function doctorProtocol(cwd: string): Promise<ValidationReport> {
     }
   }
   if (adapter) {
-    const adapterFiles: Record<AdapterName, string[]> = {
-      cursor: [".cursor/rules/atelier-core.mdc"],
-      "claude-code": ["CLAUDE.md", ".claude/commands/atelier.md"],
-      claude: ["CLAUDE.md", ".claude/commands/atelier.md"],
-      codex: ["AGENTS.md"],
-      "gemini-cli": ["GEMINI.md"],
-      antigravity: [".antigravity/atelier.md"],
-      kiro: [".kiro/steering/atelier.md"],
-      kilo: [".kilocode/rules/atelier.md"],
-      cline: [".clinerules/atelier-core.md"],
-      windsurf: [".windsurfrules"],
-      generic: ["atelier-system-prompt.txt"],
-    };
-    for (const path of adapterFiles[adapter]) {
+    for (const path of adapterInstalledPaths(adapter as AdapterName)) {
       if (!(await exists(join(cwd, path)))) {
         report.errors.push(`adapter file missing for ${adapter}: ${path}`);
       }

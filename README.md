@@ -75,17 +75,7 @@ rules, skills, schemas, and adapter instructions. `active.json` starts inactive:
 }
 ```
 
-### Use host-native plan mode
-
-```text
-/plan add this endpoint
-```
-
-Without hooks this remains ordinary host planning. With Atelier native-plan hooks
-installed, the first plan-mode prompt creates a V2 epic and injects the active
-framework step so the host agent fills `.atelier/epics/<epic>/` through `planned`.
-
-### Activate Atelier explicitly
+### Activate Atelier
 
 ```bash
 atelier new "Add payment endpoint" --mode quick
@@ -101,34 +91,34 @@ In agent chat, the equivalent activation is:
 /atelier deep migrate authentication to SSO
 ```
 
-The active epic ledger is created at `.atelier/epics/<epic-slug>/`.
+The active epic ledger is created at `.atelier/epics/<epic-slug>/`. Atelier
+never intercepts the host's `/plan ...` mode — activation is always explicit.
 
 ### Finish planning and review implementation
 
-After the plan is reviewable, the agent marks the active epic `planned` and
-exports a native mirror. The CLI helper can also do the final gate/export step:
+The agent drives the epic forward by editing `state.json` directly as each
+phase completes. When the plan is reviewable, the agent sets
+`status: planned` in `state.json` and the gate runs as part of `validate`:
 
 ```bash
-atelier done
+atelier validate --gate plan-ready
+atelier export-plan --adapter claude-code
 ```
 
-`atelier done` finalizes the active planning task when you are using the CLI
-lifecycle. In the simplified agent-led flow, the active skill updates
-`state.json` directly and `atelier validate --gate plan-ready` checks the result.
 After `planned`, implement through Claude Code, Cursor, Kiro, Antigravity, Codex
 or another host-agent workflow. After implementation:
 
 ```bash
 atelier review
-atelier done
 ```
 
-`atelier review` records how the current implementation diff matches the plan.
+`atelier review` records how the current implementation diff matches the plan;
+when accepted, the agent advances `state.json` to `done`.
 
 ## Planning protocol
 
-- [PROTOCOL.md](./PROTOCOL.md) — protocol states, files, gates, and commands
-- [AGENT-USAGE.md](./AGENT-USAGE.md) — activation and what to read when Atelier is on
+- [MANIFESTO.md](./MANIFESTO.md) — why the protocol exists and its four pillars
+- [PROTOCOL.md](./PROTOCOL.md) — protocol states, files, and gates
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — internal architecture, state model, adapters, and artifacts
 
 The default protocol shape is:
@@ -151,26 +141,20 @@ explicit activation
 | Command | Purpose |
 |---------|---------|
 | `atelier init` | Install the Atelier protocol files |
-| `atelier install-adapter <name>` | Install adapter files for a host agent |
-| `atelier adapter install <name>` | Alias for adapter installation |
-| `atelier new "<goal>" --mode quick` | Create an active epic ledger |
+| `atelier new "<goal>" --mode quick\|standard\|deep` | Create an active epic ledger |
 | `atelier status` | Show active protocol state |
 | `atelier validate` | Validate schemas, state and planning gates |
 | `atelier validate --gate plan-ready` | Validate that the active plan can be finalized |
-| `atelier doctor` | Diagnose installation and state |
-| `atelier render-rules --adapter cursor` | Write adapter rules |
-| `atelier export-plan --adapter claude-code` | Copy the active `plan.md` to the host's plan location |
+| `atelier validate --verbose` | Also check installation files and adapter outputs |
+| `atelier export-plan --adapter <name>` | Copy the active `plan.md` to the host's plan location |
 | `atelier review` | Review the current implementation diff against the planned epic |
-| `atelier next` | Optional helper to focus the next pending planning task |
-| `atelier done` | Optional helper to complete a planning/review task |
-| `atelier host-plan start "<goal>"` | Thin helper to create a V2 epic for host-native plan mode |
-| `atelier host-plan finalize` | Validate a host-authored plan and export the native mirror |
 | `atelier off` | Disable Atelier |
+| `atelier install-adapter <name> [--stdout]` | Install adapter rule files (or print to stdout) |
 
 ## Adapter outputs
 
-`atelier render-rules --adapter <name>` writes the protocol rules for the
-selected host:
+`atelier install-adapter <name>` writes the protocol rules for the selected
+host (add `--stdout` to print the rendered body instead of writing files):
 
 | Agent | Adapter | Output |
 |-------|---------|--------|
@@ -202,11 +186,11 @@ atelier export-plan --adapter claude-code --command 'plannotator annotate "$ATEL
 ```
 
 During the normal artifact flow, the agent does not need another Atelier command.
-Before a phase is marked done, it should open that phase's artifact when
-Plannotator is installed:
+Before a phase is marked done in `state.json`, it should open that phase's
+artifact when Plannotator is installed:
 `plannotator annotate .atelier/epics/<epic>/<artifact>.md`. Any notes that come
-back from Plannotator should be folded into that same artifact before `state.json`
-is advanced or `atelier done` is run.
+back from Plannotator should be folded into that same artifact before
+`state.json` is advanced.
 
 Mirrors are derived files. If a native agent changes the plan, update the
 canonical Atelier `plan.md` explicitly before finalizing it again.

@@ -3,7 +3,6 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { cmdInit } from "../src/commands/init.js";
 import { cmdNew } from "../src/commands/new.js";
-import { cmdDone, cmdNext } from "../src/commands/lifecycle.js";
 import { cmdReview } from "../src/commands/review.js";
 import { exportActivePlan } from "../src/commands/export-plan.js";
 import {
@@ -34,19 +33,17 @@ describe("atelier planning protocol", () => {
     return tmp.path;
   }
 
-  async function readyPlanningTask(dir: string) {
+  async function readyPlannedEpic(dir: string) {
     await cmdNew(dir, "Add payment endpoint", { mode: "quick" });
     const config = await readAtelierConfig(dir);
     await writeAtelierConfig(dir, { ...config, adapter: "cursor" });
     const state = await readEpicState(dir, "add-payment-endpoint");
-    state.status = "planning";
-    state.active_skill = "planner";
+    state.status = "planned";
+    state.active_skill = null;
     state.tasks = state.tasks.map((task) =>
-      task.id === "questions" || task.id === "repo-research"
+      task.id === "questions" || task.id === "repo-research" || task.id === "plan"
         ? { ...task, status: "done" as const }
-        : task.id === "plan"
-          ? { ...task, status: "in_progress" as const }
-          : task,
+        : task,
     );
     state.slices = [
       {
@@ -57,7 +54,7 @@ describe("atelier planning protocol", () => {
         depends_on: [],
         allowed_files: ["src/**"],
         acceptance_criteria: ["Route works"],
-        validation: ["Run tests"],
+        validation: ["true"],
       },
     ];
     await writeEpicState(dir, state);
@@ -111,6 +108,7 @@ describe("atelier planning protocol", () => {
       ].join("\n"),
       "utf8",
     );
+    await exportActivePlan(dir, { adapter: "cursor", ifPlanned: true });
   }
 
   test("new creates an active planning ledger", async () => {
@@ -121,40 +119,23 @@ describe("atelier planning protocol", () => {
     const state = await readEpicState(dir, "add-payment-endpoint");
     expect(active.active).toBe(true);
     expect(state.status).toBe("discovery");
-    expect(state.active_skill).toBe("questioner");
+    expect(state.active_skill).toBe("researcher");
   });
 
-  test("next and done advance planning tasks", async () => {
+  test("export-plan mirrors a planned epic to the configured adapter", async () => {
     const dir = await initialized();
-    await cmdNew(dir, "Add payment endpoint", { mode: "quick" });
+    await readyPlannedEpic(dir);
 
-    await cmdNext(dir);
-    let state = await readEpicState(dir, "add-payment-endpoint");
-    expect(state.tasks.find((task) => task.id === "questions")?.status).toBe("in_progress");
-
-    await writeFile(join(dir, ".atelier", "epics", state.epic_id, "questions.md"), "# Questions\n\n## No open questions\n", "utf8");
-    await cmdDone(dir);
-    state = await readEpicState(dir, "add-payment-endpoint");
-    expect(state.tasks.find((task) => task.id === "repo-research")?.status).toBe("in_progress");
-  });
-
-  test("done finalizes planning as planned and exports native mirror", async () => {
-    const dir = await initialized();
-    await readyPlanningTask(dir);
-
-    await cmdDone(dir);
-
-    const state = await readEpicState(dir, "add-payment-endpoint");
-    const mirror = await readFile(join(dir, ".cursor", "plans", "add-payment-endpoint.md"), "utf8");
-    expect(state.status).toBe("planned");
-    expect(state.active_skill).toBe(null);
+    const mirror = await readFile(
+      join(dir, ".cursor", "plans", "add-payment-endpoint.md"),
+      "utf8",
+    );
     expect(mirror).toContain("# Plan: Add payment endpoint");
   });
 
-  test("export-plan can mirror a planned epic manually", async () => {
+  test("export-plan accepts a custom path template", async () => {
     const dir = await initialized();
-    await readyPlanningTask(dir);
-    await cmdDone(dir);
+    await readyPlannedEpic(dir);
 
     const result = await exportActivePlan(dir, {
       adapter: "cursor",
@@ -168,23 +149,21 @@ describe("atelier planning protocol", () => {
 
   test("review creates a review artifact after native implementation", async () => {
     const dir = await initialized();
-    await readyPlanningTask(dir);
-    await cmdDone(dir);
-    await writeFile(join(dir, "implementation.txt"), "native implementation\n", "utf8");
+    await readyPlannedEpic(dir);
 
     await cmdReview(dir);
 
     const state = await readEpicState(dir, "add-payment-endpoint");
     const review = await readFile(join(dir, ".atelier", "epics", state.epic_id, "review.md"), "utf8");
     expect(state.status).toBe("review");
-    expect(state.active_skill).toBe("reviewer");
-    expect(review).toContain("Plan Checklist");
+    expect(state.active_skill).toBe("planner");
+    expect(review).toContain("# Review: Add payment endpoint");
+    expect(review).toContain("## Slices");
   });
 
   test("validate accepts planned state with a reviewable plan", async () => {
     const dir = await initialized();
-    await readyPlanningTask(dir);
-    await cmdDone(dir);
+    await readyPlannedEpic(dir);
 
     const report = await validateProtocol(dir);
     expect(report.errors, report.errors.join("\n")).toHaveLength(0);

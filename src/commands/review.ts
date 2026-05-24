@@ -1,26 +1,26 @@
 import pc from "picocolors";
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
-import { readFile, writeFile } from "node:fs/promises";
+import { access, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { epicDir } from "../protocol/paths.js";
 import { readActiveEpic, writeActiveState, writeEpicState } from "../protocol/state.js";
+import { gitChangedFiles } from "../review/git-diff.js";
+import { checkSlices } from "../review/slice-check.js";
+import { runValidations } from "../review/validation-runner.js";
+import { buildReview } from "../review/report.js";
 
-const execFileAsync = promisify(execFile);
-
-async function gitChangedFiles(cwd: string, baseline: string): Promise<string[]> {
+async function exists(path: string): Promise<boolean> {
   try {
-    const { stdout } = await execFileAsync("git", ["diff", "--name-only", baseline, "--"], { cwd });
-    const { stdout: untracked } = await execFileAsync("git", ["ls-files", "--others", "--exclude-standard"], { cwd });
-    return [...stdout.split("\n"), ...untracked.split("\n")]
-      .map((file) => file.trim())
-      .filter(Boolean);
+    await access(path);
+    return true;
   } catch {
-    return [];
+    return false;
   }
 }
 
-export async function cmdReview(cwd: string): Promise<void> {
+export async function cmdReview(
+  cwd: string,
+  options: { timeoutMs?: number } = {},
+): Promise<void> {
   try {
     const { state } = await readActiveEpic(cwd);
     if (!state) throw new Error("No active Atelier epic.");
@@ -28,42 +28,35 @@ export async function cmdReview(cwd: string): Promise<void> {
       throw new Error(`Review requires status=planned or review; current status=${state.status}.`);
     }
     const dir = epicDir(cwd, state.epic_id);
-    const plan = await readFile(join(dir, "plan.md"), "utf8");
-    const changed = await gitChangedFiles(cwd, state.guards.baseline_ref);
-    const review = [
-      `# Review: ${state.title}`,
-      "",
-      "## Plan Source",
-      "",
-      `- .atelier/epics/${state.epic_id}/plan.md`,
-      `- Baseline: ${state.guards.baseline_ref}`,
-      "",
-      "## Changed Files",
-      "",
-      ...(changed.length ? changed.map((file) => `- ${file}`) : ["- No project changes detected." ]),
-      "",
-      "## Plan Checklist",
-      "",
-      "- [ ] Implementation matches the stated goal.",
-      "- [ ] Each planned slice is represented in the changes.",
-      "- [ ] Acceptance criteria are satisfied.",
-      "- [ ] Validation steps were run or explicitly deferred.",
-      "- [ ] Deviations from the plan are documented below.",
-      "",
-      "## Deviations",
-      "",
-      "- _None recorded._",
-      "",
-      "## Plan Excerpt",
-      "",
-      "```markdown",
-      plan.trim(),
-      "```",
-      "",
-    ].join("\n");
-    await writeFile(join(dir, "review.md"), review, "utf8");
+    if (!(await exists(join(dir, "plan.md")))) {
+      throw new Error(`plan.md not found at .atelier/epics/${state.epic_id}/plan.md`);
+    }
+
+    // Atelier's own state directory is bookkeeping, not implementation —
+    // exclude it from drift detection so state.json bumps and review.md
+    // writes don't count as out-of-scope changes.
+    const changedFiles = (await gitChangedFiles(cwd, state.guards.baseline_ref))
+      .filter((file) => !file.startsWith(".atelier/"));
+    const { perSlice, violations } = checkSlices(state.slices, changedFiles);
+    const perSliceWithValidations = await Promise.all(
+      perSlice.map(async (match) => ({
+        slice: match.slice,
+        matchedFiles: match.matchedFiles,
+        validations: await runValidations(cwd, match.slice.validation, {
+          timeoutMs: options.timeoutMs,
+        }),
+      })),
+    );
+    const { markdown, failed } = buildReview({
+      state,
+      changedFiles,
+      perSlice: perSliceWithValidations,
+      violations,
+    });
+
+    await writeFile(join(dir, "review.md"), markdown, "utf8");
     state.status = "review";
-    state.active_skill = "reviewer";
+    state.active_skill = "planner";
     await writeEpicState(cwd, state);
     await writeActiveState(cwd, {
       active: true,
@@ -73,8 +66,22 @@ export async function cmdReview(cwd: string): Promise<void> {
       active_skill: state.active_skill,
       updated_at: new Date().toISOString(),
     });
-    console.log(pc.green(`review: ${state.epic_id} status=review`));
-    console.log(pc.dim(`Review artifact: .atelier/epics/${state.epic_id}/review.md`));
+
+    const verdict = failed ? pc.red("FAIL") : pc.green("PASS");
+    console.log(`review: ${state.epic_id} ${verdict}`);
+    console.log(pc.dim(`  Violations: ${violations.length}`));
+    console.log(
+      pc.dim(
+        `  Failed validations: ${
+          perSliceWithValidations.reduce(
+            (n, s) => n + s.validations.filter((v) => v.status !== "pass").length,
+            0,
+          )
+        }`,
+      ),
+    );
+    console.log(pc.dim(`  Review artifact: .atelier/epics/${state.epic_id}/review.md`));
+    if (failed) process.exitCode = 1;
   } catch (error) {
     console.error(pc.red((error as Error).message));
     process.exitCode = 1;

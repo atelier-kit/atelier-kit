@@ -5,14 +5,13 @@ and filenames so Claude Code, Cursor, Codex, etc. can ingest them without drama.
 
 The universal contract is:
 
-- `/plan ...` stays host-native. If native-plan hooks are installed, it can
-  bootstrap a V2 epic and nudge the same skill/artifact flow.
+- `/plan ...` stays host-native. Atelier never intercepts host plan mode.
 - `/atelier quick <goal>` runs `atelier new "<goal>" --mode quick`.
 - `/atelier plan <goal>` runs `atelier new "<goal>" --mode standard`.
 - `/atelier deep <goal>` runs `atelier new "<goal>" --mode deep`.
 - While active, agents read `.atelier/active.json`, `.atelier/epics/<active_epic>/state.json`, and only `.atelier/skills/<active_skill>.md`.
-- The agent may advance task state directly in `state.json`; `atelier next` and
-  `atelier done` are helpers, not the orchestration engine.
+- The agent advances task state directly in `state.json` — there is no CLI
+  helper for task lifecycle.
 - Project code stays untouched while the epic is in discovery, synthesis, design
   or planning. At `planned`, Atelier hands implementation back to the host
   agent's native workflow.

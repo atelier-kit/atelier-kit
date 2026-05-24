@@ -40,13 +40,9 @@ export const ApprovalStatusSchema = z.enum([
 ]);
 
 export const SkillSchema = z.enum([
-  "questioner",
-  "repo-analyst",
-  "tech-analyst",
-  "business-analyst",
-  "planner",
+  "researcher",
   "designer",
-  "reviewer",
+  "planner",
 ]);
 
 export const TaskTypeSchema = z.enum([

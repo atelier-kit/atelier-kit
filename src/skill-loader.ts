@@ -84,19 +84,15 @@ export function activeSkillFolder(state: Pick<EpicState, "active_skill">): strin
 export function taskTypeToSkillFolder(taskType: EpicState["tasks"][number]["type"]): SkillName {
   switch (taskType) {
     case "questions":
-      return "questioner";
     case "repo":
-      return "repo-analyst";
     case "tech":
-      return "tech-analyst";
     case "business":
-      return "business-analyst";
+      return "researcher";
     case "design":
       return "designer";
-    case "review":
-      return "reviewer";
     case "synthesis":
     case "planning":
+    case "review":
       return "planner";
   }
 }

@@ -3,20 +3,12 @@ import { Command } from "commander";
 import { cwd as processCwd } from "node:process";
 import { cmdInit } from "./commands/init.js";
 import { cmdStatus } from "./commands/status.js";
-import { cmdDoctor } from "./commands/doctor.js";
 import { cmdValidate } from "./commands/validate.js";
 import { cmdInstallAdapter } from "./commands/install-adapter.js";
 import { cmdNew } from "./commands/new.js";
-import { cmdRenderRules } from "./commands/rules.js";
 import { cmdExportPlan } from "./commands/export-plan.js";
 import { cmdReview } from "./commands/review.js";
-import { cmdDone, cmdNext, cmdOff } from "./commands/lifecycle.js";
-import { cmdHostPlanFinalize, cmdHostPlanStart } from "./commands/host-plan.js";
-import {
-  cmdNativePlanClaudeExitPlanHook,
-  cmdNativePlanClaudePromptHook,
-  cmdNativePlanClaudeToolEvidenceHook,
-} from "./commands/native-plan.js";
+import { cmdOff } from "./commands/lifecycle.js";
 
 const program = new Command();
 program
@@ -49,27 +41,12 @@ program
   });
 
 program
-  .command("doctor")
-  .description("Diagnose Atelier installation and state")
-  .action(async () => {
-    await cmdDoctor(processCwd());
-  });
-
-program
   .command("validate")
   .description("Validate Atelier schemas, gates and protocol violations")
   .option("--gate <name>", "Run a specific gate: plan-ready")
-  .action(async (opts: { gate?: string }) => {
+  .option("--verbose", "Also check installation files and adapter rule outputs")
+  .action(async (opts: { gate?: string; verbose?: boolean }) => {
     await cmdValidate(processCwd(), opts);
-  });
-
-program
-  .command("render-rules")
-  .description("Render core + adapter rules")
-  .requiredOption("--adapter <name>", "cursor|claude-code|codex|gemini-cli|antigravity|kiro|kilo|cline|windsurf|generic")
-  .option("--stdout", "Print rules instead of writing adapter files")
-  .action(async (opts: { adapter: string; stdout?: boolean }) => {
-    await cmdRenderRules(processCwd(), opts.adapter, { stdout: opts.stdout });
   });
 
 program
@@ -98,83 +75,18 @@ program
   });
 
 program
-  .command("next")
-  .description("Focus the next ready slice")
-  .action(async () => {
-    await cmdNext(processCwd());
-  });
-
-program
-  .command("done")
-  .description("Mark current planning/review task done")
-  .action(async () => {
-    await cmdDone(processCwd());
-  });
-
-program
   .command("off")
   .description("Disable Atelier and return to native mode")
   .action(async () => {
     await cmdOff(processCwd());
   });
 
-const hostPlan = program
-  .command("host-plan")
-  .description("Thin helpers for host-native planning");
-
-hostPlan
-  .command("start <goal>")
-  .description("Create a V2 planning epic for host-native plan mode")
-  .action(async (goal: string) => {
-    await cmdHostPlanStart(processCwd(), goal);
-  });
-
-hostPlan
-  .command("finalize")
-  .description("Validate the host-authored plan and export the native mirror")
-  .action(async () => {
-    await cmdHostPlanFinalize(processCwd());
-  });
-
-const nativePlan = program
-  .command("native-plan")
-  .description("Hook entrypoints for host-native plan mode");
-
-nativePlan
-  .command("claude-prompt-hook")
-  .description("Claude Code UserPromptSubmit hook")
-  .action(async () => {
-    await cmdNativePlanClaudePromptHook();
-  });
-
-nativePlan
-  .command("claude-exit-plan-hook")
-  .description("Claude Code ExitPlanMode hook")
-  .action(async () => {
-    await cmdNativePlanClaudeExitPlanHook();
-  });
-
-nativePlan
-  .command("claude-tool-evidence-hook")
-  .description("Claude Code tool evidence hook")
-  .action(async () => {
-    await cmdNativePlanClaudeToolEvidenceHook();
-  });
-
 program
   .command("install-adapter <name>")
   .description("claude-code | claude | cursor | codex | gemini-cli | antigravity | kiro | kilo | windsurf | cline | generic")
-  .action(async (name: string) => {
-    await cmdInstallAdapter(processCwd(), name);
-  });
-
-program
-  .command("adapter")
-  .description("Adapter helpers")
-  .command("install <name>")
-  .description("Install adapter files for an agent")
-  .action(async (name: string) => {
-    await cmdInstallAdapter(processCwd(), name);
+  .option("--stdout", "Print the rendered rule body instead of writing adapter files")
+  .action(async (name: string, opts: { stdout?: boolean }) => {
+    await cmdInstallAdapter(processCwd(), name, opts);
   });
 
 await program.parseAsync(process.argv);

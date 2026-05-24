@@ -58,15 +58,8 @@ or `.atelier/plan/` as a second source of truth.
 
 ## Activation model
 
-Atelier is inactive by default.
-
-```text
-/plan add this endpoint
-```
-
-Without native-plan hooks, same as always: native planning only. With hooks, the
-host plan mode can create a V2 epic and inject the active framework step while
-the plan remains host-native.
+Atelier is inactive by default. The host agent's `/plan ...` stays native;
+Atelier never intercepts host plan mode.
 
 Atelier activates only through explicit requests:
 
@@ -79,23 +72,10 @@ Use Atelier-Kit for this feature
 
 ## CLI surface
 
-The primary commands are:
-
-```bash
-atelier init
-atelier new "Add payment endpoint" --mode quick
-atelier status
-atelier validate
-atelier doctor
-atelier render-rules --adapter cursor
-atelier export-plan --adapter claude-code
-atelier host-plan start "Add payment endpoint"
-atelier host-plan finalize
-atelier review
-atelier next
-atelier done
-atelier off
-```
+See [README.md](./README.md) for the user-facing command table. The CLI is
+intentionally thin: it scaffolds folders, installs adapter rules, validates
+gates, exports mirrors, and provides optional lifecycle helpers. It does not
+replace the agent-led skill flow.
 
 ## State transitions
 
@@ -127,12 +107,13 @@ already prefers—tools, plan UI, tests, all unchanged.
   done-task artifacts that are not empty placeholders
 - `plan.md` reviewable shape when status is `planned`, `review` or `done`
 
-`atelier doctor` runs the same validation, then verifies `.atelier/protocol/*`,
-rules, skills, schemas and (from `atelier.json`) the adapter rule files expected
-for your host—still **not** the contents of an exported plan mirror path.
+`atelier validate --verbose` runs the same validation, then verifies
+`.atelier/protocol/*`, rules, skills, schemas and (from `atelier.json`) the
+adapter rule files expected for your host—still **not** the contents of an
+exported plan mirror path.
 
-`atelier validate --gate plan-ready` is enforced before `atelier done` can
-finalize planning. It requires:
+`atelier validate --gate plan-ready` is enforced before an active epic can be
+moved to `planned` (the agent edits `state.json` directly). It requires:
 
 - active epic exists
 - `plan.md` exists
@@ -155,16 +136,7 @@ Examples:
 
 ## Adapter rendering
 
-`atelier render-rules --adapter <name>` writes concrete rule files for the
-selected host:
-
-| Adapter | Output |
-|---|---|
-| Cursor | `.cursor/rules/atelier-core.mdc` |
-| Claude Code | `CLAUDE.md` |
-| Codex | `AGENTS.md` |
-| Cline | `.clinerules/atelier-core.md` |
-| Windsurf | `.windsurfrules` |
-| Generic | `AGENTS.md` |
-
-Use `--stdout` to print instead of writing files.
+`atelier install-adapter <name>` writes concrete rule files for the selected
+host (use `--stdout` to print the rendered body instead). See
+[ADAPTERS.md](./ADAPTERS.md) for the full matrix of output paths per host;
+the renderer dispatcher lives in `src/adapters/index.ts`.

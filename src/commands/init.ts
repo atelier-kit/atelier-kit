@@ -53,12 +53,12 @@ export async function cmdInit(
   console.log(pc.dim(`Adapter: ${adapter}, default Atelier mode: ${mode}`));
   console.log(
     pc.dim(
-      'Next: use host-native `/plan ...`, or activate Atelier with `/atelier plan ...` or `atelier new "your goal" --mode standard`.',
+      'Next: activate Atelier with `/atelier plan ...` or `atelier new "your goal" --mode standard`.',
     ),
   );
   console.log(
     pc.dim(
-      'Atelier is inactive until `/atelier ...`, "Use Atelier-Kit", or `atelier new` explicitly activates it.',
+      'Atelier stays inactive until `/atelier ...`, "Use Atelier-Kit", or `atelier new` explicitly activates it. The host\'s `/plan ...` is never intercepted.',
     ),
   );
 }

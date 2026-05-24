@@ -107,10 +107,11 @@ export async function createEpic(cwd: string, params: {
 }
 
 export function skillForStatus(status: string): SkillName | null {
-  if (status === "discovery") return "questioner";
-  if (status === "synthesis" || status === "planning") return "planner";
+  if (status === "discovery") return "researcher";
   if (status === "design") return "designer";
-  if (status === "review") return "reviewer";
+  if (status === "synthesis" || status === "planning" || status === "review") {
+    return "planner";
+  }
   return null;
 }
 

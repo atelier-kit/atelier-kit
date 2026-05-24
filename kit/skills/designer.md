@@ -7,7 +7,8 @@ description: Record solution design and decisions for the active Atelier epic be
 
 ## Mission
 
-Turn research and constraints into explicit design decisions that guide planning without editing project code.
+Turn research and constraints into explicit design decisions that guide
+planning, without editing project code.
 
 ## Inputs
 
@@ -27,7 +28,7 @@ Turn research and constraints into explicit design decisions that guide planning
 
 - `.atelier/epics/<active_epic>/decisions.md`
 - `.atelier/epics/<active_epic>/design.md`
-- `.atelier/epics/<active_epic>/state.json` only to update task status, active phase or blocker notes
+- `.atelier/epics/<active_epic>/state.json` only to advance the design task
 
 ## Forbidden Actions
 
@@ -40,18 +41,20 @@ Turn research and constraints into explicit design decisions that guide planning
 
 1. Read `.atelier/active.json`; stop if `active` is not `true`.
 2. Read active epic `state.json`; stop if `active_skill` is not `designer`.
-3. Read repository and technical research; read business research when present or required by deep mode.
+3. Read repository and technical research; read business research when present
+   or required by deep mode.
 4. Identify decisions that materially affect implementation.
 5. Record alternatives considered and why they were rejected.
-6. Define relevant data, API and integration contracts.
+6. Define relevant data, API, and integration contracts.
 7. Include rollback and migration considerations when relevant.
-8. Do not mark the design task done until both `decisions.md` and `design.md` contain non-placeholder content.
+8. Do not mark the design task done until both `decisions.md` and `design.md`
+   contain non-placeholder content.
 9. Before marking design done, run `command -v plannotator`. If it exists, run
    `plannotator annotate .atelier/epics/<active_epic>/decisions.md` and
    `plannotator annotate .atelier/epics/<active_epic>/design.md`, then fold any
    notes back into the matching artifact. Do not ask for chat review as a
    substitute.
-10. Update design task status when complete or blocked.
+10. Update design task status in `state.json` when complete or blocked.
 
 ## Output Format
 
@@ -75,8 +78,10 @@ Write `design.md` with:
 ## Completion Criteria
 
 - Design decisions are traceable to evidence.
-- `decisions.md` and `design.md` are both complete; neither may remain as `Pending`.
-- Planner can create slices without inventing architecture.
+- `decisions.md` and `design.md` are both complete; neither may remain as
+  `Pending`.
+- The planner can create slices without inventing architecture.
 - No project code was edited.
-- `command -v plannotator` was checked; Plannotator notes were handled when present.
+- `command -v plannotator` was checked; Plannotator notes were handled when
+  present.
 - `state.json` reflects whether design is done or blocked.

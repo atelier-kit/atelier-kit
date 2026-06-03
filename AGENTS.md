@@ -26,6 +26,9 @@ When on, choose a mode by the task's weight:
   command.
 - `atelier validate` checks the contract (mode-scaled). Implement natively. Then
   `atelier review` compares the diff against the plan and writes `## Review`.
+- If `command -v plannotator` succeeds, each skill annotates the work file with
+  `plannotator annotate .atelier/work/<slug>.md` before handing off. Optional —
+  it only runs when Plannotator is installed.
 
 ## Skills
 

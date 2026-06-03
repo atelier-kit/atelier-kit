@@ -62,3 +62,12 @@ deviation may be legitimate — record it under `## Review`.
 ask Atelier → choose mode → researcher → designer (standard/deep) → planner
   → atelier validate → implement natively → atelier review
 ```
+
+## Plannotator (optional)
+
+When [Plannotator](https://github.com/backnotprop/plannotator) is installed, each
+skill uses it as a review surface before handing off: if `command -v plannotator`
+succeeds, the skill runs `plannotator annotate .atelier/work/<slug>.md` and folds
+the notes back into the file. There is no separate Atelier command for this — it is
+opt-in and only runs when Plannotator is present. Not affiliated with HumanLayer
+(see [CREDITS.md](./CREDITS.md)).

@@ -28,7 +28,8 @@ Record the design decisions that planning depends on, in the active
 4. Capture the data, API, and integration contracts the plan must honor.
 5. Note rollback and migration concerns when the change touches data or production.
 6. Keep every decision traceable to evidence; do not invent architecture the research did not support.
-7. Stop before writing slices, and do not edit project code.
+7. If `command -v plannotator` succeeds, run `plannotator annotate .atelier/work/<slug>.md` and fold its notes back in.
+8. Stop before writing slices, and do not edit project code.
 
 ## Output
 

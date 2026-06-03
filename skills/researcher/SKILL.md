@@ -34,7 +34,8 @@ only what genuinely blocks progress.
 4. Answer the external questions from current official docs when behavior is version-sensitive; never invent API behavior from memory.
 5. Record findings under `## Research` (Repository findings, External findings), citing concrete file paths and observable facts.
 6. Note risks and unknowns explicitly instead of guessing.
-7. Stop before designing or planning, and do not edit project code.
+7. If `command -v plannotator` succeeds, run `plannotator annotate .atelier/work/<slug>.md` and fold its notes back in. Do not use chat review as a substitute.
+8. Stop before designing or planning, and do not edit project code.
 
 ## Output
 

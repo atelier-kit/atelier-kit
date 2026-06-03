@@ -28,14 +28,16 @@ writes project code.
 4. Keep each slice small enough for one implementation iteration.
 5. In deep mode, fill `## Risks` with real risks, not placeholders.
 6. Run `atelier validate` and fix every error before handing off to implementation.
-7. Quick mode needs no slices — leave the change to be made directly.
+7. If `command -v plannotator` succeeds, run `plannotator annotate .atelier/work/<slug>.md` and fold its notes back in before handing off. Do not use chat review as a substitute.
+8. Quick mode needs no slices — leave the change to be made directly.
 
 ## Instructions (review)
 
 1. After native implementation, run `atelier review` — it writes the `## Review` section.
 2. Read the review: weigh allowed-files violations and validation results against each slice's acceptance criteria.
 3. Record remaining risks, follow-ups, and any intentional deviations (with reasons) in the work file.
-4. Recommend done, continue, or blocked — and never hide failed validation.
+4. If `command -v plannotator` succeeds, run `plannotator annotate .atelier/work/<slug>.md` and fold its notes back in before recommending done.
+5. Recommend done, continue, or blocked — and never hide failed validation.
 
 ## Forbidden
 

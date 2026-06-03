@@ -1,8 +1,8 @@
 import { matchesAny } from "./glob.js";
-import type { ProtocolSlice } from "../protocol/schema.js";
+import type { Slice } from "../work/types.js";
 
 export type SliceMatch = {
-  slice: ProtocolSlice;
+  slice: Slice;
   /** Subset of changed files that match this slice's `allowed_files`. */
   matchedFiles: string[];
 };
@@ -17,7 +17,7 @@ export type SliceCheckResult = {
 };
 
 export function checkSlices(
-  slices: ProtocolSlice[],
+  slices: Slice[],
   changedFiles: string[],
 ): SliceCheckResult {
   const perSlice: SliceMatch[] = slices.map((slice) => ({

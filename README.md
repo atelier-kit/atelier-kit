@@ -1,199 +1,112 @@
-# atelier-kit
+# Atelier Kit
 
-Atelier-Kit adds **structure around planning** when you ask for it: artifacts
-under `.atelier/`, a ledger per epic, optional mirrors into your agent's native
-plan files, and a short review pass after implementation.
+Atelier Kit is a **skill-first** workflow for AI coding agents:
+**research → plan → implement**, with a verifiable plan contract — and without a
+rigid CLI controlling the flow.
 
-Nothing happens until you opt in. `/atelier ...` (or explicitly asking to use
-Atelier-Kit) turns the protocol on; until then there are no `.atelier/` writes,
-no skills loaded, no gates. Hosts that install native plan hooks can also let
-the host's `/plan ...` mode bootstrap a V2 epic and receive framework nudges
-while the agent writes the same `.atelier/epics/<epic>/` artifacts.
+It helps agents stop jumping straight to code: ask better questions, research the
+codebase, write a plan in small slices, implement, and review the result. It is
+opt-in and never blocks — the skills teach the agent to work better; they don't
+gate execution.
 
-While an epic is active, treat these two files as authoritative:
+## Atelier in 5 minutes
 
-```text
-.atelier/active.json
-.atelier/epics/<epic-slug>/state.json
+1. **Install the skills** (works across agents via the open Agent Skills standard):
+
+   ```bash
+   npx skills add atelier-kit/atelier-kit
+   ```
+
+   Or copy `skills/` into your agent (Claude Code: `.claude/skills/`).
+
+2. **Ask your agent to use it:**
+
+   > "Use Atelier to plan this feature before implementing."
+   > "Use Atelier in deep mode for this migration."
+   > "Use Atelier to research how feature flags work — no code yet."
+
+3. **The agent works through one file per task** — `.atelier/work/<slug>.md` —
+   running the skills (`researcher` → `designer` → `planner`) and writing each
+   section as it goes.
+
+That's the whole loop. The optional CLI below only adds a deterministic check on
+the plan for those who want it (e.g. in CI).
+
+## Modes
+
+The agent picks a mode by the task's weight — more process only where it pays off:
+
+| Mode | For | Flow | Artifact |
+|------|-----|------|----------|
+| **quick** | small, local, low-risk | understand → change → validate | one file, no contract |
+| **standard** | multiple files / real logic | research → plan (slices) → implement → review | `## Plan` with slices |
+| **deep** | architecture, data, security, migration | + design + risks | full contract + risks |
+
+## Skills
+
+- **researcher** — turn a goal into four buckets of questions (blocking-user ·
+  repo-research · external-research · safe-assumptions) and gather evidence.
+- **designer** — record design decisions and trade-offs (standard/deep).
+- **planner** — write the sliced plan, then review the implementation against it.
+
+Each is a standard `skills/<name>/SKILL.md` package, loaded lazily by description.
+
+## The work file
+
+One Markdown file per task, `.atelier/work/<slug>.md`, holds the whole story:
+objective, questions, research, plan, implementation, validation, decisions, and
+review. See [`templates/work.md`](./templates/work.md) and worked
+[`examples/`](./examples).
+
+In standard/deep mode the `## Plan` slices are a **verifiable contract** — each
+slice declares the files it may touch, observable acceptance criteria, and a
+runnable validation command:
+
+```markdown
+### Slice 1 — healthz route
+
+**Goal:** Add a /healthz route that returns 200 when the DB ping resolves.
+
+**Allowed files:** `src/server/healthz.ts`, `test/routes/healthz.test.ts`
+
+**Acceptance criteria:**
+
+- A request to /healthz returns 200 and a status body when the ping resolves.
+
+**Validation:**
+
+- `pnpm test test/routes/healthz.test.ts`
 ```
 
-An epic walks through discovery, synthesis and design (depending on mode),
-planning, then `planned`. After `planned`, coding happens the same way it would
-without Atelier—the agent uses its usual workflow. Review at the end compares
-what shipped with what was planned.
+## Optional CLI — the contract
 
-Vocabulary you will see:
-
-- **epic**: the initiative you are planning end to end
-- **question**: first artifact; research should not run on boilerplate questions alone
-- **task**: one chunk of the protocol (questions, a research track, planning, etc.)
-- **slice**: a vertical cut inside `plan.md` with scope, acceptance checks and validation
-
-## Plannotator
-
-Atelier-Kit keeps the CLI small. When
-[Plannotator](https://github.com/backnotprop/plannotator) is installed, the
-agent uses it directly as a review surface for planning artifacts. Before a
-phase is marked done, the active artifact is opened with:
+Installation is handled by `npx skills`. The only thing code does better than the
+agent itself is check the contract deterministically, so the CLI is tiny and
+optional:
 
 ```bash
-plannotator annotate .atelier/epics/<epic>/<artifact>.md
+npx atelier validate [file]   # mode-scaled plan-ready gate
+npx atelier review  [file]    # diff vs. allowed_files + run validation; writes ## Review
+npx atelier new "<title>" --mode standard   # scaffold a work file (convenience)
 ```
 
-Any notes from Plannotator are folded back into that artifact before `state.json`
-advances. There is no separate Atelier command for this flow.
+- **`validate`** rejects weak plans in standard/deep — catch-all `allowed_files`
+  (`src/**`), vague acceptance criteria, validation with no runnable command, and
+  (deep) a missing `## Risks` section. Quick mode is advisory.
+- **`review`** diffs the working tree against each slice's `allowed_files`, runs
+  the `Validation` commands, and writes the result into `## Review`. In
+  standard/deep it exits non-zero on drift or a failed check (usable in CI); quick
+  is advisory.
 
-**Not affiliated with HumanLayer.** See [CREDITS.md](./CREDITS.md).
+The agent — not the CLI — writes every section. The CLI only refuses to bless a
+contract too vague to be audited, and reports drift from it.
 
-## Install
+## Docs
 
-```bash
-npm install -g @atelier-kit/atelier-kit
-```
-
-`atelier-kit` ships a small command-line helper. It initializes the protocol,
-installs adapter rules, validates gates, and exports native plan mirrors; the
-agent and skills do the planning work.
-
-## Quickstart
-
-### Initialize the protocol
-
-```bash
-cd your-repo
-atelier init
-```
-
-This installs `.atelier/atelier.json`, `.atelier/active.json`, protocol files,
-rules, skills, schemas, and adapter instructions. `active.json` starts inactive:
-
-```json
-{
-  "active": false,
-  "mode": "native",
-  "active_epic": null
-}
-```
-
-### Activate Atelier
-
-```bash
-atelier new "Add payment endpoint" --mode quick
-atelier status
-atelier validate
-```
-
-In agent chat, the equivalent activation is:
-
-```text
-/atelier quick add this endpoint
-/atelier plan add payments
-/atelier deep migrate authentication to SSO
-```
-
-The active epic ledger is created at `.atelier/epics/<epic-slug>/`. Atelier
-never intercepts the host's `/plan ...` mode — activation is always explicit.
-
-### Finish planning and review implementation
-
-The agent drives the epic forward by editing `state.json` directly as each
-phase completes. When the plan is reviewable, the agent sets
-`status: planned` in `state.json` and the gate runs as part of `validate`:
-
-```bash
-atelier validate --gate plan-ready
-atelier export-plan --adapter claude-code
-```
-
-After `planned`, implement through Claude Code, Cursor, Kiro, Antigravity, Codex
-or another host-agent workflow. After implementation:
-
-```bash
-atelier review
-```
-
-`atelier review` records how the current implementation diff matches the plan;
-when accepted, the agent advances `state.json` to `done`.
-
-## Planning protocol
-
-- [MANIFESTO.md](./MANIFESTO.md) — why the protocol exists and its four pillars
-- [PROTOCOL.md](./PROTOCOL.md) — protocol states, files, and gates
-- [ARCHITECTURE.md](./ARCHITECTURE.md) — internal architecture, state model, adapters, and artifacts
-
-The default protocol shape is:
-
-```text
-explicit activation
-  -> .atelier/active.json
-  -> .atelier/epics/<epic>/state.json
-  -> questioner writes questions.md
-  -> research artifacts
-  -> design decisions
-  -> plan.md with slices
-  -> planned
-  -> native agent implementation
-  -> review
-```
-
-## Small CLI Surface
-
-| Command | Purpose |
-|---------|---------|
-| `atelier init` | Install the Atelier protocol files |
-| `atelier new "<goal>" --mode quick\|standard\|deep` | Create an active epic ledger |
-| `atelier status` | Show active protocol state |
-| `atelier validate` | Validate schemas, state and planning gates |
-| `atelier validate --gate plan-ready` | Validate that the active plan can be finalized |
-| `atelier validate --verbose` | Also check installation files and adapter outputs |
-| `atelier export-plan --adapter <name>` | Copy the active `plan.md` to the host's plan location |
-| `atelier review` | Review the current implementation diff against the planned epic |
-| `atelier off` | Disable Atelier |
-| `atelier install-adapter <name> [--stdout]` | Install adapter rule files (or print to stdout) |
-
-## Adapter outputs
-
-`atelier install-adapter <name>` writes the protocol rules for the selected
-host (add `--stdout` to print the rendered body instead of writing files):
-
-| Agent | Adapter | Output |
-|-------|---------|--------|
-| Claude Code | `claude-code` | `CLAUDE.md`, `.claude/commands/atelier.md`, `.claude/skills/atelier/*.md` |
-| Cursor | `cursor` | `.cursor/rules/atelier-core.mdc` |
-| Codex CLI | `codex` | `AGENTS.md` |
-| Gemini CLI | `gemini-cli` | `GEMINI.md` |
-| Antigravity | `antigravity` | `.antigravity/atelier.md` |
-| Kiro | `kiro` | `.kiro/steering/atelier.md` |
-| Kilo Code | `kilo` | `.kilocode/rules/atelier.md` |
-| Windsurf | `windsurf` | `.windsurfrules` |
-| Cline | `cline` | `.clinerules/atelier-core.md` |
-| Generic | `generic` | `atelier-system-prompt.txt` |
-
-See [ADAPTERS.md](./ADAPTERS.md) for the adapter capability matrix.
-
-## Native plan mirrors
-
-Treat `.atelier/epics/<epic>/plan.md` as canonical. When your agent reads plans
-better from its own location, `atelier export-plan` copies there—mirrors are for
-convenience, not authority. The default Claude Code mirror is
-`~/.claude/plans/<epic>.md`; Cursor, Kiro and Antigravity use workspace-local
-mirror paths unless `--path` is provided.
-
-External review tools can still be chained after export:
-
-```bash
-atelier export-plan --adapter claude-code --command 'plannotator annotate "$ATELIER_PLAN_PATH"'
-```
-
-During the normal artifact flow, the agent does not need another Atelier command.
-Before a phase is marked done in `state.json`, it should open that phase's
-artifact when Plannotator is installed:
-`plannotator annotate .atelier/epics/<epic>/<artifact>.md`. Any notes that come
-back from Plannotator should be folded into that same artifact before
-`state.json` is advanced.
-
-Mirrors are derived files. If a native agent changes the plan, update the
-canonical Atelier `plan.md` explicitly before finalizing it again.
+- [MANIFESTO.md](./MANIFESTO.md) — what Atelier is and the principles behind it
+- [PROTOCOL.md](./PROTOCOL.md) — the work file, modes, and the contract
+- [ARCHITECTURE.md](./ARCHITECTURE.md) — how the skills and CLI fit together
+- [AGENTS.md](./AGENTS.md) — passive activation context for agents
 
 ## License
 

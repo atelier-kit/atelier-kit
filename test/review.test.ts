@@ -3,17 +3,8 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { join } from "node:path";
-import { cmdInit } from "../src/commands/init.js";
-import { cmdNew } from "../src/commands/new.js";
 import { cmdReview } from "../src/commands/review.js";
-import {
-  readActiveState,
-  readEpicState,
-  writeActiveState,
-  writeEpicState,
-} from "../src/protocol/state.js";
-import { tempDir, kitPath } from "./helpers.js";
-import type { ProtocolSlice } from "../src/protocol/schema.js";
+import { tempDir } from "./helpers.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -24,168 +15,117 @@ async function gitInit(dir: string): Promise<void> {
   await execFileAsync("git", ["config", "commit.gpgsign", "false"], { cwd: dir });
 }
 
-async function gitCommitAll(dir: string, message: string): Promise<string> {
-  await execFileAsync("git", ["add", "-A"], { cwd: dir });
-  await execFileAsync("git", ["commit", "-q", "-m", message], { cwd: dir });
-  const { stdout } = await execFileAsync("git", ["rev-parse", "HEAD"], { cwd: dir });
-  return stdout.trim();
+function buildWork(
+  mode: string,
+  opts: { allowed: string; validation: string },
+): string {
+  return `# Work: Add login
+
+## Mode
+
+${mode}
+
+## Plan
+
+### Slice 1 — route
+
+**Goal:** Add the login route returning 200 on valid credentials end to end.
+
+**Allowed files:** \`${opts.allowed}\`
+
+**Acceptance criteria:**
+
+- The login route responds 200 on valid credentials and 401 otherwise.
+
+**Validation:**
+
+- \`${opts.validation}\`
+
+## Review
+
+_Filled by atelier review._
+`;
 }
 
-async function readyPlannedEpic(
-  dir: string,
-  slices: ProtocolSlice[],
-): Promise<string> {
-  await cmdNew(dir, "Add login endpoint", { mode: "quick" });
-  const state = await readEpicState(dir, "add-login-endpoint");
-  state.status = "planned";
-  state.active_skill = null;
-  state.slices = slices;
-  state.tasks = state.tasks.map((task) => ({ ...task, status: "done" as const }));
-  await writeEpicState(dir, state);
-  const active = await readActiveState(dir);
-  await writeActiveState(dir, {
-    ...active,
-    active: true,
-    active_epic: state.epic_id,
-    active_phase: state.status,
-    active_skill: state.active_skill,
-    updated_at: new Date().toISOString(),
-  });
-  await writeFile(
-    join(dir, ".atelier", "epics", state.epic_id, "plan.md"),
-    [
-      "# Plan: Add login endpoint",
-      "",
-      "## Goal",
-      "",
-      "Login endpoint.",
-      "",
-      "## Risks",
-      "",
-      "| Risk | Impact | Mitigation |",
-      "|---|---:|---|",
-      "| Scope drift | Medium | Slice covers only the route |",
-      "",
-      "## Slices",
-      "",
-      "### Slice 1 - Route",
-      "",
-      "**Goal:** Add the route",
-      "",
-      "**Acceptance criteria:**",
-      "",
-      "- Route responds 200 on valid creds.",
-      "",
-      "**Validation:**",
-      "",
-      "- true",
-      "",
-    ].join("\n"),
-    "utf8",
-  );
-  return state.epic_id;
-}
-
-describe("atelier review", () => {
+describe("atelier review (work.md)", () => {
   let cleanup: () => Promise<void> = async () => {};
+  let dir = "";
 
   afterEach(async () => {
     await cleanup();
-    delete process.env.ATELIER_KIT_ROOT;
     process.exitCode = 0;
   });
 
-  async function setupPlanned(slices: ProtocolSlice[]) {
+  async function setup(
+    mode: string,
+    opts: { allowed: string; validation: string },
+  ): Promise<void> {
     const tmp = await tempDir();
     cleanup = tmp.cleanup;
-    process.env.ATELIER_KIT_ROOT = kitPath();
-    await mkdir(join(tmp.path, "src"), { recursive: true });
-    await writeFile(join(tmp.path, "src", "placeholder.ts"), "export {};\n", "utf8");
-    await gitInit(tmp.path);
-    await cmdInit(tmp.path, { yes: true });
-    const epicId = await readyPlannedEpic(tmp.path, slices);
-    // Commit AFTER planning so the baseline includes all framework artifacts.
-    // Real users do this when planning finishes; review then sees only
-    // implementation changes layered on top.
-    const baseline = await gitCommitAll(tmp.path, "planning complete");
-    const state = await readEpicState(tmp.path, epicId);
-    state.guards.baseline_ref = baseline;
-    await writeEpicState(tmp.path, state);
-    return { dir: tmp.path, epicId };
+    dir = tmp.path;
+    await mkdir(join(dir, "src"), { recursive: true });
+    await writeFile(join(dir, "src", "placeholder.ts"), "export {};\n", "utf8");
+    await mkdir(join(dir, ".atelier", "work"), { recursive: true });
+    await writeFile(join(dir, ".atelier", "work", "add-login.md"), buildWork(mode, opts), "utf8");
+    await gitInit(dir);
+    // Commit everything so HEAD exists; later edits show up as the diff.
+    await execFileAsync("git", ["add", "-A"], { cwd: dir });
+    await execFileAsync("git", ["commit", "-q", "-m", "baseline"], { cwd: dir });
   }
 
-  test("PASS when every change is inside allowed_files and validation succeeds", async () => {
-    const { dir, epicId } = await setupPlanned([
-      {
-        id: "slice-001",
-        title: "Route",
-        status: "ready",
-        goal: "Add the route",
-        depends_on: [],
-        allowed_files: ["src/**"],
-        acceptance_criteria: ["Route responds 200 on valid creds."],
-        validation: ["true"],
-      },
-    ]);
+  async function reviewSection(): Promise<string> {
+    const raw = await readFile(join(dir, ".atelier", "work", "add-login.md"), "utf8");
+    return raw.slice(raw.indexOf("## Review"));
+  }
+
+  test("standard PASS when changes are in scope and validation succeeds", async () => {
+    await setup("standard", { allowed: "src/**", validation: "true" });
     await writeFile(join(dir, "src", "login.ts"), "export const x = 1;\n", "utf8");
 
     await cmdReview(dir);
 
     expect(process.exitCode ?? 0).toBe(0);
-    const review = await readFile(join(dir, ".atelier", "epics", epicId, "review.md"), "utf8");
+    const review = await reviewSection();
     expect(review).toContain("Overall: PASS");
     expect(review).toContain("Allowed-files violations: 0");
-    expect(review).toContain("Failed validations: 0");
     expect(review).toContain("- src/login.ts");
   });
 
-  test("FAIL with Violations block when a file is changed outside every slice's allowed_files", async () => {
-    const { dir, epicId } = await setupPlanned([
-      {
-        id: "slice-001",
-        title: "Route",
-        status: "ready",
-        goal: "Add the route",
-        depends_on: [],
-        allowed_files: ["src/**"],
-        acceptance_criteria: ["Route responds 200 on valid creds."],
-        validation: ["true"],
-      },
-    ]);
+  test("standard FAIL when a file is changed outside allowed_files", async () => {
+    await setup("standard", { allowed: "src/**", validation: "true" });
     await writeFile(join(dir, "src", "login.ts"), "export const x = 1;\n", "utf8");
     await writeFile(join(dir, "out-of-scope.md"), "drift\n", "utf8");
 
     await cmdReview(dir);
 
     expect(process.exitCode).toBe(1);
-    const review = await readFile(join(dir, ".atelier", "epics", epicId, "review.md"), "utf8");
+    const review = await reviewSection();
     expect(review).toContain("Overall: FAIL");
     expect(review).toContain("Allowed-files violations: 1");
-    expect(review).toMatch(/## Violations[\s\S]*- out-of-scope\.md/);
+    expect(review).toMatch(/### Violations[\s\S]*- out-of-scope\.md/);
   });
 
-  test("FAIL when a validation command exits non-zero", async () => {
-    const { dir, epicId } = await setupPlanned([
-      {
-        id: "slice-001",
-        title: "Route",
-        status: "ready",
-        goal: "Add the route",
-        depends_on: [],
-        allowed_files: ["src/**"],
-        acceptance_criteria: ["Route responds 200 on valid creds."],
-        validation: ["false"],
-      },
-    ]);
+  test("standard FAIL when a validation command exits non-zero", async () => {
+    await setup("standard", { allowed: "src/**", validation: "false" });
     await writeFile(join(dir, "src", "login.ts"), "export const x = 1;\n", "utf8");
 
     await cmdReview(dir);
 
     expect(process.exitCode).toBe(1);
-    const review = await readFile(join(dir, ".atelier", "epics", epicId, "review.md"), "utf8");
+    const review = await reviewSection();
     expect(review).toContain("Overall: FAIL");
-    expect(review).toContain("Allowed-files violations: 0");
     expect(review).toContain("Failed validations: 1");
     expect(review).toContain("FAIL `false`");
+  });
+
+  test("quick mode is advisory (exit 0) even with out-of-scope drift", async () => {
+    await setup("quick", { allowed: "src/**", validation: "true" });
+    await writeFile(join(dir, "anywhere.md"), "drift\n", "utf8");
+
+    await cmdReview(dir);
+
+    expect(process.exitCode ?? 0).toBe(0);
+    const review = await reviewSection();
+    expect(review).toContain("Overall: ADVISORY");
   });
 });

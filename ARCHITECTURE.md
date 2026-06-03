@@ -1,142 +1,69 @@
-# atelier-kit architecture
+# Architecture
 
-Atelier-Kit is a **planning protocol**: a convention for where artifacts
-live under `.atelier/` and how an epic moves from questions to a finished plan.
-It does **not** sit between you and the agent as an extra planner or executor.
+Atelier Kit has two halves: **skills** (the product, Markdown) and a **tiny CLI**
+(the optional contract checker, TypeScript).
 
-Until someone turns Atelier on (`/atelier ...`, an equivalent explicit cue, or a
-native plan hook), the coding agent works like always—same commands, same
-habits. After activation, the agent still does the thinking: reading the repo,
-drafting research and `plan.md`, and later implementing. Atelier mostly
-structures outputs and tracks state; it does not substitute for those steps.
+## 1. Skills (the product)
 
-![Atelier-Kit planning protocol architecture](./assets/atelier-architecture-flow.png)
-
-## Layers
-
-1. **Protocol files** in `.atelier/protocol/`
-2. **Rules and adapters** in `.atelier/rules/`
-3. **On-demand skills** in `.atelier/skills/`
-4. **Schemas** in `.atelier/schemas/`
-5. **Per-epic ledgers** in `.atelier/epics/<epic>/`
-6. **CLI helpers** that initialize, validate, render rules, export native plans
-   and optionally move protocol state
-
-The interesting rules live in those protocol files, schemas, rules and skills.
-The CLI stays small on purpose: it scaffolds state and checks invariants. The
-agent-led skill flow may update the active epic ledger directly; you will not
-find a hidden orchestrator, session store or implementation runner inside the
-CLI.
-
-## Source of truth
-
-Global activation:
-
-```text
-.atelier/active.json
+```
+skills/
+  researcher/SKILL.md
+  designer/SKILL.md
+  planner/SKILL.md
 ```
 
-Active epic state:
+Folder-based [Agent Skills](https://www.skills.sh/) — each is a `SKILL.md` with
+`name`/`description` frontmatter and an `## Instructions` section. They teach the
+agent to research, decide, plan, and review, all by reading and writing sections
+of `.atelier/work/<slug>.md`. They depend on no JSON state and no CLI command to
+advance.
 
-```text
-.atelier/epics/<epic-slug>/state.json
+Distribution is delegated to `npx skills` (the open ecosystem): one canonical
+copy, symlinked or copied into each agent's recognized skills location. Atelier
+ships no per-host adapter layer of its own. `AGENTS.md` carries the passive
+activation context.
+
+## 2. CLI (`src/`, the contract checker)
+
+```
+src/
+  cli.ts                 # commander entry: new, validate, review
+  commands/{new,validate,review}.ts
+  work/                  # the work-file model
+    types.ts             #   Mode, Slice, ParsedWork
+    paths.ts             #   .atelier/work/<slug>.md, slugify
+    template.ts          #   per-mode work.md skeleton
+    parse.ts             #   markdown → { title, mode, slices }
+    plan-ready.ts        #   mode-scaled contract gate
+    discover.ts          #   resolve which work file to act on
+    update.ts            #   rewrite the ## Review section
+  review/                # reused diff/validation engine
+    git-diff.ts · glob.ts · slice-check.ts · validation-runner.ts · report.ts
+  skill-loader.ts        # parse SKILL.md frontmatter
+  gates/instruction-budget.ts   # keep skills lean
 ```
 
-The active epic `state.json` stores:
+The CLI parses the slice contract out of the work file's `## Plan` section and
+does the two deterministic things an agent can't fake:
 
-- mode: `quick`, `standard` or `deep`
-- status: `discovery`, `synthesis`, `design`, `planning`, `planned`, `review`,
-  `done` or `blocked`
-- active skill
-- required artifacts
-- slices
-- guard metadata
-- violations
+- **`validate`** (`work/plan-ready.ts`) — mode-scaled gate. Quick is skipped;
+  standard/deep require well-formed slices; deep also requires real risks.
+- **`review`** (`commands/review.ts` + `src/review/*`) — diff the working tree
+  against each slice's `allowed_files`, run the `Validation` commands, write the
+  `## Review` section, and exit non-zero on drift/failure (quick is advisory).
 
-No other file is operational state. Atelier does not use `.atelier/context.md`
-or `.atelier/plan/` as a second source of truth.
+## State
 
-## Activation model
+The only repo-side state is `.atelier/work/<slug>.md` files — versioned Markdown.
+No `atelier.json`, `active.json`, epics, or status machine. Activation is by
+prompt; the CLI is stateless and reads whatever work file you point it at (or the
+most recently modified one).
 
-Atelier is inactive by default. The host agent's `/plan ...` stays native;
-Atelier never intercepts host plan mode.
+## Tests
 
-Atelier activates only through explicit requests:
+`test/` (vitest, `process.env.ATELIER_KIT_ROOT` no longer needed):
 
-```text
-/atelier quick add this endpoint
-/atelier plan add payments
-/atelier deep migrate authentication to SSO
-Use Atelier-Kit for this feature
-```
-
-## CLI surface
-
-See [README.md](./README.md) for the user-facing command table. The CLI is
-intentionally thin: it scaffolds folders, installs adapter rules, validates
-gates, exports mirrors, and provides optional lifecycle helpers. It does not
-replace the agent-led skill flow.
-
-## State transitions
-
-Typical flow (standard/deep; **quick** skips synthesis and design tasks):
-
-```text
-native
-  -> discovery/questioner
-  -> discovery/research
-  -> synthesis
-  -> design
-  -> planning
-  -> planned
-  -> native agent implementation
-  -> review
-  -> done
-```
-
-`planned` is where Atelier steps aside: there is a validated `plan.md`, usually a
-native mirror export, and from here the host agent ships the work however it
-already prefers—tools, plan UI, tests, all unchanged.
-
-## Validation
-
-`atelier validate` checks:
-
-- `atelier.json` and `active.json`
-- when active: epic `state.json`, task/skill coherence, required artifacts on disk,
-  done-task artifacts that are not empty placeholders
-- `plan.md` reviewable shape when status is `planned`, `review` or `done`
-
-`atelier validate --verbose` runs the same validation, then verifies
-`.atelier/protocol/*`, rules, skills, schemas and (from `atelier.json`) the
-adapter rule files expected for your host—still **not** the contents of an
-exported plan mirror path.
-
-`atelier validate --gate plan-ready` is enforced before an active epic can be
-moved to `planned` (the agent edits `state.json` directly). It requires:
-
-- active epic exists
-- `plan.md` exists
-- plan has slices
-- slices have goals, acceptance criteria and validation
-- risks are documented
-
-## Skills
-
-Each skill is a narrow playbook for one stretch of the epic (questions first,
-then repo research, and so on). Load **only** the file named by `active_skill`;
-everything else can stay closed until that phase matters.
-
-Examples:
-
-- `questioner` writes `questions.md`
-- `repo-analyst` writes `research/repo.md`
-- `planner` writes `synthesis.md`, `plan.md` and state updates
-- `reviewer` writes `review.md` after native implementation
-
-## Adapter rendering
-
-`atelier install-adapter <name>` writes concrete rule files for the selected
-host (use `--stdout` to print the rendered body instead). See
-[ADAPTERS.md](./ADAPTERS.md) for the full matrix of output paths per host;
-the renderer dispatcher lives in `src/adapters/index.ts`.
+- `work-md.test.ts` — parser + slugify + review-section rewrite
+- `plan-ready.test.ts` — the mode-scaled gate
+- `review.test.ts` — end-to-end diff/validation with a temp git repo
+- `skill-loader.test.ts` / `instruction-budget.test.ts` — skill packaging

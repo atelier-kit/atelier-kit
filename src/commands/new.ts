@@ -1,33 +1,47 @@
 import pc from "picocolors";
-import { AtelierModeSchema } from "../protocol/schema.js";
-import { createEpic } from "../protocol/epic.js";
+import { access } from "node:fs/promises";
+import { relative } from "node:path";
+import { isMode, type Mode } from "../work/types.js";
+import { slugify, workFilePath } from "../work/paths.js";
+import { workTemplate } from "../work/template.js";
+import { writeText } from "../fs-utils.js";
 
-type CommandMode = "quick" | "standard" | "deep";
+async function exists(path: string): Promise<boolean> {
+  try {
+    await access(path);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
+/** Create a single `.atelier/work/<slug>.md` from the template. Convenience only. */
 export async function cmdNew(
   cwd: string,
   title: string,
-  opts: { mode?: string; goal?: string },
+  opts: { mode?: string } = {},
 ): Promise<void> {
-  const parsedMode = opts.mode ? AtelierModeSchema.safeParse(opts.mode) : null;
-  if (parsedMode && (!parsedMode.success || parsedMode.data === "native")) {
-    console.error(pc.red(`Invalid Atelier mode: ${opts.mode}`));
+  let mode: Mode = "standard";
+  if (opts.mode) {
+    if (!isMode(opts.mode)) {
+      console.error(
+        pc.red(`Invalid mode: ${opts.mode}. Use quick | standard | deep.`),
+      );
+      process.exitCode = 1;
+      return;
+    }
+    mode = opts.mode;
+  }
+
+  const slug = slugify(title);
+  const path = workFilePath(cwd, slug);
+  if (await exists(path)) {
+    console.error(pc.red(`Work already exists: ${relative(cwd, path)}`));
     process.exitCode = 1;
     return;
   }
 
-  try {
-    const mode = parsedMode?.success ? (parsedMode.data as CommandMode) : undefined;
-    const state = await createEpic(cwd, {
-      title,
-      goal: opts.goal,
-      mode,
-    });
-    console.log(pc.green(`Atelier epic created: ${state.epic_id}`));
-    console.log(pc.dim(`mode=${state.mode} status=${state.status} skill=${state.active_skill}`));
-    console.log(pc.dim(`source of truth: .atelier/epics/${state.epic_id}/state.json`));
-  } catch (error) {
-    console.error(pc.red((error as Error).message));
-    process.exitCode = 1;
-  }
+  await writeText(path, workTemplate(title, mode));
+  console.log(pc.green(`Created work: ${slug} (mode=${mode})`));
+  console.log(pc.dim(relative(cwd, path)));
 }

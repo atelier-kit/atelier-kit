@@ -1,74 +1,64 @@
-# Atelier-Kit Protocol
+# Protocol
 
-Atelier-Kit is **planning only**, turned on when you say so. The agent keeps doing
-the reasoning; what changes is where artifacts land and what gets validated
-before you call a plan finished.
+Atelier Kit is opt-in. When off, the agent behaves natively. When on, it works
+through **one Markdown file per task** and — in standard/deep mode — a verifiable
+plan contract.
 
-The CLI surface, adapter matrix, and native plan mirror behavior live in
-[README.md](./README.md); this document is the protocol contract: states,
-gates, and source-of-truth files.
+## The work file
 
-## Activation
-
-- `/atelier quick ...`, `/atelier plan ...`, `/atelier deep ...` turn Atelier on.
-- Saying "Use Atelier-Kit for this feature" counts too.
-- `/plan ...` stays host-native. Atelier never intercepts host plan mode.
-
-While inactive, leave Atelier alone—no epics, no skills, no gates.
-
-## Source of truth
-
-Global activation lives in:
-
-```text
-.atelier/active.json
+```
+.atelier/work/<slug>.md
 ```
 
-The active epic state lives in:
+This is the only operational artifact. It is plain Markdown the agent reads and
+writes; there is no JSON state machine. Sections:
 
-```text
-.atelier/epics/<epic-slug>/state.json
+| Section | Written by | Notes |
+|---------|-----------|-------|
+| `## Mode` | new / agent | `quick` \| `standard` \| `deep` |
+| `## Objective` | researcher | one or two sentences |
+| `## Questions` | researcher | four buckets (see below) |
+| `## Research` | researcher | repository + external findings, with paths |
+| `## Decisions` | designer | standard/deep, when there's a real choice |
+| `## Plan` | planner | `### Approach` + `### Slice N` blocks (the contract) |
+| `## Risks` | planner | required in deep mode |
+| `## Implementation` | agent (native) | log per slice |
+| `## Validation` | agent | tests/manual checks |
+| `## Review` | `atelier review` | generated; the one CLI-owned section |
+
+### The four question buckets
+
+The researcher splits questions to ask the user as little as possible:
+
+1. **Blocking user questions** — only what blocks a decision.
+2. **Repository research questions** — answer from the codebase.
+3. **External research questions** — verify in docs/APIs.
+4. **Safe assumptions** — proceed without asking.
+
+## Modes
+
+- **quick** — no plan, no contract, no gate. Understand → change → validate.
+- **standard** — `## Plan` slices with `Allowed files` + observable
+  `Acceptance criteria` + runnable `Validation`.
+- **deep** — same, plus a populated `## Risks` section.
+
+## The contract (standard/deep)
+
+Each slice declares:
+
+- **Allowed files** — specific paths/globs it may modify (never catch-all like `src/**`).
+- **Acceptance criteria** — observable conditions (>=8 words; avoid "works"/"is correct").
+- **Validation** — at least one shell-runnable command.
+
+`atelier validate` rejects a contract too vague to audit. After native
+implementation, `atelier review` diffs the working tree against each slice's
+`Allowed files`, runs the `Validation` commands, and exits non-zero on drift or
+failure (quick mode is advisory). Verification is not authority: a flagged
+deviation may be legitimate — record it under `## Review`.
+
+## Flow
+
 ```
-
-The protocol does not stash operational state in a separate chat/session dump file.
-
-## Planning order
-
-Every Atelier epic starts with questions.
-
-```text
-questioner -> repo-analyst -> tech-analyst -> [business-analyst] -> designer -> planner
+ask Atelier → choose mode → researcher → designer (standard/deep) → planner
+  → atelier validate → implement natively → atelier review
 ```
-
-`questioner` writes `questions.md` before research starts. The file may be
-refined later, but it cannot remain as the generic seed questions once the
-questions task is marked done.
-
-The active skill updates `state.json` directly after writing its artifact.
-There are no CLI helpers for advancing tasks — the agent owns the ledger.
-
-## Planning gate
-
-`atelier validate --gate plan-ready` requires:
-
-1. An active epic exists.
-2. `plan.md` exists.
-3. The plan has goal, assumptions, risks and slices.
-4. Every slice has a goal, allowed files, acceptance criteria and validation.
-5. `state.json` reflects the same reviewable slice structure.
-
-## Implementation and review
-
-After `planned`, Atelier is no longer driving the show. Implement however you
-already implement—Cursor, Claude Code, scripts, whatever fits your repo.
-
-Once code exists, run:
-
-```bash
-atelier review
-```
-
-The review artifact compares the current diff and validation evidence against
-the planned slices. If the review is acceptable, the agent advances the epic
-to `done` in `state.json`; otherwise it continues implementing natively and
-runs `atelier review` again.

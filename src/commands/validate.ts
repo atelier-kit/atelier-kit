@@ -1,50 +1,45 @@
 import pc from "picocolors";
-import { doctorProtocol, validateProtocol, validatePlanReady } from "../protocol/validator.js";
-import { readActiveEpic } from "../protocol/state.js";
+import { relative } from "node:path";
+import { resolveWorkFile } from "../work/discover.js";
+import { parseWorkFile } from "../work/parse.js";
+import { planReady } from "../work/plan-ready.js";
 
-const VALID_GATES = ["plan-ready"] as const;
-type Gate = (typeof VALID_GATES)[number];
-
+/**
+ * Run the `plan-ready` gate against a work file's `## Plan` slices.
+ * Mode-scaled: quick is advisory (always OK), standard/deep enforce the contract.
+ */
 export async function cmdValidate(
   cwd: string,
-  opts: { gate?: string; verbose?: boolean } = {},
+  opts: { file?: string; gate?: string } = {},
 ): Promise<void> {
-  if (opts.gate !== undefined) {
-    if (!VALID_GATES.includes(opts.gate as Gate)) {
-      console.error(pc.red(`Unknown gate: ${opts.gate}. Valid gates: ${VALID_GATES.join(", ")}`));
-      process.exitCode = 1;
-      return;
-    }
-    const { state } = await readActiveEpic(cwd);
-    if (!state) {
-      console.error(pc.red("No active Atelier epic."));
-      process.exitCode = 1;
-      return;
-    }
-    const { errors, warnings } = await validatePlanReady(cwd, state);
-    if (errors.length === 0 && warnings.length === 0) {
-      console.log(pc.green(`atelier validate --gate ${opts.gate}: OK`));
-    } else if (errors.length === 0) {
-      console.log(pc.yellow(`atelier validate --gate ${opts.gate}: OK with warnings`));
-      for (const w of warnings) console.log(pc.dim(`  ! ${w}`));
-    } else {
-      console.log(pc.red(`atelier validate --gate ${opts.gate}: failed`));
-      for (const e of errors) console.log(pc.dim(`  - ${e}`));
-      for (const w of warnings) console.log(pc.dim(`  ! ${w}`));
-      process.exitCode = 1;
-    }
+  let file: string;
+  try {
+    file = await resolveWorkFile(cwd, opts.file);
+  } catch (error) {
+    console.error(pc.red((error as Error).message));
+    process.exitCode = 1;
     return;
   }
 
-  const { ok, errors } = opts.verbose
-    ? await doctorProtocol(cwd)
-    : await validateProtocol(cwd);
-  const label = opts.verbose ? "atelier validate --verbose" : "atelier validate";
-  if (ok) {
-    console.log(pc.green(`${label}: OK`));
-  } else {
-    console.log(pc.red(`${label}: failed`));
-    for (const e of errors) console.log(pc.dim(`  - ${e}`));
-    process.exitCode = 1;
+  const work = await parseWorkFile(file);
+  const { errors, warnings, skipped } = planReady(work);
+  const label = `validate ${relative(cwd, file)} (mode=${work.mode})`;
+
+  if (skipped) {
+    console.log(pc.green(`${label}: OK (quick mode — contract not required)`));
+    return;
   }
+  if (errors.length === 0 && warnings.length === 0) {
+    console.log(pc.green(`${label}: OK`));
+    return;
+  }
+  if (errors.length === 0) {
+    console.log(pc.yellow(`${label}: OK with warnings`));
+    for (const w of warnings) console.log(pc.dim(`  ! ${w}`));
+    return;
+  }
+  console.log(pc.red(`${label}: failed`));
+  for (const e of errors) console.log(pc.dim(`  - ${e}`));
+  for (const w of warnings) console.log(pc.dim(`  ! ${w}`));
+  process.exitCode = 1;
 }

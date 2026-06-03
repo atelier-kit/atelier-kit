@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-`@atelier-kit/atelier-kit` — a **skill-first behavior kit** for coding agents. The product is a set of Markdown skills (`skills/<name>/SKILL.md`) distributed via the open Agent Skills standard (`npx skills`). A tiny Node 20+ CLI (`atelier` / `atelier-kit`) adds the one thing code does better than prose: checking and reviewing the **plan contract**. The agent does the thinking; the CLI only validates and reviews what it produces.
+`@atelier-kit/atelier-kit` — a **skill-first behavior kit** for coding agents. The product is a single Markdown Agent Skill (`skills/atelier-kit/SKILL.md`) that routes through research/design/plan phases via bundled `references/*.md`, distributed over the open Agent Skills standard (`npx skills`). A tiny Node 20+ CLI (`atelier` / `atelier-kit`) adds the one thing code does better than prose: checking and reviewing the **plan contract**. The agent does the thinking; the CLI only validates and reviews what it produces.
 
 ## Commands
 
@@ -40,7 +40,7 @@ Two halves: **skills** (the product, Markdown) and a **tiny CLI** (the contract 
 
 ### 1. Skills (`skills/`)
 
-`skills/{researcher,designer,planner}/SKILL.md` — folder-based Agent Skills with `name`/`description` frontmatter and an `## Instructions` section. They teach the agent to research (with the four question buckets), decide, plan, and review — all by writing sections of `.atelier/work/<slug>.md`. They depend on no JSON state and no CLI command to advance. `AGENTS.md` holds the passive activation context. `templates/` and `examples/` are shipped docs.
+`skills/atelier-kit/SKILL.md` — one folder-based Agent Skill with `name`/`description` frontmatter and a lean `## Instructions` flow that routes to `references/{researcher,designer,planner}.md` per phase (progressive disclosure). It teaches the agent to research (with the four question buckets), decide, plan, and review — all by writing sections of `.atelier/work/<slug>.md`. It depends on no JSON state and no CLI command to advance. A single skill keeps the kit's identity on install: `npx skills` installs each `skills/<name>/SKILL.md` as its own directory, so the umbrella lands as one `.claude/skills/atelier-kit/` instead of three loose folders. `AGENTS.md` holds the passive activation context. `templates/` and `examples/` are shipped docs.
 
 ### 2. CLI (`src/`)
 

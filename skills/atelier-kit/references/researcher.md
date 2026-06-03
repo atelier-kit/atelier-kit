@@ -1,9 +1,4 @@
----
-name: researcher
-description: Investigate before changing code — turn a goal into sharp questions and repository/external evidence, recorded in the Atelier work file. Use at the start of any non-trivial task before planning or implementing.
----
-
-# Researcher
+# Researcher (phase reference)
 
 ## Mission
 

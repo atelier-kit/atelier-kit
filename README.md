@@ -17,7 +17,7 @@ gate execution.
    npx skills add atelier-kit/atelier-kit
    ```
 
-   Or copy `skills/` into your agent (Claude Code: `.claude/skills/`).
+   Or copy `skills/atelier-kit/` into your agent (Claude Code: `.claude/skills/`).
 
 2. **Ask your agent to use it:**
 
@@ -26,7 +26,7 @@ gate execution.
    > "Use Atelier to research how feature flags work — no code yet."
 
 3. **The agent works through one file per task** — `.atelier/work/<slug>.md` —
-   running the skills (`researcher` → `designer` → `planner`) and writing each
+   moving through the phases (research → design → plan → review) and writing each
    section as it goes.
 
 That's the whole loop. The optional CLI below only adds a deterministic check on
@@ -44,12 +44,17 @@ The agent picks a mode by the task's weight — more process only where it pays 
 
 ## Skills
 
-- **researcher** — turn a goal into four buckets of questions (blocking-user ·
-  repo-research · external-research · safe-assumptions) and gather evidence.
-- **designer** — record design decisions and trade-offs (standard/deep).
-- **planner** — write the sliced plan, then review the implementation against it.
+Atelier ships as **one** Agent Skill — `atelier-kit` — whose `SKILL.md` routes
+through three phases, each detailed in a bundled `references/*.md` loaded on demand:
 
-Each is a standard `skills/<name>/SKILL.md` package, loaded lazily by description.
+- **research** — turn a goal into four buckets of questions (blocking-user ·
+  repo-research · external-research · safe-assumptions) and gather evidence.
+- **design** — record design decisions and trade-offs (standard/deep).
+- **plan** — write the sliced plan, then review the implementation against it.
+
+It installs as a single directory (`.claude/skills/atelier-kit/`), not three
+loose folders — `npx skills` installs each `skills/<name>/SKILL.md` it finds as
+its own directory, so the umbrella keeps the phases bundled inside it.
 
 ## The work file
 

@@ -1,9 +1,4 @@
----
-name: planner
-description: Turn evidence into a sliced, verifiable plan, then review the implementation against it. Prepares and audits work for native implementation — never writes project code itself.
----
-
-# Planner
+# Planner (phase reference)
 
 ## Mission
 

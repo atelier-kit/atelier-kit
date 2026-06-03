@@ -1,9 +1,4 @@
----
-name: designer
-description: Turn research into explicit design decisions and trade-offs before planning. Use in standard/deep Atelier tasks that have a real architectural, data, or API choice to make.
----
-
-# Designer
+# Designer (phase reference)
 
 ## Mission
 

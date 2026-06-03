@@ -7,21 +7,28 @@ Atelier Kit has two halves: **skills** (the product, Markdown) and a **tiny CLI*
 
 ```
 skills/
-  researcher/SKILL.md
-  designer/SKILL.md
-  planner/SKILL.md
+  atelier-kit/
+    SKILL.md                 # the router: activation, modes, phase flow
+    references/
+      researcher.md          # research-phase detail (loaded on demand)
+      designer.md            # design-phase detail
+      planner.md             # plan + review detail
 ```
 
-Folder-based [Agent Skills](https://www.skills.sh/) — each is a `SKILL.md` with
-`name`/`description` frontmatter and an `## Instructions` section. They teach the
-agent to research, decide, plan, and review, all by reading and writing sections
-of `.atelier/work/<slug>.md`. They depend on no JSON state and no CLI command to
-advance.
+One folder-based [Agent Skill](https://www.skills.sh/): `SKILL.md` carries the
+`name`/`description` frontmatter and a lean `## Instructions` flow that routes to
+the right `references/<phase>.md` as each phase begins (progressive disclosure).
+The skill teaches the agent to research, decide, plan, and review, all by reading
+and writing sections of `.atelier/work/<slug>.md`. It depends on no JSON state and
+no CLI command to advance.
 
-Distribution is delegated to `npx skills` (the open ecosystem): one canonical
-copy, symlinked or copied into each agent's recognized skills location. Atelier
-ships no per-host adapter layer of its own. `AGENTS.md` carries the passive
-activation context.
+A single skill keeps the kit's identity intact on install: `npx skills add
+atelier-kit/atelier-kit` walks `skills/<name>/SKILL.md` and installs each match as
+its own directory — so the umbrella lands as one `.claude/skills/atelier-kit/`,
+references included, instead of three loose sibling folders. Distribution is
+delegated to `npx skills` (the open ecosystem): one canonical copy, symlinked or
+copied into each agent's recognized skills location. Atelier ships no per-host
+adapter layer of its own. `AGENTS.md` carries the passive activation context.
 
 ## 2. CLI (`src/`, the contract checker)
 

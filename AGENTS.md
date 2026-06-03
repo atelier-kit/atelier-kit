@@ -19,8 +19,9 @@ When on, choose a mode by the task's weight:
 
 - One artifact per task: `.atelier/work/<slug>.md`. Create it with
   `atelier new "<title>" --mode <mode>`, or by hand from `templates/work.md`.
-- Load one skill at a time: **researcher** → **designer** (standard/deep) →
-  **planner** (plan, then review).
+- One umbrella skill, **atelier-kit**, routes through phases — **research** →
+  **design** (standard/deep) → **plan** (then review) — reading the matching
+  `references/<phase>.md` on demand.
 - In standard/deep, the `## Plan` slices are a contract: each declares
   `Allowed files`, observable `Acceptance criteria`, and a runnable `Validation`
   command.
@@ -32,5 +33,7 @@ When on, choose a mode by the task's weight:
 
 ## Skills
 
-This repo ships `researcher`, `designer`, and `planner` as Agent Skills. Install
-them across agents with `npx skills add atelier-kit/atelier-kit`.
+This repo ships a single Agent Skill, **atelier-kit**, with the research, design,
+and planning phases bundled as `references/*.md` (progressive disclosure). Install
+it across agents with `npx skills add atelier-kit/atelier-kit` — it lands as one
+directory (`.claude/skills/atelier-kit/`), not three.

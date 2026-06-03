@@ -1,14 +1,2 @@
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-
-/**
- * Resolved bundled kit/ next to dist/cli.js (or ATELIER_KIT_ROOT override for tests).
- */
-export function getKitRoot(): string {
-  const override = process.env.ATELIER_KIT_ROOT;
-  if (override) return override;
-  const here = dirname(fileURLToPath(import.meta.url));
-  return join(here, "..", "kit");
-}
-
+/** The per-repo Atelier directory. Holds only `work/<slug>.md` files now. */
 export const ATELIER_DIR = ".atelier";

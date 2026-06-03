@@ -1,23 +1,16 @@
 import matter from "gray-matter";
-import { readdir, readFile } from "node:fs/promises";
-import { basename, join } from "node:path";
+import { access, readdir, readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { z } from "zod";
-import type { EpicState, SkillName } from "./protocol/schema.js";
 
 const FrontSchema = z.object({
   name: z.string().optional(),
   description: z.string().optional(),
-  phase: z.union([z.string(), z.array(z.string())]).optional(),
-  reads: z.array(z.string()).optional(),
-  produces: z.array(z.string()).optional(),
 });
 
 export interface SkillFront {
   name: string;
   description: string;
-  phase?: string | string[];
-  reads?: string[];
-  produces?: string[];
 }
 
 export interface SkillFile {
@@ -26,18 +19,28 @@ export interface SkillFile {
   label: string;
 }
 
+async function fileExists(path: string): Promise<boolean> {
+  try {
+    await access(path);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Discover folder-based skills (`<root>/<name>/SKILL.md`) — the open Agent
+ * Skills layout that `npx skills` and native loaders consume.
+ */
 export async function listSkillFiles(skillsRoot: string): Promise<SkillFile[]> {
   const entries = await readdir(skillsRoot, { withFileTypes: true });
   const found: SkillFile[] = [];
 
   for (const entry of entries) {
-    if (!entry.isFile() || !entry.name.endsWith(".md")) continue;
-    const name = basename(entry.name, ".md");
-    found.push({
-      name,
-      path: join(skillsRoot, entry.name),
-      label: entry.name,
-    });
+    if (!entry.isDirectory()) continue;
+    const path = join(skillsRoot, entry.name, "SKILL.md");
+    if (!(await fileExists(path))) continue;
+    found.push({ name: entry.name, path, label: `${entry.name}/SKILL.md` });
   }
 
   return found.sort((a, b) => a.name.localeCompare(b.name));
@@ -47,12 +50,11 @@ export async function loadSkill(
   skillsRoot: string,
   folder: string,
 ): Promise<{ front: SkillFront; body: string; instructions: string }> {
-  const p = join(skillsRoot, `${folder}.md`);
+  const p = join(skillsRoot, folder, "SKILL.md");
   const raw = await readFile(p, "utf8");
   const { data, content } = matter(raw);
   const parsed = FrontSchema.parse(data);
   const front: SkillFront = {
-    ...parsed,
     name: parsed.name ?? folder,
     description: parsed.description ?? "",
   };
@@ -75,24 +77,4 @@ export function countInstructions(instructionBlock: string): number {
     if (/^\d+\.\s/.test(t) || /^[-*]\s/.test(t)) n++;
   }
   return n;
-}
-
-export function activeSkillFolder(state: Pick<EpicState, "active_skill">): string | null {
-  return state.active_skill;
-}
-
-export function taskTypeToSkillFolder(taskType: EpicState["tasks"][number]["type"]): SkillName {
-  switch (taskType) {
-    case "questions":
-    case "repo":
-    case "tech":
-    case "business":
-      return "researcher";
-    case "design":
-      return "designer";
-    case "synthesis":
-    case "planning":
-    case "review":
-      return "planner";
-  }
 }

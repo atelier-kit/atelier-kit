@@ -16,6 +16,6 @@ This project is an **independent, clean-room implementation** and is **not affil
 
 ## What atelier-kit adds
 
-- An opt-in planning layer that stores intent under `.atelier/` instead of burying it in chat logs.
-- Explicit active state in `.atelier/active.json` and per-epic source of truth in `.atelier/epics/<epic>/state.json`.
-- Programmatic validators (`doctor`, `validate`), planning gates, on-demand skills, and multi-agent adapter rules.
+- A skill-first, opt-in layer that stores intent in one Markdown file per task (`.atelier/work/<slug>.md`) instead of burying it in chat logs.
+- A verifiable plan contract — slices with allowed files, observable acceptance criteria, and runnable validation — checked by `atelier validate` and `atelier review`.
+- Mode-scaled depth (quick / standard / deep), distributed as standard Agent Skills via `npx skills`.

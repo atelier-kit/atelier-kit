@@ -1,92 +1,41 @@
 #!/usr/bin/env node
 import { Command } from "commander";
 import { cwd as processCwd } from "node:process";
-import { cmdInit } from "./commands/init.js";
-import { cmdStatus } from "./commands/status.js";
-import { cmdValidate } from "./commands/validate.js";
-import { cmdInstallAdapter } from "./commands/install-adapter.js";
 import { cmdNew } from "./commands/new.js";
-import { cmdExportPlan } from "./commands/export-plan.js";
+import { cmdValidate } from "./commands/validate.js";
 import { cmdReview } from "./commands/review.js";
-import { cmdOff } from "./commands/lifecycle.js";
 
 const program = new Command();
 program
   .name("atelier")
-  .description("Planning protocol CLI — installs .atelier/, validates state, renders adapters")
-  .version("0.2.0");
-
-program
-  .command("init")
-  .description("Install .atelier/ protocol files")
-  .option("-y, --yes", "Skip prompts (default: generic, standard)")
-  .action(async (opts: { yes?: boolean }) => {
-    await cmdInit(processCwd(), opts);
-  });
+  .description(
+    "Atelier Kit — the verifiable-plan contract for skill-driven agents. " +
+      "Skills are distributed via `npx skills`; this CLI only validates and reviews the plan.",
+  )
+  .version("0.4.0");
 
 program
   .command("new <title>")
-  .description("Create and activate a new Atelier epic")
-  .option("--mode <quick|standard|deep>", "Atelier planning mode")
-  .option("--goal <goal>", "Explicit epic goal")
-  .action(async (title: string, opts: { mode?: string; goal?: string }) => {
+  .description("Create a .atelier/work/<slug>.md from the template")
+  .option("--mode <quick|standard|deep>", "Planning depth (default: standard)")
+  .action(async (title: string, opts: { mode?: string }) => {
     await cmdNew(processCwd(), title, opts);
   });
 
 program
-  .command("status")
-  .description("Show active Atelier protocol state")
-  .action(async () => {
-    await cmdStatus(processCwd());
+  .command("validate [file]")
+  .description("Check a work file's plan against the contract (mode-scaled)")
+  .option("--gate <name>", "Gate to run (only plan-ready)", "plan-ready")
+  .action(async (file: string | undefined, opts: { gate?: string }) => {
+    await cmdValidate(processCwd(), { file, gate: opts.gate });
   });
 
 program
-  .command("validate")
-  .description("Validate Atelier schemas, gates and protocol violations")
-  .option("--gate <name>", "Run a specific gate: plan-ready")
-  .option("--verbose", "Also check installation files and adapter rule outputs")
-  .action(async (opts: { gate?: string; verbose?: boolean }) => {
-    await cmdValidate(processCwd(), opts);
-  });
-
-program
-  .command("export-plan")
-  .description("Export the active Atelier plan to an agent-native mirror file")
-  .option("--adapter <name>", "claude-code|cursor|kiro|antigravity|generic")
-  .option("--path <path>", "Target path; supports {cwd}, {home}, {epic_id}, {title}")
-  .option("--command <command>", "Optional shell command to run after export; receives ATELIER_PLAN_PATH")
-  .option("--if-planned", "Skip unless the active epic is planned")
-  .option("--quiet", "Suppress non-error output")
-  .action(async (opts: {
-    adapter?: string;
-    path?: string;
-    command?: string;
-    ifPlanned?: boolean;
-    quiet?: boolean;
-  }) => {
-    await cmdExportPlan(processCwd(), opts);
-  });
-
-program
-  .command("review")
-  .description("Create a review scaffold comparing implementation against the Atelier plan")
-  .action(async () => {
-    await cmdReview(processCwd());
-  });
-
-program
-  .command("off")
-  .description("Disable Atelier and return to native mode")
-  .action(async () => {
-    await cmdOff(processCwd());
-  });
-
-program
-  .command("install-adapter <name>")
-  .description("claude-code | claude | cursor | codex | gemini-cli | antigravity | kiro | kilo | windsurf | cline | generic")
-  .option("--stdout", "Print the rendered rule body instead of writing adapter files")
-  .action(async (name: string, opts: { stdout?: boolean }) => {
-    await cmdInstallAdapter(processCwd(), name, opts);
+  .command("review [file]")
+  .description("Compare the diff against the plan slices; write the ## Review section")
+  .option("--base <ref>", "Git baseline to diff against (default: HEAD)")
+  .action(async (file: string | undefined, opts: { base?: string }) => {
+    await cmdReview(processCwd(), { file, base: opts.base });
   });
 
 await program.parseAsync(process.argv);

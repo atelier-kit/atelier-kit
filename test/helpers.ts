@@ -13,6 +13,6 @@ export async function tempDir(): Promise<{ path: string; cleanup: () => Promise<
   };
 }
 
-export function kitPath(): string {
-  return join(repoRoot, "kit");
+export function skillsPath(): string {
+  return join(repoRoot, "skills");
 }

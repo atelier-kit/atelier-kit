@@ -4,6 +4,39 @@ All notable changes to `@atelier-kit/atelier-kit` are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 this project uses semver pre-1.0 — minor bumps may introduce breaking changes.
 
+## [0.4.0] — 2026-06-03
+
+A reposition from a planning CLI to a **skill-first behavior kit**. The agent's
+work now lives in one Markdown file per task; the CLI shrinks to the only thing
+code does better than prose — checking and reviewing the plan contract. Skills are
+distributed via the open Agent Skills standard (`npx skills`) instead of a
+per-host adapter layer.
+
+### Breaking changes
+
+- **Removed the state machine.** No more `.atelier/atelier.json`, `active.json`,
+  `.atelier/epics/<slug>/state.json`, phases, tasks, or status ledger.
+- **One artifact per task:** `.atelier/work/<slug>.md` (objective, questions,
+  research, plan, implementation, validation, decisions, review). The multi-file
+  epic tree (`questions.md`, `research/*`, `synthesis.md`, `design.md`,
+  `decisions.md`, `plan.md`, `review.md`) is gone.
+- **CLI reduced to `new`, `validate`, `review`.** Removed `init`, `status`,
+  `off`, `export-plan`, and `install-adapter`. `validate`/`review` now read the
+  slice contract from the work file's `## Plan` and are **mode-scaled** (quick is
+  advisory; standard/deep enforce; deep also requires `## Risks`).
+- **Removed the adapter layer** (`src/adapters/**`, `kit/rules/adapters/**`,
+  `ADAPTERS.md`). Skills install via `npx skills add atelier-kit/atelier-kit`;
+  `AGENTS.md` carries passive activation context.
+- **Skills are now folder-based `SKILL.md` packages** under `skills/` (was
+  `kit/skills/*.md`). Still three: `researcher` (now with the four question
+  buckets), `designer`, `planner`.
+- Dropped the `prompts` dependency; removed `kit/` and the JSON schemas.
+
+### Added
+
+- `templates/{work,decision}.md` and worked `examples/` (quick, standard, deep,
+  research-only).
+
 ## [0.3.0] — 2026-05-23
 
 A seven-phase refactor that sharpens the framework around its four pillars

@@ -39,13 +39,22 @@ for the phase you are entering — do not load them all up front.
 1. Confirm the user invoked Atelier; if not, behave natively and stop here.
 2. Choose the mode (quick / standard / deep) from the task's weight.
 3. Create the work file: `atelier new "<title>" --mode <mode>`, or by hand from `templates/work.md`.
-4. **Research** — read `references/researcher.md`, then fill `## Objective`, `## Questions` (four buckets), and `## Research`.
+4. **Research** — read `references/researcher.md`, then fill `## Objective`, `## Questions` (the four buckets — blocking user questions, repository research, external research, safe assumptions), and `## Research`.
 5. **Design** (standard/deep with a real choice) — read `references/designer.md`, then fill `## Decisions`.
 6. **Plan** — read `references/planner.md`, then write `## Plan` slices (and `## Risks` in deep mode).
 7. Run `atelier validate` and fix every error before implementing.
 8. Implement natively, logging progress under `## Implementation` and checks under `## Validation`.
 9. **Review** — run `atelier review`, then follow the review steps in `references/planner.md` to finalize `## Review`.
-10. In quick mode, skip the slices and the gate: understand → change → validate directly.
+10. At each phase hand-off (after research, design, plan, and review), if `command -v plannotator` succeeds, run `plannotator annotate .atelier/work/<slug>.md` and fold its notes back in before advancing.
+11. In quick mode, skip the slices and the gate: understand → change → validate directly.
+
+## Plannotator (optional)
+
+When [Plannotator](https://github.com/backnotprop/plannotator) is installed, use it as a
+review surface before each hand-off: if `command -v plannotator` succeeds, run
+`plannotator annotate .atelier/work/<slug>.md` and fold the notes back into the work file.
+There is no separate Atelier command for this — it is opt-in and only runs when Plannotator
+is present. The phase references repeat this so it survives progressive disclosure.
 
 ## Forbidden
 

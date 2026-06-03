@@ -36,6 +36,10 @@ _What needs to be achieved._
 
 - _Pending._
 
+## Decisions
+
+_Record significant decisions: context, decision, reason, consequences._
+
 ## Plan
 
 ### Approach
@@ -67,10 +71,6 @@ _Log each slice as you implement it: status, what changed, validation, notes._
 ## Validation
 
 _Tests run, manual checks, what was not validated._
-
-## Decisions
-
-_Record significant decisions: context, decision, reason, consequences._
 
 ## Review
 

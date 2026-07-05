@@ -57,10 +57,18 @@ Answer the questions in `## Questions` with evidence and produce **one consolida
    research as a spec and duplicate existing code when this is ambiguous.
 8. Record remaining uncertainty in `## Open unknowns` instead of guessing.
 9. Keep the whole document compact (target 50–300 lines). Condense; do not append.
-10. Run `atelier validate --gate research-ready` and fix any failures.
+10. Run the **research-ready self-check** (no CLI) and fix any failures before
+    advancing:
+    - every section required by the mode is present as a literal `## ` heading;
+    - no `_Pending._` placeholder remains;
+    - the three generic seed questions were replaced with project-specific ones;
+    - the file is within the ~300-line budget (condense if over).
+    (`atelier validate --gate research-ready` re-checks these deterministically if
+    you want an optional double-check.)
 11. Before updating `state.json`, follow the "Plannotator (optional, per phase)"
     section of `core.md` against `research.md`.
-12. Update the research task status when evidence is complete or blocked.
+12. Update the research task status directly in `state.json` when evidence is
+    complete or blocked.
 
 ## Output Format
 
@@ -75,7 +83,8 @@ Complete the fixed sections of `.atelier/epics/<active_epic>/research.md`:
 
 ## Completion Criteria
 
-- `atelier validate --gate research-ready` passes.
+- The research-ready self-check passes (all required sections, no `_Pending._`,
+  non-generic questions, within the line budget).
 - Every significant claim cites a path, symbol, command or source.
 - The document is compact (target 50–300 lines) and free of `_Pending._` sections.
 - Existing code vs new code is explicit.

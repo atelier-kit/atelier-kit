@@ -4,6 +4,12 @@ Atelier-Kit is **planning only**, turned on when you say so. The agent keeps doi
 the reasoning; what changes is where artifacts land and what gets validated
 before you call a plan finished.
 
+**The runtime is 100% file-based.** Activation, bootstrap, gates, review and
+finalization are all done by reading and writing files under `.atelier/`. The
+`atelier` CLI is an **optional** convenience — it installs the files and can
+re-verify state deterministically — but no planning step requires it. Every CLI
+command below has a file-based equivalent the agent performs directly.
+
 ## Activation
 
 - `/atelier quick ...`, `/atelier plan ...`, `/atelier deep ...` turn Atelier on.
@@ -30,28 +36,35 @@ The active epic state lives in:
 
 The protocol does not stash operational state in a separate chat/session dump file.
 
-## CLI
+## Activation and the file-based loop
 
-The `atelier` commands are intentionally small. They scaffold folders, install
-adapter rules, validate gates, export mirrors, and provide optional lifecycle
-helpers. They do not replace the agent-led skill flow.
+Activation (`/atelier quick|plan|deep <goal>` or "use Atelier-Kit") is handled by
+following `.atelier/skills/bootstrap.md`: the agent creates
+`.atelier/epics/<slug>/state.json` + stub artifacts and sets `.atelier/active.json`
+— no CLI. From there the loop is: read `active.json` → read the epic `state.json`
+→ load only `.atelier/skills/<active_skill>.md` → write the artifact → update
+`state.json`. `/atelier off` sets `active.json` back to inactive.
+
+## CLI (optional)
+
+The `atelier` commands are a convenience layer, not part of the runtime. They
+scaffold folders, install adapter rules, and can re-verify gates/mirrors/review
+deterministically. Everything they do at runtime, the agent can do file-based.
 
 ```bash
+# Installation (how the files get into a repo)
 atelier init
-atelier new "Add payment endpoint" --mode quick
-atelier status
-atelier validate
-atelier validate --gate research-ready
-atelier validate --gate plan-ready
-atelier doctor
 atelier render-rules --adapter cursor
-atelier export-plan --adapter claude-code
-atelier host-plan start "Add payment endpoint"
-atelier host-plan finalize
-atelier review
-atelier next
-atelier done
-atelier off
+atelier install-adapter claude-code
+
+# Optional runtime equivalents (agent does these file-based)
+atelier new "Add payment endpoint" --mode quick   # ≙ follow bootstrap.md
+atelier validate --gate research-ready            # ≙ researcher self-check
+atelier validate --gate plan-ready                # ≙ planner self-check
+atelier export-plan --adapter claude-code         # ≙ copy plan.md to the mirror
+atelier review                                    # ≙ follow reviewer.md
+atelier next | atelier done | atelier off         # ≙ edit state.json / active.json
+atelier status | atelier doctor                   # ≙ read the ledger
 ```
 
 ## Native plan mirrors
@@ -64,13 +77,13 @@ derived artifacts. Canonical plan:
 .atelier/epics/<epic-slug>/plan.md
 ```
 
-`atelier export-plan` writes the mirror. `--command` can invoke tools such as
-Plannotator after the file is written, with `ATELIER_PLAN_PATH` pointing at the
-mirror file.
+The agent writes the mirror by copying `plan.md` to the host's plan location;
+`atelier export-plan` does the same as an optional helper (and `--command` can
+invoke tools such as Plannotator afterwards, with `ATELIER_PLAN_PATH` pointing at
+the mirror). Mirrors are optional — the canonical `plan.md` is authoritative.
 
-When a plan is finalized, the epic becomes `planned` and the configured native
-mirror should be exported. The user can then let the host agent implement from
-that native plan.
+When a plan is finalized, the epic becomes `planned`. The user can then let the
+host agent implement from the canonical plan or a mirror.
 
 ## Planning order
 
@@ -101,13 +114,19 @@ be created`, `## Open unknowns`), with a compactness budget of ~300 lines.
 `design.md` embeds decisions as an ADR-style `## Decisions` section and, in
 deep mode, `## Risk register`, `## Rollback` and `## Test strategy` sections.
 
-In the simplified flow, the active skill may update `state.json` directly after
-writing its artifact. `atelier next` and `atelier done` remain optional helpers,
-not the core planning engine.
+The active skill updates `state.json` directly after writing its artifact.
+`atelier next` and `atelier done` are optional helpers, not the core engine.
+
+## Gates are self-checks
+
+Gates are checklists each skill verifies against its own artifact before advancing
+`state.json`. They are mechanical enough for the agent to audit itself, so no CLI
+is required. Running `atelier validate --gate <name>` re-checks the same rules
+deterministically and is a fine optional double-check.
 
 ## Research gate
 
-`atelier validate --gate research-ready` (standard/deep) requires:
+The **research-ready** self-check (standard/deep) requires:
 
 1. `research.md` exists with the sections required by the mode.
 2. No `_Pending._` sections remain.
@@ -116,7 +135,7 @@ not the core planning engine.
 
 ## Planning gate
 
-`atelier validate --gate plan-ready` requires:
+The **plan-ready** self-check requires:
 
 1. An active epic exists.
 2. `plan.md` exists.
@@ -128,26 +147,22 @@ not the core planning engine.
 ## Living plan
 
 `plan.md` stays alive after `planned`: per-slice progress is recorded under
-`## Progress` during native implementation and the mirror is re-exported when
-the plan changes. The Atelier `plan.md` remains canonical.
+`## Progress` during native implementation and any mirror is rewritten from
+`plan.md` when it changes. The Atelier `plan.md` remains canonical.
 
 ## Implementation and review
 
 After `planned`, Atelier is no longer driving the show. Implement however you
 already implement—Cursor, Claude Code, scripts, whatever fits your repo.
 
-Once code exists, run:
-
-```bash
-atelier review
-```
-
-The review artifact compares the current diff and validation evidence against
-the planned slices, including an automatic **Scope Check**: every changed file
-is matched against the union of the slices' `allowed_files`, and out-of-scope
-files are recorded in `review.md` and in `state.json.violations`. If the review
-is acceptable, `atelier done` marks the epic `done`; otherwise the user can
-continue implementing natively and review again.
+Once code exists, the reviewer skill (`.atelier/skills/reviewer.md`) compares the
+current diff and validation evidence against the planned slices, including the
+**Scope Check**: it builds the union of the slices' `allowed_files`, lists every
+changed file that matches none of them, and records out-of-scope files in
+`review.md` and `state.json.violations` — all computed by the agent, no CLI.
+`atelier review` produces the identical artifact if you prefer to run it. When the
+review is acceptable the epic is set to `done`; otherwise implement more and
+review again.
 
 ## Compatibility with pre-consolidation epics
 

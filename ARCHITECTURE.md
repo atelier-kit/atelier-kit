@@ -10,6 +10,11 @@ habits. After activation, the agent still does the thinking: reading the repo,
 drafting research and `plan.md`, and later implementing. Atelier mostly
 structures outputs and tracks state; it does not substitute for those steps.
 
+**The runtime is file-based.** The agent bootstraps epics, runs gate self-checks,
+and writes the review by reading and writing files under `.atelier/` — the
+`atelier` CLI is optional (installation + deterministic re-verification) and never
+required to plan.
+
 ![Atelier-Kit planning protocol architecture](./assets/atelier-architecture-flow.png)
 
 ## Layers
@@ -77,24 +82,28 @@ Atelier activates only through explicit requests:
 Use Atelier-Kit for this feature
 ```
 
-## CLI surface
+## CLI surface (optional)
 
-The primary commands are:
+The CLI installs the files and offers deterministic re-checks; the runtime never
+depends on it. Installation commands:
 
 ```bash
 atelier init
-atelier new "Add payment endpoint" --mode quick
-atelier status
-atelier validate
-atelier doctor
 atelier render-rules --adapter cursor
-atelier export-plan --adapter claude-code
-atelier host-plan start "Add payment endpoint"
-atelier host-plan finalize
-atelier review
-atelier next
-atelier done
-atelier off
+atelier install-adapter claude-code
+```
+
+Optional runtime helpers, each with a file-based equivalent the agent performs
+directly (bootstrap via `.atelier/skills/bootstrap.md`, gate self-checks, review
+via `.atelier/skills/reviewer.md`, state edits):
+
+```bash
+atelier new "Add payment endpoint" --mode quick   # ≙ bootstrap.md
+atelier validate [--gate research-ready|plan-ready]
+atelier status | atelier doctor
+atelier export-plan --adapter claude-code          # ≙ copy plan.md
+atelier host-plan start | finalize
+atelier review | next | done | off
 ```
 
 ## State transitions
@@ -114,13 +123,15 @@ native
   -> done
 ```
 
-`planned` is where Atelier steps aside: there is a validated `plan.md`, usually a
-native mirror export, and from here the host agent ships the work however it
-already prefers—tools, plan UI, tests, all unchanged.
+`planned` is where Atelier steps aside: there is a validated `plan.md`, optionally
+a native mirror the agent copied, and from here the host agent ships the work
+however it already prefers—tools, plan UI, tests, all unchanged.
 
 ## Validation
 
-`atelier validate` checks:
+Gates are self-checks the skills run against their artifacts (no CLI). The same
+rules are also available as an optional deterministic re-check via
+`atelier validate`, which verifies:
 
 - `atelier.json` and `active.json`
 - when active: epic `state.json`, task/skill coherence, required artifacts on disk,
@@ -131,13 +142,11 @@ already prefers—tools, plan UI, tests, all unchanged.
 rules, skills, schemas and (from `atelier.json`) the adapter rule files expected
 for your host—still **not** the contents of an exported plan mirror path.
 
-`atelier validate --gate research-ready` is enforced before the research task
-can be marked done (standard/deep). It requires the consolidated `research.md`
-to have the sections the mode demands, no `_Pending._` leftovers, non-generic
-questions, and it warns above the ~300-line budget.
+The **research-ready** self-check gates the research task (standard/deep): the
+consolidated `research.md` must have the sections the mode demands, no `_Pending._`
+leftovers, non-generic questions, and stay within the ~300-line budget.
 
-`atelier validate --gate plan-ready` is enforced before `atelier done` can
-finalize planning. It requires:
+The **plan-ready** self-check gates finalizing planning. It requires:
 
 - active epic exists
 - `plan.md` exists
@@ -145,14 +154,18 @@ finalize planning. It requires:
 - slices have goals, allowed files, acceptance criteria and validation
 - risks are documented
 
+Both are also runnable as `atelier validate --gate <name>` for an optional
+deterministic double-check.
+
 ## Skills
 
-Each skill is a narrow playbook for one stretch of the epic (questions first,
-then consolidated research, and so on). Load **only** the file named by
+Each skill is a narrow playbook for one stretch of the epic (bootstrap, then
+questions, then consolidated research, and so on). Load **only** the file named by
 `active_skill`; everything else can stay closed until that phase matters.
 
-The five skills:
+The skills:
 
+- `bootstrap` creates the epic ledger + stub artifacts from files at activation
 - `questioner` writes the `## Questions` section of `research.md`
 - `researcher` fills the remaining sections of `research.md` (one consolidated,
   compact document)

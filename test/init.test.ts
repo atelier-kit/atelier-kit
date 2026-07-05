@@ -22,6 +22,7 @@ describe("init", () => {
     await access(join(path, ".atelier", "rules", "core.md"));
     await access(join(path, ".atelier", "skills", "questioner.md"));
     await access(join(path, ".atelier", "skills", "researcher.md"));
+    await access(join(path, ".atelier", "skills", "bootstrap.md"));
     await access(join(path, ".atelier", "skills", "planner.md"));
     await access(join(path, ".atelier", "skills", "designer.md"));
     await access(join(path, ".atelier", "skills", "reviewer.md"));

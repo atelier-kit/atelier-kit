@@ -12,6 +12,8 @@ Atelier-Kit is a planning protocol for **structured, opt-in agent planning**. It
 
 **Key principle**: Atelier is **inactive by default**. Nothing happens until someone activates it with `/atelier ...`, an equivalent cue, or through native-plan hooks.
 
+**Runtime is 100% file-based / CLI-free.** The agent bootstraps epics (via `.atelier/skills/bootstrap.md`), runs gate self-checks, and writes the review entirely by reading/writing files under `.atelier/`. The `atelier` CLI stays functional but is **optional** — it installs the files (`init`, `render-rules`, `install-adapter`) and can re-verify state deterministically (`validate`, `review`, `doctor`), but no skill or adapter rule instructs the agent to run it. The `test/adapters.test.ts` "never instructs the atelier CLI" test guards this: agent-facing text must not contain the `` `atelier <runtime-verb>` `` invocation form.
+
 ## Development Commands
 
 ```bash
@@ -59,7 +61,7 @@ The `kit/` directory contains **templates and rule files** distributed with the 
 - `protocol/` — Protocol YAML files (default skill order, artifact shapes, etc.)
 - `rules/` — Adapter rule templates for each host (Claude Code, Cursor, etc.)
 - `schemas/` — JSON schemas for validation
-- `skills/` — Skill markdown templates (questioner, researcher, designer, planner, reviewer)
+- `skills/` — Skill markdown templates (bootstrap, questioner, researcher, designer, planner, reviewer; plus host-plan-coach). `bootstrap` is the file-based epic-creation skill used at activation.
 
 ### State Model
 
@@ -86,7 +88,7 @@ Skills are narrow playbooks for one phase of planning. Each skill:
 - Contains instructions and Zod schemas for that phase's artifacts
 - Is loaded **only when active** (via `active_skill` in `state.json`)
 
-Example flow:
+Example flow (after `bootstrap` creates the ledger at activation):
 ```
 questioner -> researcher -> [designer] -> planner -> reviewer
 ```

@@ -16,7 +16,7 @@ async function renderStatusBlock(cwd: string): Promise<string> {
     if (!active.active || !active.active_epic) {
       body = "Inactive. No active epic. Run `/atelier quick|plan|deep <goal>` to activate.";
     } else if (!state) {
-      body = `Active. Epic \`${active.active_epic}\` — state.json missing; run \`atelier doctor\`.`;
+      body = `Active. Epic \`${active.active_epic}\` — state.json missing; recreate it from \`.atelier/skills/bootstrap.md\` or restore it.`;
     } else {
       const skill = state.active_skill ?? "(none)";
       body = [

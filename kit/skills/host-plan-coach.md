@@ -36,8 +36,8 @@ epic ledger.
    `research.md` before marking the questions task done.
 10. Record evidence in `research.md` with concrete files, symbols and sources;
     keep it consolidated and compact (target 50–300 lines) and state explicitly
-    what exists vs what will be created. Validate with
-    `atelier validate --gate research-ready`.
+    what exists vs what will be created. Self-check research-ready: all required
+    sections present, no `_Pending._`, seed questions replaced, within budget.
 11. Use `design.md` (when scheduled) to narrow tradeoffs before final planning;
     record decisions in ADR style under `## Decisions`. In deep mode, also
     complete `## Risk register`, `## Rollback` and `## Test strategy`.
@@ -52,16 +52,20 @@ epic ledger.
 17. When the plan is ready and Plannotator notes have been handled, set `status`
     to `planned` and `active_skill` to `null`.
 18. Keep `.atelier/active.json.active_phase` and `.atelier/active.json.active_skill` synchronized with the epic state.
-19. Export a native plan mirror with `atelier export-plan --adapter <adapter>` after the epic reaches `planned`.
+19. Optionally write a native plan mirror by copying `plan.md` to the host's plan
+    location after the epic reaches `planned`; the canonical `plan.md` stays
+    authoritative.
 20. After `planned`, implementation belongs to the host agent workflow; record
-    per-slice progress back into `plan.md` under `## Progress` and re-export the
-    mirror when the plan changes.
-21. After implementation, run or request `atelier review` to compare the diff
-    against `plan.md`, including the Scope Check (diff × allowed_files).
+    per-slice progress back into `plan.md` under `## Progress` and rewrite the
+    mirror from `plan.md` when the plan changes.
+21. After implementation, follow `.atelier/skills/reviewer.md` to compare the diff
+    against `plan.md` — compute the Scope Check (diff × allowed_files) yourself
+    and write `review.md`. No CLI is required.
 
 ## Completion Criteria
 
 - The active epic is `planned`.
 - `plan.md` is not a stub.
 - `state.json.slices` matches the planned slices.
-- `atelier validate --gate plan-ready` passes.
+- The plan-ready self-check passes (plan sections + every slice's goal, allowed
+  files, acceptance criteria and validation, mirrored in `state.json`).

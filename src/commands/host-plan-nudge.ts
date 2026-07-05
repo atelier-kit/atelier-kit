@@ -51,7 +51,7 @@ export function formatHostPlanFrameworkNudge(input: HostPlanNudgeState | EpicSta
     `- **Status:** \`${task.status}\``,
     `- **Skill:** \`.atelier/skills/${skill}.md\` (host planning checklist: \`.atelier/skills/host-plan-coach.md\` when installed)`,
     `- **Boundary:** work only on this task; do not fill later artifacts early.`,
-    `- **Plannotator:** before marking this task done, run \`command -v plannotator\`; if present, run \`plannotator annotate ${base}/${task.artifact}\` and fold in any notes. Do not stop at \`atelier status\` or ask for chat review instead.`,
+    `- **Plannotator:** before marking this task done, run \`command -v plannotator\`; if present, run \`plannotator annotate ${base}/${task.artifact}\` and fold in any notes. Do not ask for a chat review instead.`,
     ``,
     `### Do now`,
     ``,
@@ -64,7 +64,7 @@ export function formatHostPlanFrameworkNudge(input: HostPlanNudgeState | EpicSta
     case "business":
       lines.push(
         `1. Fill the evidence sections of \`${base}/research.md\` (Codebase, Constraints, What exists vs what will be created, Open unknowns${state.mode === "deep" ? ", Product behavior" : ""}) with concrete paths, symbols and sources.`,
-        `2. Keep the document consolidated and compact (target 50–300 lines); run \`atelier validate --gate research-ready\`.`,
+        `2. Keep the document consolidated and compact (target 50–300 lines); self-check research-ready: all required sections present, no \`_Pending._\`, seed questions replaced, within budget.`,
         `3. Mark this task done in \`${base}/state.json\` and advance \`active_skill\` to the next pending task.`,
       );
       break;

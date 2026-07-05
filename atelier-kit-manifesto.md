@@ -52,7 +52,7 @@ Nothing changes until the developer asks for it.
 
 While the protocol is inactive, the agent completely ignores the `.atelier/` directory. It keeps working the same way it always has.
 
-When the developer activates the protocol, atelier-kit creates an epic, records the operational state, and guides the agent through the right phases.
+When the developer activates the protocol, the agent creates an epic, records the operational state, and moves through the right phases — **entirely from files**. Bootstrap, gates, review and finalization are reads and writes under `.atelier/`; the `atelier` CLI is an optional convenience (it installs the files and can re-verify state), never a required step in the loop.
 
 That choice matters.
 
@@ -64,11 +64,11 @@ stateDiagram-v2
     Inactive --> Active: /atelier quick|plan|deep
     Inactive --> Active: "Use atelier-kit"
     Inactive --> Active: /plan with installed hook
-    Active --> Planning: creates epic
-    Planning --> Planned: plan-ready gate approved
-    Planned --> NativeImplementation: exports plan mirror
-    NativeImplementation --> Review: atelier review
-    Review --> Done: atelier done
+    Active --> Planning: bootstrap.md creates epic (files)
+    Planning --> Planned: plan-ready self-check passes
+    Planned --> NativeImplementation: plan.md (mirror optional)
+    NativeImplementation --> Review: reviewer skill (files)
+    Review --> Done: state.json set to done
     Done --> [*]
 ```
 
@@ -422,9 +422,11 @@ The mirror is derived. The source of truth remains the canonical plan in the epi
 
 After implementation, atelier-kit becomes useful again.
 
-The `atelier review` command compares the current diff with the planned slices.
-
-The first question is answered automatically: `atelier review` cross-checks every changed file against the union of the slices' `allowed_files` and records out-of-scope files in `review.md` and in `state.json.violations`.
+The reviewer skill compares the current diff with the planned slices — file-based,
+no CLI. It computes the Scope Check itself: it builds the union of the slices'
+`allowed_files`, lists every changed file outside those patterns, and records the
+out-of-scope files in `review.md` and in `state.json.violations`. (`atelier review`
+produces the identical artifact as an optional CLI equivalent.)
 
 The review should answer:
 
@@ -436,13 +438,13 @@ The review should answer:
 
 ```mermaid
 flowchart TB
-    Diff[Implementation diff] --> Review[atelier review]
+    Diff[Implementation diff] --> Review[reviewer skill]
     Plan[plan.md with slices] --> Review
     Evidence[Validation evidence] --> Review
 
-    Review --> RMD[review.md]
+    Review --> RMD[review.md + Scope Check]
     RMD --> Decision{Review accepted?}
-    Decision -->|Yes| Done[atelier done]
+    Decision -->|Yes| Done[set state.json to done]
     Decision -->|No| Continue[Continue implementation]
     Continue --> Review
 ```
@@ -520,6 +522,13 @@ Delivery should be compared against the agreed contract.
 
 Once the plan is ready, atelier-kit should reduce interference, not add friction.
 
+### 11. The runtime should need no tooling
+
+Activation, bootstrap, gates, review and finalization are reads and writes under
+`.atelier/`. A CLI may install the files and re-verify state, but the protocol must
+be fully operable from files alone — any agent that can read and write the
+repository can run it.
+
 ---
 
 ## 18. The full cycle
@@ -542,10 +551,10 @@ flowchart TB
     Planned --> Mirror[export-plan]
     Mirror --> Native[Native implementation]
     Native --> Progress["progress recorded in plan.md ## Progress"]
-    Progress --> Review[atelier review]
+    Progress --> Review[reviewer skill]
     Review --> Scope["scope check: diff × allowed_files"]
     Scope --> ReviewMD[review.md]
-    ReviewMD --> Done[atelier done]
+    ReviewMD --> Done[state.json set to done]
 ```
 
 ---
@@ -628,17 +637,22 @@ But to make collaboration between humans and agents worthy of trust.
 
 ## Appendix: main commands
 
+The runtime is file-based. These commands **install** the protocol; everything
+after `install-adapter` is an **optional** deterministic re-check of work the agent
+already does by reading and writing files.
+
 ```bash
+# Installation
 atelier init
 atelier install-adapter claude-code
-atelier new "Add payment system" --mode standard
-atelier status
-atelier validate --gate research-ready
-atelier validate --gate plan-ready
-atelier export-plan --adapter claude-code
-atelier review
-atelier done
-atelier off
+
+# Optional (each has a file-based equivalent)
+atelier new "Add payment system" --mode standard  # ≙ .atelier/skills/bootstrap.md
+atelier validate --gate research-ready             # ≙ researcher self-check
+atelier validate --gate plan-ready                 # ≙ planner self-check
+atelier export-plan --adapter claude-code          # ≙ copy plan.md to the mirror
+atelier review                                     # ≙ .atelier/skills/reviewer.md
+atelier done | atelier off                         # ≙ edit state.json / active.json
 ```
 
 ---

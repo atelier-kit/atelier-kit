@@ -10,6 +10,13 @@ no skills loaded, no gates. Hosts that install native plan hooks can also let
 the host's `/plan ...` mode bootstrap a V2 epic and receive framework nudges
 while the agent writes the same `.atelier/epics/<epic>/` artifacts.
 
+**The runtime is 100% file-based.** The agent bootstraps epics, runs gate
+self-checks, and writes the review entirely by reading and writing files under
+`.atelier/` — it never needs the `atelier` CLI. The CLI exists as an optional
+convenience: it installs the files (`atelier init`, `render-rules`,
+`install-adapter`) and can re-verify state deterministically, but no planning step
+depends on it.
+
 While an epic is active, treat these two files as authoritative:
 
 ```text
@@ -96,13 +103,8 @@ framework step so the host agent fills `.atelier/epics/<epic>/` through `planned
 
 ### Activate Atelier explicitly
 
-```bash
-atelier new "Add payment endpoint" --mode quick
-atelier status
-atelier validate
-```
-
-In agent chat, the equivalent activation is:
+In agent chat, activation is a natural-language cue — the agent bootstraps the
+epic file-based by following `.atelier/skills/bootstrap.md`:
 
 ```text
 /atelier quick add this endpoint
@@ -110,29 +112,22 @@ In agent chat, the equivalent activation is:
 /atelier deep migrate authentication to SSO
 ```
 
-The active epic ledger is created at `.atelier/epics/<epic-slug>/`.
+The active epic ledger is created at `.atelier/epics/<epic-slug>/`. (If you
+prefer, `atelier new "Add payment endpoint" --mode quick` does the same from the
+CLI — it is optional.)
 
 ### Finish planning and review implementation
 
-After the plan is reviewable, the agent marks the active epic `planned` and
-exports a native mirror. The CLI helper can also do the final gate/export step:
+The agent advances through the skills, runs each skill's gate self-check, and sets
+the epic to `planned` by editing `state.json` — no CLI. After `planned`, implement
+through Claude Code, Cursor, Kiro, Antigravity, Codex or another host-agent
+workflow. Then the agent follows `.atelier/skills/reviewer.md` to compare the diff
+against the plan (including the changed-files × `allowed_files` Scope Check) and
+writes `review.md`.
 
-```bash
-atelier done
-```
-
-`atelier done` finalizes the active planning task when you are using the CLI
-lifecycle. In the simplified agent-led flow, the active skill updates
-`state.json` directly and `atelier validate --gate plan-ready` checks the result.
-After `planned`, implement through Claude Code, Cursor, Kiro, Antigravity, Codex
-or another host-agent workflow. After implementation:
-
-```bash
-atelier review
-atelier done
-```
-
-`atelier review` records how the current implementation diff matches the plan.
+Every step has an optional CLI equivalent (`atelier validate --gate plan-ready`,
+`atelier review`, `atelier done`) that re-checks the same rules deterministically,
+but none are required to plan.
 
 ## Planning protocol
 
@@ -155,7 +150,21 @@ explicit activation
   -> review (diff × allowed_files)
 ```
 
-## Small CLI Surface
+## Small CLI Surface (optional)
+
+The runtime never requires these; they install the files and offer deterministic
+re-checks. The agent performs every runtime action file-based.
+
+| Command | Purpose | File-based equivalent |
+|---------|---------|-----------------------|
+| `atelier init` | Install the Atelier protocol files | — (installation) |
+| `atelier new "<goal>" --mode quick` | Create an active epic ledger | follow `.atelier/skills/bootstrap.md` |
+| `atelier validate --gate research-ready` | Re-check research | researcher self-check |
+| `atelier validate --gate plan-ready` | Re-check plan | planner self-check |
+| `atelier review` | Diff × plan + Scope Check | follow `.atelier/skills/reviewer.md` |
+| `atelier next` / `done` / `off` | Advance/finish/disable | edit `state.json` / `active.json` |
+
+Full command reference below (all optional at runtime):
 
 | Command | Purpose |
 |---------|---------|
@@ -200,23 +209,20 @@ See [ADAPTERS.md](./ADAPTERS.md) for the adapter capability matrix.
 ## Native plan mirrors
 
 Treat `.atelier/epics/<epic>/plan.md` as canonical. When your agent reads plans
-better from its own location, `atelier export-plan` copies there—mirrors are for
-convenience, not authority. The default Claude Code mirror is
+better from its own location, the agent copies `plan.md` there itself (mirrors are
+for convenience, not authority). The default Claude Code mirror is
 `~/.claude/plans/<epic>.md`; Cursor, Kiro and Antigravity use workspace-local
-mirror paths unless `--path` is provided.
-
-External review tools can still be chained after export:
+mirror paths. `atelier export-plan` does the copy as an optional helper, and its
+`--command` can chain external tools:
 
 ```bash
 atelier export-plan --adapter claude-code --command 'plannotator annotate "$ATELIER_PLAN_PATH"'
 ```
 
-During the normal artifact flow, the agent does not need another Atelier command.
-Before a phase is marked done, it should open that phase's artifact when
-Plannotator is installed:
-`plannotator annotate .atelier/epics/<epic>/<artifact>.md`. Any notes that come
-back from Plannotator should be folded into that same artifact before `state.json`
-is advanced or `atelier done` is run.
+During the normal artifact flow the agent needs no CLI. Before a phase is marked
+done, it should open that phase's artifact when Plannotator is installed:
+`plannotator annotate .atelier/epics/<epic>/<artifact>.md`. Any notes are folded
+into that same artifact before `state.json` is advanced.
 
 Mirrors are derived files. If a native agent changes the plan, update the
 canonical Atelier `plan.md` explicitly before finalizing it again.

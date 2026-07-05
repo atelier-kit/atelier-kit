@@ -66,4 +66,4 @@ The `## Questions` section of `research.md` contains:
 - No other section of `research.md` was modified.
 - No project code was edited.
 - The Plannotator boundary check in `core.md` was followed (run or skipped per host capability).
-- The questions task is marked done in `state.json`; `atelier done` is only an optional helper.
+- The questions task is marked done by editing `state.json` directly; no CLI is required (`atelier done` is only an optional helper).

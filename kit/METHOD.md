@@ -36,9 +36,13 @@ Each epic ledger owns its artifacts:
 
 ## Gates
 
-Atelier guides you through `planned`: by then `plan.md` should stand scrutiny,
-slices should be spelled out, and the native mirror should be exported for the
-host agent.
+Atelier guides you through `planned`: by then `plan.md` should stand scrutiny and
+slices should be spelled out. Gates are **self-checks** each skill runs against
+its own artifact (research-ready, plan-ready) — no CLI is required to pass them.
 
 Coding ships via whatever workflow you already use for this agent. When changes
-exist on disk, `atelier review` captures how closely reality matches the plan.
+exist on disk, follow `.atelier/skills/reviewer.md` to compare reality against the
+plan (compute changed-files × allowed_files yourself and write `review.md`).
+
+The `atelier` CLI is optional: it installs these files and can re-verify state
+deterministically, but the protocol runs entirely from files.

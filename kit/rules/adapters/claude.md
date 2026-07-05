@@ -3,5 +3,5 @@
 Alias for `claude-code`.
 
 - `/plan ...` stays Claude Code-native; native-plan hooks may activate Atelier V2 and nudge the same artifact flow.
-- `/atelier quick|plan|deep ...` activates Atelier through the `atelier` CLI.
+- `/atelier quick|plan|deep ...` activates Atelier; bootstrap the epic by following `.atelier/skills/bootstrap.md`.
 - Read `.atelier/active.json`, the active epic `state.json`, and only `.atelier/skills/<active_skill>.md` while active.

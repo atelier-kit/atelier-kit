@@ -88,7 +88,31 @@ describe("agent adapters include planner protocol", () => {
 
     expect(claude).toContain("/plan ...");
     expect(claude).toContain("/atelier plan");
-    expect(command).toContain('atelier new "<goal>" --mode standard');
+    // CLI-free: the command bootstraps from files, not `atelier new`.
+    expect(command).toContain(".atelier/skills/bootstrap.md");
+    expect(command).not.toContain("atelier new");
+    // The mirrored skills include the file-based bootstrap skill.
+    await access(join(path, ".claude", "skills", "atelier", "bootstrap.md"));
+  });
+
+  test("adapter agent-facing text never instructs the atelier CLI", async () => {
+    const { path, cleanup: c } = await tempDir();
+    cleanup = c;
+    process.env.ATELIER_KIT_ROOT = kitPath();
+
+    await cmdInit(path, { yes: true });
+    await cmdInstallAdapter(path, "claude-code");
+    await cmdInstallAdapter(path, "generic");
+
+    const claude = await readFile(join(path, "CLAUDE.md"), "utf8");
+    const command = await readFile(join(path, ".claude", "commands", "atelier.md"), "utf8");
+    const generic = await readFile(join(path, "atelier-system-prompt.txt"), "utf8");
+    // No agent-facing text should tell the agent to *run* these runtime CLI
+    // verbs. The CLI invocation form is `atelier <verb>` (backtick immediately
+    // before); the `/atelier <verb>` slash-command names are fine.
+    for (const text of [claude, command, generic]) {
+      expect(text).not.toMatch(/`atelier (new|next|done|review|export-plan|install-adapter|render-rules)\b/);
+    }
   });
 
   test.each([

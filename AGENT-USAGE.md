@@ -16,28 +16,27 @@ the host tool already tells you to.
 - `.atelier/active.json` with `"active": true` means the current task belongs
   to an active Atelier epic.
 
-## CLI helpers
+## No CLI required at runtime
 
-Prefer the active skill instructions and update the active epic ledger directly.
-Use the CLI only for setup, validation, mirror export, review, or optional
-lifecycle help:
+Do everything by reading and writing files. Bootstrap via
+`.atelier/skills/bootstrap.md`, follow the active skill, run its gate self-check,
+and update `state.json`/`active.json` directly. The `atelier` CLI is optional:
 
 ```bash
+# Installation (how the files get into a repo)
 atelier init
-atelier new "Add payment endpoint" --mode quick
-atelier status
-atelier validate
-atelier validate --gate research-ready
-atelier validate --gate plan-ready
 atelier render-rules --adapter cursor
-atelier export-plan --adapter claude-code
-atelier host-plan start "Add payment endpoint"
-atelier host-plan finalize
-atelier review
-atelier next
-atelier done
-atelier off
+atelier install-adapter claude-code
+
+# Optional deterministic re-checks (agent does these file-based)
+atelier validate --gate research-ready   # ≙ researcher self-check
+atelier validate --gate plan-ready       # ≙ planner self-check
+atelier review                           # ≙ follow reviewer.md
+atelier export-plan --adapter claude-code # ≙ copy plan.md to the mirror
 ```
+
+Never block on a CLI call. If a host cannot run the CLI, the full flow still works
+from files alone.
 
 ## What the agent should read
 
@@ -55,14 +54,13 @@ If something disagrees, trust the active epic `state.json`.
 ## Native plan mirrors
 
 Agents may use native planning surfaces when they help the user review a plan.
-Use `atelier export-plan --adapter <adapter>` to mirror
-`.atelier/epics/<active_epic>/plan.md` into an agent-native destination. The
-mirror is not protocol state; update the Atelier plan and ledger first, then
-export again.
+Copy `.atelier/epics/<active_epic>/plan.md` into the agent-native destination
+yourself; the mirror is not protocol state, so update the Atelier plan and ledger
+first, then rewrite the mirror. (`atelier export-plan --adapter <adapter>` does the
+same copy as an optional helper.)
 
-Claude Code exports to `~/.claude/plans/<epic>.md`; Cursor exports to
+Claude Code reads `~/.claude/plans/<epic>.md`; Cursor reads
 `.cursor/plans/<epic>.md`. Kiro and Antigravity use workspace-local plan files.
-External tools can run through `atelier export-plan --command`.
 
 ## Recommended flows
 
@@ -88,13 +86,13 @@ Expected behavior:
 
 Expected behavior:
 
-- create or reuse the active V2 epic ledger; quick mode starts directly at
-  `planning` with the `planner` skill;
+- bootstrap the epic file-based via `.atelier/skills/bootstrap.md`; quick mode
+  starts directly at `planning` with the `planner` skill;
 - record grounding evidence inline in `plan.md` under `## Research Notes`
   (files, symbols, constraints; what exists vs what will be created);
 - finalize as `planned` by making `plan.md` and `state.json.slices` pass the
-  plan-ready gate;
-- let the native agent implement from the exported plan.
+  plan-ready self-check;
+- let the native agent implement from the canonical plan (or a mirror you copy).
 
 ### Atelier standard
 
@@ -110,10 +108,11 @@ Expected behavior:
 - `researcher` fills the remaining sections of the same consolidated document
   (`## Codebase`, `## Constraints`, `## What exists vs what will be created`,
   `## Open unknowns`), keeping it compact (target 50–300 lines), and passes
-  `atelier validate --gate research-ready`;
+  the research-ready self-check (sections present, no `_Pending._`, non-generic
+  questions, within budget);
 - optionally write `design.md` when tradeoffs need narrowing;
 - define slices with allowed files, acceptance criteria, and validation;
-- finalize as `planned` and export the native plan mirror.
+- finalize as `planned`; copy a native mirror only if the host wants one.
 
 ### Atelier deep
 
@@ -131,16 +130,13 @@ Expected behavior:
 
 ## Review behavior
 
-After the host agent implements from the native plan:
+After the host agent implements from the plan, follow
+`.atelier/skills/reviewer.md`: collect the diff against
+`state.json.guards.baseline_ref`, build the union of the slices' `allowed_files`,
+and write `.atelier/epics/<active_epic>/review.md` with a `## Scope Check`
+section listing any changed file outside the allowed patterns. Record those in
+`state.json.violations` and justify or flag each as drift. Set the epic to `done`
+by editing `state.json` when the review is accepted.
 
-```bash
-atelier review
-atelier done
-```
-
-`atelier review` writes `.atelier/epics/<active_epic>/review.md` and sets the
-epic to `review`. It compares the diff and validation evidence against the
-planned slices, including the automatic Scope Check (changed files ×
-`allowed_files`); out-of-scope files land in `review.md` and
-`state.json.violations` and must be justified or flagged as drift.
-`atelier done` closes the epic when the review is accepted.
+`atelier review` / `atelier done` produce the identical result from the CLI if you
+prefer, but neither is required.

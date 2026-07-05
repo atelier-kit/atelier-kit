@@ -3,9 +3,9 @@
 Use `CLAUDE.md` and generated command files under `.claude/commands/`.
 
 - `/plan ...` stays Claude Code-native; native-plan hooks may activate Atelier V2 and nudge the same artifact flow.
-- `/atelier quick <goal>` maps to `atelier new "<goal>" --mode quick`.
-- `/atelier plan <goal>` maps to `atelier new "<goal>" --mode standard`.
-- `/atelier deep <goal>` maps to `atelier new "<goal>" --mode deep`.
+- `/atelier quick <goal>` bootstraps a quick epic via `.atelier/skills/bootstrap.md`.
+- `/atelier plan <goal>` bootstraps a standard epic via `.atelier/skills/bootstrap.md`.
+- `/atelier deep <goal>` bootstraps a deep epic via `.atelier/skills/bootstrap.md`.
 - After any command that changes state, read `.atelier/active.json` and the active epic `state.json`.
 - Load only `.atelier/skills/<active_skill>.md`.
 - At `planned`, use the exported Claude plan under `~/.claude/plans/` for native implementation.

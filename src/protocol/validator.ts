@@ -342,6 +342,7 @@ export async function doctorProtocol(cwd: string): Promise<ValidationReport> {
     "protocol/modes.yaml",
     "protocol/skills.yaml",
     "rules/core.md",
+    "skills/bootstrap.md",
     "skills/questioner.md",
     "skills/researcher.md",
     "skills/planner.md",

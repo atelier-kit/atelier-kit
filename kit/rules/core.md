@@ -1,8 +1,13 @@
 # Atelier-Kit Planning Protocol
 
 <!-- atelier:status -->
-Inactive. (No active epic. `atelier render-rules` rewrites this block when state changes.)
+Inactive. (No active epic. This block is refreshed when state changes.)
 <!-- /atelier:status -->
+
+Atelier runs **entirely from files** under `.atelier/`. You never need the
+`atelier` CLI to plan: bootstrap, gates, review, and finalization are all done by
+reading and writing files. The CLI is an optional convenience — it installs these
+files and can re-verify state deterministically — but no step below requires it.
 
 ## Activation
 
@@ -13,6 +18,12 @@ Atelier is **off** unless one of these is true:
 
 When off, ignore `.atelier/` entirely. Do not create artifacts, do not load
 skills, do not enforce gates, do not block normal agent behavior.
+
+**To activate a new epic** (`/atelier quick|plan|deep <goal>` or "use
+Atelier-Kit") with no epic yet, read `.atelier/skills/bootstrap.md` and follow it
+to create the ledger and stubs from files, then continue with the loop below.
+**To deactivate** (`/atelier off`), set `.atelier/active.json` to
+`{ "active": false, "mode": "native", "active_epic": null, "active_phase": null, "active_skill": null, "updated_at": null }`.
 
 ## When on, the only loop is
 
@@ -62,13 +73,35 @@ Research quality bar: one consolidated `research.md`, compact (target 50–300
 lines), every claim citing a path, symbol, command or source, and explicit
 about what already exists vs what will be created.
 
+## Gates are self-checks (no CLI)
+
+Each skill ends with a **self-check gate**: an explicit, mechanical checklist you
+verify by reading the artifact before you advance `state.json`. Do not advance
+until every item passes. The checks are literal (a heading exists, no
+`_Pending._` remains, a line count is within budget, each slice lists
+`allowed_files`), so you can audit them yourself.
+
+- **research-ready** (researcher): required sections for the mode are present,
+  no `_Pending._` left, the seed questions were replaced, and the file is compact
+  (target 50–300 lines).
+- **plan-ready** (planner): `plan.md` has goal, assumptions, risks and slices;
+  every slice has goal, allowed files, acceptance criteria and validation; the
+  same slices are mirrored in `state.json`.
+
+Running `atelier validate --gate <name>` re-checks the same rules deterministically
+and is a fine optional double-check, but it is never required to advance.
+
 ## Implementation and review
 
-- `status: planned` → switch to the host's native implementation flow using the
-  exported plan mirror. The canonical plan stays at
-  `.atelier/epics/<active_epic>/plan.md`.
-- `status: review` → compare the implementation diff against `plan.md` and
-  write `review.md`.
+- `status: planned` → switch to the host's native implementation flow. The
+  canonical plan is `.atelier/epics/<active_epic>/plan.md`. If your host reads
+  plans from a native location, copy `plan.md` there yourself (optional); the
+  canonical file stays authoritative.
+- During implementation, record per-slice progress back into `plan.md` under
+  `## Progress` (the plan is a living artifact).
+- `status: review` → follow `.atelier/skills/reviewer.md`: compare the
+  implementation diff against `plan.md`, cross-check changed files against each
+  slice's `allowed_files` yourself, and write `review.md`.
 
 ## Plannotator (optional, per phase)
 
@@ -91,13 +124,15 @@ At that moment:
 3. Fold the user's annotations back into the same artifact.
 4. Then update `state.json`.
 
-`atelier status` is not a substitute. A chat-based "looks good?" is not a
-substitute. Plannotator either runs at the boundary or is skipped entirely.
+A chat-based "looks good?" is not a substitute. Plannotator either runs at the
+boundary or is skipped entirely. (`command -v plannotator` is a host shell check,
+not the Atelier CLI.)
 
 ## When state disagrees with reality
 
 Pause and report the discrepancy to the user. Do not auto-correct `state.json`
-silently. The user (or `atelier doctor`, if they choose) resolves it.
+silently. The user resolves it by editing the ledger (optionally re-checking with
+`atelier doctor`).
 
 The ledger is `.atelier/epics/<active_epic>/state.json`. Anything else under
 `.atelier/` (including `context.md` if present) is not authoritative.

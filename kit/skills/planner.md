@@ -43,8 +43,8 @@ Transform available evidence into a native-agent implementation plan with review
 3. Confirm project code writes are disabled.
 4. In quick mode, fill `## Research Notes` in `plan.md` yourself: the files,
    symbols and constraints that ground the plan, stating what exists vs what
-   will be created. In standard/deep modes, consume `research.md` (it must pass
-   `atelier validate --gate research-ready`) and `design.md` when scheduled.
+   will be created. In standard/deep modes, consume `research.md` (it must have
+   passed the researcher's research-ready self-check) and `design.md` when scheduled.
 5. In deep mode, do not start final planning until `design.md` is complete.
    If it is not, stop and block with a clear reason.
 6. Summarize the load-bearing evidence in `## Evidence Summary` — a condensation,
@@ -55,11 +55,18 @@ Transform available evidence into a native-agent implementation plan with review
 9. Reflect the same slices in `state.json` and `plan.md`.
 10. Before updating `state.json` to `planned`, follow the "Plannotator (optional,
     per phase)" section of `core.md` against `plan.md`.
-11. Set `status` to `planned` and `active_skill` to `null` only when the plan passes
-    `atelier validate --gate plan-ready`.
-12. During native implementation, the plan stays alive: progress per slice is
-    recorded under `## Progress` and the native mirror is re-exported when the
-    plan changes.
+11. Run the **plan-ready self-check** (no CLI) and set `status` to `planned` and
+    `active_skill` to `null` only when every item passes:
+    - `plan.md` has `## Goal`, `## Assumptions`, `## Risks` and `## Slices`;
+    - every slice section has `**Goal:**`, `**Allowed files:**`,
+      `**Acceptance criteria:**` and `**Validation:**`;
+    - `state.json.slices` mirrors the same slices, each with a non-empty
+      `allowed_files`, `acceptance_criteria` and `validation`.
+    (`atelier validate --gate plan-ready` re-checks these deterministically if you
+    want an optional double-check.)
+12. During native implementation, the plan stays alive: record progress per slice
+    under `## Progress`. If you keep a native mirror, rewrite it from `plan.md`
+    when the plan changes; the canonical `plan.md` stays authoritative.
 
 ## Output Format
 
@@ -85,7 +92,8 @@ Each slice section must include:
 
 ## Completion Criteria
 
-- `plan.md` passes `atelier validate --gate plan-ready`.
+- The plan-ready self-check passes (plan sections present; every slice has goal,
+  allowed files, acceptance criteria and validation; `state.json` mirrors them).
 - `state.json` has at least one ready slice.
 - Every slice has allowed files, acceptance criteria and validation.
 - The Plannotator boundary check in `core.md` was followed (run or skipped per host capability).

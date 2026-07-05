@@ -43,6 +43,7 @@
       "type": ["string", "null"],
       "enum": [
         "questioner",
+        "researcher",
         "repo-analyst",
         "tech-analyst",
         "business-analyst",
@@ -50,7 +51,8 @@
         "designer",
         "reviewer",
         null
-      ]
+      ],
+      "$comment": "repo/tech/business-analyst are legacy skill names kept for ledgers created before the researcher fusion"
     },
     "current_slice": { "type": ["string", "null"] },
     "approval": { "$ref": "gate.schema.json#/definitions/approval" },

@@ -8,6 +8,7 @@
     "type": {
       "enum": [
         "questions",
+        "research",
         "repo",
         "tech",
         "business",
@@ -15,7 +16,8 @@
         "design",
         "planning",
         "review"
-      ]
+      ],
+      "$comment": "repo/tech/business/synthesis are legacy task types kept for ledgers created before research consolidation"
     },
     "status": { "enum": ["pending", "in_progress", "done", "blocked"] },
     "artifact": { "type": "string", "minLength": 1 }

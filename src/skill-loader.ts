@@ -85,12 +85,13 @@ export function taskTypeToSkillFolder(taskType: EpicState["tasks"][number]["type
   switch (taskType) {
     case "questions":
       return "questioner";
+    // Legacy repo/tech/business tasks route to the researcher skill so
+    // pre-fusion ledgers keep working after upgrade.
+    case "research":
     case "repo":
-      return "repo-analyst";
     case "tech":
-      return "tech-analyst";
     case "business":
-      return "business-analyst";
+      return "researcher";
     case "design":
       return "designer";
     case "review":

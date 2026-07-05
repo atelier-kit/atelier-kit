@@ -1,51 +1,45 @@
 modes:
   quick:
-    description: Small, low-risk change.
+    description: Small, low-risk change. Research lives inline in plan.md.
     required_artifacts:
-      - questions.md
-      - research/repo.md
       - plan.md
       - review.md
-    research_tracks:
-      repo: required
-      tech: optional
-      business: optional
+    plan_sections:
+      research_notes: required
     max_recommended_slices: 3
 
   standard:
-    description: Normal feature or medium change.
+    description: Normal feature or medium change. One consolidated research artifact.
     required_artifacts:
-      - questions.md
-      - research/repo.md
-      - research/tech.md
-      - synthesis.md
-      - decisions.md
-      - design.md
+      - research.md
       - plan.md
       - review.md
-    research_tracks:
-      repo: required
-      tech: required
-      business: optional
+    research_sections:
+      questions: required
+      codebase: required
+      constraints: required
+      what_exists_vs_created: required
+      open_unknowns: required
+      product_behavior: optional
+    optional_artifacts:
+      - design.md
 
   deep:
     description: High-risk architectural or product change.
     required_artifacts:
-      - questions.md
-      - research/repo.md
-      - research/tech.md
-      - research/business.md
-      - synthesis.md
-      - decisions.md
+      - research.md
       - design.md
-      - risk-register.md
-      - rollback.md
-      - test-strategy.md
       - plan.md
-      - critique.md
       - review.md
-    research_tracks:
-      repo: required
-      tech: required
-      business: required
-      risk: required
+    research_sections:
+      questions: required
+      codebase: required
+      constraints: required
+      product_behavior: required
+      what_exists_vs_created: required
+      open_unknowns: required
+    design_sections:
+      decisions: required
+      risk_register: required
+      rollback: required
+      test_strategy: required

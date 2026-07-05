@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { readActiveEpic, readAtelierConfig, writeActiveState, writeEpicState } from "../protocol/state.js";
 import { epicDir } from "../protocol/paths.js";
 import { inactiveState } from "../protocol/templates.js";
-import { validatePlanReady } from "../protocol/validator.js";
+import { researchQuestionsLookGeneric, validatePlanReady, validateResearchReady } from "../protocol/validator.js";
 import { exportActivePlan } from "./export-plan.js";
 import { refreshAdapter } from "../adapters/index.js";
 import type { AtelierStatus, EpicState, SkillName } from "../protocol/schema.js";
@@ -53,12 +53,13 @@ function taskSkill(task: ProtocolTask): SkillName {
   switch (task.type) {
     case "questions":
       return "questioner";
+    // Legacy repo/tech/business tasks are routed to the researcher skill so
+    // pre-fusion ledgers keep working after upgrade.
+    case "research":
     case "repo":
-      return "repo-analyst";
     case "tech":
-      return "tech-analyst";
     case "business":
-      return "business-analyst";
+      return "researcher";
     case "design":
       return "designer";
     case "review":
@@ -72,6 +73,7 @@ function taskSkill(task: ProtocolTask): SkillName {
 function taskStatus(task: ProtocolTask): AtelierStatus {
   switch (task.type) {
     case "questions":
+    case "research":
     case "repo":
     case "tech":
     case "business":
@@ -128,16 +130,20 @@ function questionsLookGenericOnly(content: string): boolean {
 }
 
 async function assertTaskArtifactComplete(cwd: string, state: EpicState, task: ProtocolTask): Promise<void> {
-  const artifacts = task.type === "design"
-    ? ["decisions.md", "design.md"]
-    : [task.artifact];
   const pending: string[] = [];
-  for (const artifact of artifacts) {
-    const content = await readFile(join(epicDir(cwd, state.epic_id), artifact), "utf8")
-      .catch(() => "");
-    if (!content || artifactLooksPending(content)) pending.push(artifact);
+  const content = await readFile(join(epicDir(cwd, state.epic_id), task.artifact), "utf8")
+    .catch(() => "");
+  if (task.type === "questions" && task.artifact === "research.md") {
+    // The questioner owns only the ## Questions section of research.md; later
+    // sections may still be _Pending._ for the researcher.
+    if (!content) pending.push(task.artifact);
+    else if (researchQuestionsLookGeneric(content)) {
+      pending.push(`${task.artifact} questions are still generic`);
+    }
+  } else {
+    if (!content || artifactLooksPending(content)) pending.push(task.artifact);
     if (task.type === "questions" && questionsLookGenericOnly(content)) {
-      pending.push(`${artifact} is still generic`);
+      pending.push(`${task.artifact} is still generic`);
     }
   }
   if (pending.length > 0) {
@@ -177,6 +183,13 @@ export async function cmdDone(cwd: string): Promise<void> {
       throw new Error("No active planning task. Use `atelier next` to focus the next task.");
     }
     await assertTaskArtifactComplete(cwd, state, current);
+    if (current.type === "research") {
+      const { errors, warnings } = await validateResearchReady(cwd, state);
+      for (const warning of warnings) console.log(pc.yellow(`! ${warning}`));
+      if (errors.length > 0) {
+        throw new Error(`Cannot finish research: research gate failed.\n- ${errors.join("\n- ")}`);
+      }
+    }
     current.status = "done";
     if (current.type === "planning") {
       state.status = "planned";

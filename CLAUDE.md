@@ -59,7 +59,7 @@ The `kit/` directory contains **templates and rule files** distributed with the 
 - `protocol/` — Protocol YAML files (default skill order, artifact shapes, etc.)
 - `rules/` — Adapter rule templates for each host (Claude Code, Cursor, etc.)
 - `schemas/` — JSON schemas for validation
-- `skills/` — Skill markdown templates (questioner, repo-analyst, planner, reviewer, etc.)
+- `skills/` — Skill markdown templates (questioner, researcher, designer, planner, reviewer)
 
 ### State Model
 
@@ -69,15 +69,12 @@ When active, Atelier manages state in three JSON files:
 2. **`.atelier/active.json`** — Global activation state (is Atelier on? which epic is active?)
 3. **`.atelier/epics/<epic-slug>/state.json`** — Per-epic state (current task, status, slices, violations). **This is the source of truth** for the active epic.
 
-The active epic owns artifacts under `.atelier/epics/<epic>/`:
+The active epic owns artifacts under `.atelier/epics/<epic>/` — ceremony scales with mode (quick=2, standard=3, deep=4 artifacts):
 ```
 ├── state.json
-├── questions.md
-├── research/
-├── synthesis.md
-├── decisions.md
-├── design.md
-├── plan.md
+├── research.md   (standard/deep — ## Questions + evidence sections, consolidated, ~300-line budget)
+├── design.md     (deep; optional in standard — decisions embedded as an ADR-style ## Decisions section)
+├── plan.md       (living contract; quick mode keeps research inline under ## Research Notes)
 └── review.md
 ```
 
@@ -91,8 +88,10 @@ Skills are narrow playbooks for one phase of planning. Each skill:
 
 Example flow:
 ```
-questioner -> repo-analyst -> tech-analyst -> designer -> planner -> reviewer
+questioner -> researcher -> [designer] -> planner -> reviewer
 ```
+
+The questioner writes only the `## Questions` section of `research.md`; the researcher fills the remaining evidence sections of the same document. Legacy skill names (repo-analyst, tech-analyst, business-analyst) and task types (repo/tech/business/synthesis) remain valid in schemas so pre-consolidation ledgers still parse; legacy research tasks route to the researcher skill.
 
 ### Adapter Rendering
 
@@ -115,19 +114,23 @@ questioner -> repo-analyst -> tech-analyst -> designer -> planner -> reviewer
 
 ### Planning Modes
 
-- **quick**: Skips synthesis and design phases; goes straight to planning.
-- **standard** (aka `plan`): Full questioner → research → synthesis → design → planning flow.
-- **deep**: Extended research and design phases; for complex initiatives.
+- **quick**: Starts directly at planning with the planner skill; research is inline in `plan.md` (`## Research Notes`). Artifacts: plan.md + review.md.
+- **standard** (aka `plan`): questioner → researcher → planning. Artifacts: research.md + plan.md + review.md (design.md optional).
+- **deep**: Adds a required `design.md` (with `## Risk register`, `## Rollback`, `## Test strategy` sections) and `## Product behavior` in research.md.
 
 ### Planning Gates
+
+`atelier validate --gate research-ready` (standard/deep) enforces before the research task can be marked done: required sections per mode, no `_Pending._` leftovers, seed questions replaced; warns above the ~300-line budget.
 
 `atelier validate --gate plan-ready` enforces these before `atelier done`:
 
 1. Active epic exists
 2. `plan.md` exists with:
    - goal, assumptions, risks sections
-   - slices (vertical cuts with scope, acceptance criteria, validation)
-3. `state.json` reflects the same slice structure
+   - slices (vertical cuts with scope, **allowed files**, acceptance criteria, validation)
+3. `state.json` reflects the same slice structure (each slice must have non-empty `allowed_files`)
+
+`atelier review` additionally cross-checks changed files against the slices' `allowed_files` (Scope Check) and records out-of-scope files in `state.json.violations`.
 
 The `planner` skill manages these checks; the validator enforces them.
 
@@ -161,7 +164,7 @@ When you modify the protocol:
 ### Testing
 
 Tests use Vitest. Key patterns:
-- Validate state transitions (e.g., discovery → synthesis)
+- Validate state transitions (e.g., discovery → planning)
 - Validate gate logic (e.g., `plan-ready` checks all slices have acceptance criteria)
 - Validate schema parsing (e.g., malformed `state.json` is caught)
 

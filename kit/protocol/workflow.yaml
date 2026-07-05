@@ -9,16 +9,11 @@ states:
   idle:
     atelier_active: true
     can_write_project_code: false
-    next: [discovery]
+    next: [discovery, planning]
 
   discovery:
     can_write_project_code: false
-    skills: [questioner, repo-analyst, tech-analyst, business-analyst]
-    next: [synthesis, planning, blocked]
-
-  synthesis:
-    can_write_project_code: false
-    skills: [planner]
+    skills: [questioner, researcher]
     next: [design, planning, blocked]
 
   design:

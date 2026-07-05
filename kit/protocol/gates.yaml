@@ -1,4 +1,15 @@
 gates:
+  research_ready:
+    description: Research must be consolidated, concrete and compact before design/planning.
+    require:
+      - active.active=true
+      - research.md exists (standard/deep modes)
+      - required_sections_present_for_mode
+      - no_pending_sections
+      - seed_questions_replaced
+    warn:
+      - line_budget_exceeded (target ~300 lines)
+
   plan_ready:
     description: Plan must be reviewable before native implementation.
     require:
@@ -8,6 +19,7 @@ gates:
       - plan_has_goal
       - plan_has_slices
       - each_slice_has_goal
+      - each_slice_has_allowed_files
       - each_slice_has_acceptance_criteria
       - risks_are_documented
       - validation_steps_are_documented
@@ -17,4 +29,5 @@ gates:
     require:
       - review.md exists
       - plan_compliance_recorded
+      - changed_files_checked_against_allowed_files
       - validation_result_present

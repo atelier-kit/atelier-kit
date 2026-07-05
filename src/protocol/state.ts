@@ -85,6 +85,6 @@ export async function ensureEpicDirectories(
   cwd: string,
   epicId: string,
 ): Promise<void> {
-  await mkdir(join(epicDir(cwd, epicId), "research"), { recursive: true });
+  await mkdir(epicDir(cwd, epicId), { recursive: true });
 }
 

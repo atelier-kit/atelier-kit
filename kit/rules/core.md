@@ -32,15 +32,13 @@ state, follow the active skill, write the artifact, update state.
 The active skill defines the **only artifact** you may write inside the active
 epic. Map:
 
-| `active_skill`     | allowed artifact                                  |
-|--------------------|---------------------------------------------------|
-| `questioner`       | `questions.md`                                    |
-| `repo-analyst`     | `research/repo.md`                                |
-| `tech-analyst`     | `research/tech.md`                                |
-| `business-analyst` | `research/business.md`                            |
-| `designer`         | `decisions.md` and `design.md`                    |
-| `planner`          | `synthesis.md` and `plan.md`                      |
-| `reviewer`         | `review.md`                                       |
+| `active_skill` | allowed artifact                             |
+|----------------|----------------------------------------------|
+| `questioner`   | `research.md` (only the `## Questions` section) |
+| `researcher`   | `research.md`                                |
+| `designer`     | `design.md`                                  |
+| `planner`      | `plan.md`                                    |
+| `reviewer`     | `review.md`                                  |
 
 Updates to `state.json` are always allowed (it's the ledger).
 
@@ -54,10 +52,15 @@ obvious — early artifacts decay when upstream assumptions change.
 
 The planning order is fixed:
 
-`questioner → repo-analyst → tech-analyst → [business-analyst] → designer → planner → reviewer`
+`questioner → researcher → [designer] → planner → reviewer`
 
-`business-analyst` runs only in modes that schedule it (typically `deep`, and
-optionally `standard`).
+`designer` runs only in modes that schedule it (`deep`; optional in `standard`).
+`quick` mode skips straight to `planner`: research lives inline in `plan.md`
+under `## Research Notes`.
+
+Research quality bar: one consolidated `research.md`, compact (target 50–300
+lines), every claim citing a path, symbol, command or source, and explicit
+about what already exists vs what will be created.
 
 ## Implementation and review
 

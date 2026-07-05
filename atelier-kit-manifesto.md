@@ -81,7 +81,7 @@ atelier-kit deliberately separates two phases that are often blurred together:
 1. **planning what should be done**;
 2. **implementing it with the chosen coding tool**.
 
-During planning, the protocol structures questions, research, synthesis, design, and the plan.
+During planning, the protocol structures questions, research, design, and the plan — as few artifacts as the risk allows.
 
 Once the plan is approved, atelier-kit gets out of the way. Implementation can happen with Claude Code, Cursor, Codex, Kiro, Kilo Code, Windsurf, Cline, Antigravity, or any compatible agent.
 
@@ -90,10 +90,8 @@ The canonical file stays in the repository, while the plan can also be mirrored 
 ```mermaid
 flowchart TB
     subgraph Planning["Planning phase - atelier-kit active"]
-        Q[questions.md]
-        R[research/*.md]
-        S[synthesis.md]
-        D[design.md]
+        R["research.md (questions + evidence)"]
+        D["design.md (when the mode schedules it)"]
         P[canonical plan.md]
     end
 
@@ -103,7 +101,7 @@ flowchart TB
         Code[Code changes]
     end
 
-    Q --> R --> S --> D --> P
+    R --> D --> P
     P --> Gate[plan-ready gate]
     Gate --> M
     M --> A --> Code
@@ -117,7 +115,7 @@ Conversations disappear. Prompts change. Sessions expire. Context fragments.
 
 That is why atelier-kit stores state and artifacts inside the repository itself.
 
-Each epic has a ledger under `.atelier/epics/<epic-slug>/`. That ledger holds the current state, questions, research, synthesis, design, plan, and review.
+Each epic has a ledger under `.atelier/epics/<epic-slug>/`. That ledger holds the current state, research (with its questions), design, plan, and review.
 
 Planning stops being a loose sequence of chat messages and becomes a set of versionable, reviewable, auditable artifacts.
 
@@ -134,16 +132,15 @@ flowchart TB
 
     Epics --> Epic["<epic-slug>/"]
     Epic --> State[state.json]
-    Epic --> Questions[questions.md]
-    Epic --> Research[research/]
-    Epic --> Synthesis[synthesis.md]
-    Epic --> Design[design.md]
+    Epic --> Research[research.md]
+    Epic --> Design["design.md (per mode)"]
     Epic --> Plan[plan.md]
     Epic --> Review[review.md]
 
-    Research --> Repo[repo.md]
-    Research --> Tech[tech.md]
-    Research --> Business[business.md]
+    Research --> Questions[## Questions]
+    Research --> Codebase[## Codebase]
+    Research --> Constraints[## Constraints]
+    Research --> Exists[## What exists vs what will be created]
 ```
 
 ---
@@ -159,15 +156,14 @@ The state flow is clear:
 ```mermaid
 stateDiagram-v2
     [*] --> discovery
-    discovery --> synthesis: research completed
-    synthesis --> design: understanding consolidated
+    discovery --> design: research-ready passed
+    discovery --> planning: research-ready passed (no design scheduled)
     design --> planning: decisions agreed
     planning --> planned: plan-ready passed
     planned --> review: implementation completed
     review --> done: review accepted
 
     discovery --> blocked: gate violated
-    synthesis --> blocked: missing artifact
     design --> blocked: pending decision
     planning --> blocked: invalid plan
     review --> blocked: critical deviation
@@ -218,22 +214,17 @@ Before reading the repository, before proposing architecture, before writing a p
 
 These questions cannot be generic. They need to reflect the epic's goal, the system's domain, and the points that must be investigated.
 
-The questioner creates the first quality filter for planning.
+The questioner creates the first quality filter for planning. Its questions open `research.md`: the `## Questions` section is written before any evidence section, in the same consolidated document.
 
 ```mermaid
 flowchart LR
     Goal[Epic goal] --> Questioner[questioner]
-    Questioner --> Questions[questions.md]
-    Questions --> Repo[repo-analyst]
-    Questions --> Tech[tech-analyst]
-    Questions --> Business[business-analyst]
-
-    Repo --> RepoMD[research/repo.md]
-    Tech --> TechMD[research/tech.md]
-    Business --> BusinessMD[research/business.md]
+    Questioner --> Questions["research.md ## Questions"]
+    Questions --> Researcher[researcher]
+    Researcher --> Evidence["research.md evidence sections<br/>(Codebase, Constraints, Product behavior,<br/>What exists vs what will be created, Open unknowns)"]
 ```
 
-Intent isolation starts here as well. Research tracks receive objective technical questions, which reduces the risk of prematurely confirming an imagined solution.
+Intent isolation starts here as well. The researcher receives objective technical questions, which reduces the risk of prematurely confirming an imagined solution.
 
 ---
 
@@ -245,26 +236,26 @@ It identifies modules, dependencies, existing patterns, versions, technical cons
 
 Research should not jump straight to the answer. It should produce evidence.
 
-After research, synthesis consolidates findings, identifies conflicts, and organizes the team's understanding of the system. It is still not time to decide.
+Research is **one consolidated, compact document**. Quality beats volume: a bad line of research compounds into a bad plan and thousands of bad lines of code, so `research.md` is held to a quality bar — correct, complete, compact (target 50–300 lines), every claim citing a path, symbol, command or source, and explicit about what already exists versus what will be created. The `research-ready` gate enforces this shape.
 
-Architectural decisions belong in design.
+It is still not time to decide. Architectural decisions belong in design.
 
 ```mermaid
 flowchart TB
-    subgraph Research[Research]
-        R1[research/repo.md]
-        R2[research/tech.md]
-        R3[research/business.md]
+    subgraph Research["research.md (one document)"]
+        R1[## Codebase]
+        R2[## Constraints]
+        R3["## Product behavior (deep)"]
+        R4[## What exists vs what will be created]
     end
 
-    Research --> Syn[synthesis.md]
-    Syn --> Des[design.md]
+    Research --> Des[design.md]
     Des --> Plan[plan.md]
 
     R1 -. maps .-> Current[Current state]
     R2 -. identifies .-> Constraints[Constraints]
     R3 -. describes .-> Impact[Business impact]
-    Syn -. consolidates .-> Understanding[Understanding]
+    R4 -. prevents .-> Duplication[Duplicated implementations]
     Des -. decides .-> Target[Target state]
     Plan -. operationalizes .-> Execution[Execution by slices]
 ```
@@ -284,6 +275,8 @@ It answers:
 - which decisions still carry risk;
 - what the desired state of the system is.
 
+Decisions live inside `design.md` as an ADR-style `## Decisions` section. In deep mode, `design.md` also carries `## Risk register`, `## Rollback` and `## Test strategy` as required sections — depth comes from sections, not from more files.
+
 Before tactical planning begins, the human should be able to review the design.
 
 atelier-kit assumes agents can help, but important architectural decisions still need human responsibility.
@@ -297,6 +290,8 @@ The plan is not a loose task list.
 `plan.md` is a verifiable contract between intent, design, and implementation.
 
 It must include the goal, assumptions, risks, and slices. Each slice is a vertical implementation unit with defined scope, allowed files, acceptance criteria, and validation instructions.
+
+The plan is also a **living artifact**: during native implementation, per-slice progress is recorded back into `plan.md` under `## Progress` and the native mirror is re-exported. There is no chain of new documents after the plan — the plan absorbs its own history.
 
 ```mermaid
 classDiagram
@@ -387,12 +382,12 @@ flowchart TD
     S -->|No| Quick
     S -->|High operational risk| Deep[deep]
 
-    Quick --> QA[questions.md + research/repo.md + plan.md]
-    Standard --> SA[questions.md + research + synthesis.md + design.md + plan.md]
-    Deep --> DA[standard + required business track + risk register + rollback + critique]
+    Quick --> QA["plan.md (research inline) + review.md"]
+    Standard --> SA["research.md + plan.md + review.md (design.md optional)"]
+    Deep --> DA["research.md + design.md (risk register, rollback, test strategy as sections) + plan.md + review.md"]
 ```
 
-The goal is not bureaucracy. It is to match planning depth to risk and impact.
+The goal is not bureaucracy. It is to match planning depth to risk and impact — quick produces 2 artifacts, standard 3, deep 4. Depth scales through sections and rigor, not through more files.
 
 ---
 
@@ -428,6 +423,8 @@ The mirror is derived. The source of truth remains the canonical plan in the epi
 After implementation, atelier-kit becomes useful again.
 
 The `atelier review` command compares the current diff with the planned slices.
+
+The first question is answered automatically: `atelier review` cross-checks every changed file against the union of the slices' `allowed_files` and records out-of-scope files in `review.md` and in `state.json.violations`.
 
 The review should answer:
 
@@ -532,10 +529,10 @@ flowchart TB
     Intent[Intent] --> Activate[Activate atelier-kit]
     Activate --> Epic[Create epic]
     Epic --> Discovery[Discovery]
-    Discovery --> Questions[questions.md]
-    Questions --> Research[research/*.md]
-    Research --> Synthesis[synthesis.md]
-    Synthesis --> Design[design.md]
+    Discovery --> Questions["research.md ## Questions"]
+    Questions --> Research["research.md evidence sections"]
+    Research --> RGate{research-ready?}
+    RGate -->|Yes| Design["design.md (when scheduled)"]
     Design --> Planning[planning]
     Planning --> Plan[plan.md]
     Plan --> Gate{plan-ready?}
@@ -544,8 +541,10 @@ flowchart TB
     Gate -->|Yes| Planned[planned]
     Planned --> Mirror[export-plan]
     Mirror --> Native[Native implementation]
-    Native --> Review[atelier review]
-    Review --> ReviewMD[review.md]
+    Native --> Progress["progress recorded in plan.md ## Progress"]
+    Progress --> Review[atelier review]
+    Review --> Scope["scope check: diff × allowed_files"]
+    Scope --> ReviewMD[review.md]
     ReviewMD --> Done[atelier done]
 ```
 
@@ -577,7 +576,7 @@ A small, installable, versionable protocol.
 
 It creates a shared language between the developer, the agent, and the repository.
 
-It turns intent into questions, questions into research, research into synthesis, synthesis into design, design into a plan, the plan into slices, slices into implementation, and implementation into review.
+It turns intent into questions, questions into research, research into design, design into a plan, the plan into slices, slices into implementation, and implementation into review.
 
 It makes the agent's work more legible, more verifiable, and safer to trust.
 
@@ -634,6 +633,7 @@ atelier init
 atelier install-adapter claude-code
 atelier new "Add payment system" --mode standard
 atelier status
+atelier validate --gate research-ready
 atelier validate --gate plan-ready
 atelier export-plan --adapter claude-code
 atelier review
@@ -655,11 +655,9 @@ flowchart TB
     OptIn --> Requested[Does not interfere unless requested]
 
     Root --> Planning[Planning Protocol]
-    Planning --> Questions[questions.md]
-    Planning --> Research[research]
-    Planning --> Synthesis[synthesis.md]
-    Planning --> Design[design.md]
-    Planning --> Plan[plan.md]
+    Planning --> Research["research.md (questions + evidence)"]
+    Planning --> Design["design.md (per mode)"]
+    Planning --> Plan["plan.md (living)"]
 
     Root --> State[State]
     State --> Active[active.json]
@@ -675,6 +673,7 @@ flowchart TB
 
     Root --> Gates[Gates]
     Gates --> Validate[validate]
+    Gates --> ResearchReady[research-ready]
     Gates --> PlanReady[plan-ready]
     Gates --> Blocked[blocked]
 

@@ -21,9 +21,7 @@ describe("init", () => {
     await access(join(path, ".atelier", "protocol", "workflow.yaml"));
     await access(join(path, ".atelier", "rules", "core.md"));
     await access(join(path, ".atelier", "skills", "questioner.md"));
-    await access(join(path, ".atelier", "skills", "repo-analyst.md"));
-    await access(join(path, ".atelier", "skills", "tech-analyst.md"));
-    await access(join(path, ".atelier", "skills", "business-analyst.md"));
+    await access(join(path, ".atelier", "skills", "researcher.md"));
     await access(join(path, ".atelier", "skills", "planner.md"));
     await access(join(path, ".atelier", "skills", "designer.md"));
     await access(join(path, ".atelier", "skills", "reviewer.md"));

@@ -27,6 +27,7 @@ atelier init
 atelier new "Add payment endpoint" --mode quick
 atelier status
 atelier validate
+atelier validate --gate research-ready
 atelier validate --gate plan-ready
 atelier render-rules --adapter cursor
 atelier export-plan --adapter claude-code
@@ -87,9 +88,10 @@ Expected behavior:
 
 Expected behavior:
 
-- create or reuse the active V2 epic ledger;
-- focus `questioner` first and replace generic `questions.md` placeholders;
-- create `research/repo.md` and `plan.md`;
+- create or reuse the active V2 epic ledger; quick mode starts directly at
+  `planning` with the `planner` skill;
+- record grounding evidence inline in `plan.md` under `## Research Notes`
+  (files, symbols, constraints; what exists vs what will be created);
 - finalize as `planned` by making `plan.md` and `state.json.slices` pass the
   plan-ready gate;
 - let the native agent implement from the exported plan.
@@ -103,10 +105,13 @@ Expected behavior:
 Expected behavior:
 
 - create the active epic;
-- complete project-specific questions first;
-- complete repo and tech research;
-- use business research when product/stakeholder impact is material;
-- write synthesis, decisions, design, and plan artifacts;
+- `questioner` writes project-specific questions in the `## Questions` section
+  of `research.md` first;
+- `researcher` fills the remaining sections of the same consolidated document
+  (`## Codebase`, `## Constraints`, `## What exists vs what will be created`,
+  `## Open unknowns`), keeping it compact (target 50–300 lines), and passes
+  `atelier validate --gate research-ready`;
+- optionally write `design.md` when tradeoffs need narrowing;
 - define slices with allowed files, acceptance criteria, and validation;
 - finalize as `planned` and export the native plan mirror.
 
@@ -119,8 +124,9 @@ Expected behavior:
 Expected behavior:
 
 - follow the standard flow;
-- require business research;
-- add risk register, rollback, test strategy, and critique artifacts;
+- `research.md` additionally requires `## Product behavior`;
+- `design.md` is required, with decisions recorded as ADRs under `## Decisions`
+  plus `## Risk register`, `## Rollback` and `## Test strategy` sections;
 - finalize a high-confidence plan for native implementation.
 
 ## Review behavior
@@ -133,5 +139,8 @@ atelier done
 ```
 
 `atelier review` writes `.atelier/epics/<active_epic>/review.md` and sets the
-epic to `review`. It should compare the diff and validation evidence against
-the planned slices. `atelier done` closes the epic when the review is accepted.
+epic to `review`. It compares the diff and validation evidence against the
+planned slices, including the automatic Scope Check (changed files ×
+`allowed_files`); out-of-scope files land in `review.md` and
+`state.json.violations` and must be justified or flagged as drift.
+`atelier done` closes the epic when the review is accepted.

@@ -20,6 +20,30 @@ async function gitChangedFiles(cwd: string, baseline: string): Promise<string[]>
   }
 }
 
+function globToRegExp(pattern: string): RegExp {
+  let escaped = pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&");
+  // Order matters: consume ** (and **/) before single-segment wildcards.
+  escaped = escaped.replace(/\*\*\/?/g, "\u0000");
+  escaped = escaped.replace(/\*/g, "[^/]*").replace(/\?/g, "[^/]");
+  escaped = escaped.replace(/\u0000/g, ".*");
+  return new RegExp(`^${escaped}$`);
+}
+
+function matchesAny(file: string, patterns: string[]): boolean {
+  return patterns.some((pattern) => globToRegExp(pattern).test(file));
+}
+
+export function outOfScopeFiles(params: {
+  changed: string[];
+  allowed: string[];
+  ignored: string[];
+}): string[] {
+  if (params.allowed.length === 0) return [];
+  return params.changed.filter(
+    (file) => !matchesAny(file, params.ignored) && !matchesAny(file, params.allowed),
+  );
+}
+
 export async function cmdReview(cwd: string): Promise<void> {
   try {
     const { state } = await readActiveEpic(cwd);
@@ -30,6 +54,28 @@ export async function cmdReview(cwd: string): Promise<void> {
     const dir = epicDir(cwd, state.epic_id);
     const plan = await readFile(join(dir, "plan.md"), "utf8");
     const changed = await gitChangedFiles(cwd, state.guards.baseline_ref);
+    const allowed = [...new Set(state.slices.flatMap((slice) => slice.allowed_files))];
+    const outOfScope = outOfScopeFiles({
+      changed,
+      allowed,
+      ignored: state.guards.allowed_pre_planned_paths,
+    });
+    const scopeLines = allowed.length === 0
+      ? ["- No allowed_files recorded in slices; scope check skipped."]
+      : outOfScope.length === 0
+        ? [`- OK: all changed files match the planned allowed_files (${allowed.join(", ")}).`]
+        : [
+            `- Allowed patterns: ${allowed.join(", ")}`,
+            "- Files changed outside the planned allowed_files:",
+            ...outOfScope.map((file) => `  - ${file}`),
+          ];
+    if (outOfScope.length > 0) {
+      const known = new Set(state.violations);
+      for (const file of outOfScope) {
+        const violation = `out-of-scope change: ${file}`;
+        if (!known.has(violation)) state.violations.push(violation);
+      }
+    }
     const review = [
       `# Review: ${state.title}`,
       "",
@@ -42,10 +88,15 @@ export async function cmdReview(cwd: string): Promise<void> {
       "",
       ...(changed.length ? changed.map((file) => `- ${file}`) : ["- No project changes detected." ]),
       "",
+      "## Scope Check (diff × allowed_files)",
+      "",
+      ...scopeLines,
+      "",
       "## Plan Checklist",
       "",
       "- [ ] Implementation matches the stated goal.",
       "- [ ] Each planned slice is represented in the changes.",
+      "- [ ] Changed files stay within the planned allowed_files (see Scope Check).",
       "- [ ] Acceptance criteria are satisfied.",
       "- [ ] Validation steps were run or explicitly deferred.",
       "- [ ] Deviations from the plan are documented below.",

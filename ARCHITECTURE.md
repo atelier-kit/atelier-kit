@@ -45,8 +45,8 @@ Active epic state:
 The active epic `state.json` stores:
 
 - mode: `quick`, `standard` or `deep`
-- status: `discovery`, `synthesis`, `design`, `planning`, `planned`, `review`,
-  `done` or `blocked`
+- status: `discovery`, `design`, `planning`, `planned`, `review`,
+  `done` or `blocked` (`synthesis` remains valid for legacy ledgers)
 - active skill
 - required artifacts
 - slices
@@ -99,17 +99,17 @@ atelier off
 
 ## State transitions
 
-Typical flow (standard/deep; **quick** skips synthesis and design tasks):
+Typical flow (standard/deep; **quick** starts directly at planning, with
+research inline in `plan.md`):
 
 ```text
 native
-  -> discovery/questioner
-  -> discovery/research
-  -> synthesis
-  -> design
+  -> discovery/questioner   (## Questions section of research.md)
+  -> discovery/researcher   (remaining sections of research.md)
+  -> design                 (deep; optional in standard)
   -> planning
   -> planned
-  -> native agent implementation
+  -> native agent implementation (progress recorded back into plan.md)
   -> review
   -> done
 ```
@@ -131,27 +131,36 @@ already prefers—tools, plan UI, tests, all unchanged.
 rules, skills, schemas and (from `atelier.json`) the adapter rule files expected
 for your host—still **not** the contents of an exported plan mirror path.
 
+`atelier validate --gate research-ready` is enforced before the research task
+can be marked done (standard/deep). It requires the consolidated `research.md`
+to have the sections the mode demands, no `_Pending._` leftovers, non-generic
+questions, and it warns above the ~300-line budget.
+
 `atelier validate --gate plan-ready` is enforced before `atelier done` can
 finalize planning. It requires:
 
 - active epic exists
 - `plan.md` exists
 - plan has slices
-- slices have goals, acceptance criteria and validation
+- slices have goals, allowed files, acceptance criteria and validation
 - risks are documented
 
 ## Skills
 
 Each skill is a narrow playbook for one stretch of the epic (questions first,
-then repo research, and so on). Load **only** the file named by `active_skill`;
-everything else can stay closed until that phase matters.
+then consolidated research, and so on). Load **only** the file named by
+`active_skill`; everything else can stay closed until that phase matters.
 
-Examples:
+The five skills:
 
-- `questioner` writes `questions.md`
-- `repo-analyst` writes `research/repo.md`
-- `planner` writes `synthesis.md`, `plan.md` and state updates
-- `reviewer` writes `review.md` after native implementation
+- `questioner` writes the `## Questions` section of `research.md`
+- `researcher` fills the remaining sections of `research.md` (one consolidated,
+  compact document)
+- `designer` writes `design.md` (decisions embedded as ADRs; risk register,
+  rollback and test strategy as sections in deep mode)
+- `planner` writes `plan.md` and state updates
+- `reviewer` writes `review.md` after native implementation, checking the diff
+  against each slice's `allowed_files`
 
 ## Adapter rendering
 

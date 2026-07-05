@@ -56,10 +56,10 @@ describe("native-plan Claude hooks", () => {
 
     const nudge = formatHostPlanFrameworkNudge(await readActiveEpic(dir));
     expect(nudge).toContain(".atelier/epics/");
-    expect(nudge).toContain("questions.md");
+    expect(nudge).toContain("research.md");
     expect(nudge).toContain("state.json");
     expect(nudge).toContain("before marking this task done");
-    expect(nudge).toContain("plannotator annotate .atelier/epics/goal-for-nudge-test/questions.md");
+    expect(nudge).toContain("plannotator annotate .atelier/epics/goal-for-nudge-test/research.md");
     expect(nudge).not.toContain(".atelier/context.md");
     expect(nudge).not.toContain(".atelier/plan/");
   });
@@ -77,7 +77,7 @@ describe("native-plan Claude hooks", () => {
 
     const active = await readActiveState(dir);
     expect(active.active).toBe(true);
-    expect(formatHostPlanFrameworkNudge(await readActiveEpic(dir))).toContain("questions.md");
+    expect(formatHostPlanFrameworkNudge(await readActiveEpic(dir))).toContain("research.md");
   });
 
   test("skips bootstrap when permission_mode is not plan", async () => {

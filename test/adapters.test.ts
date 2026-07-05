@@ -27,7 +27,7 @@ describe("agent adapters include planner protocol", () => {
     const prompt = await readFile(join(path, "atelier-system-prompt.txt"), "utf8");
     expect(prompt).toContain("/atelier quick");
     expect(prompt).toContain(".atelier/active.json");
-    expect(prompt).toContain("active_skill: questioner");
+    expect(prompt).toContain("active_skill: planner");
   });
 
   test("cursor adapter renders workspace rules", async () => {

@@ -1,8 +1,8 @@
 import pc from "picocolors";
-import { validateProtocol, validatePlanReady } from "../protocol/validator.js";
+import { validateProtocol, validatePlanReady, validateResearchReady } from "../protocol/validator.js";
 import { readActiveEpic } from "../protocol/state.js";
 
-const VALID_GATES = ["plan-ready"] as const;
+const VALID_GATES = ["plan-ready", "research-ready"] as const;
 type Gate = (typeof VALID_GATES)[number];
 
 export async function cmdValidate(cwd: string, opts: { gate?: string } = {}): Promise<void> {
@@ -18,7 +18,16 @@ export async function cmdValidate(cwd: string, opts: { gate?: string } = {}): Pr
       process.exitCode = 1;
       return;
     }
-    const errors = await validatePlanReady(cwd, state);
+    let errors: string[];
+    let warnings: string[] = [];
+    if (opts.gate === "research-ready") {
+      const result = await validateResearchReady(cwd, state);
+      errors = result.errors;
+      warnings = result.warnings;
+    } else {
+      errors = await validatePlanReady(cwd, state);
+    }
+    for (const w of warnings) console.log(pc.yellow(`  ! ${w}`));
     if (errors.length === 0) {
       console.log(pc.green(`atelier validate --gate ${opts.gate}: OK`));
     } else {

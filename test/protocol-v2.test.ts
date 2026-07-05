@@ -39,14 +39,8 @@ describe("atelier planning protocol", () => {
     const config = await readAtelierConfig(dir);
     await writeAtelierConfig(dir, { ...config, adapter: "cursor" });
     const state = await readEpicState(dir, "add-payment-endpoint");
-    state.status = "planning";
-    state.active_skill = "planner";
     state.tasks = state.tasks.map((task) =>
-      task.id === "questions" || task.id === "repo-research"
-        ? { ...task, status: "done" as const }
-        : task.id === "plan"
-          ? { ...task, status: "in_progress" as const }
-          : task,
+      task.id === "plan" ? { ...task, status: "in_progress" as const } : task,
     );
     state.slices = [
       {
@@ -70,16 +64,6 @@ describe("atelier planning protocol", () => {
       updated_at: new Date().toISOString(),
     });
     await writeFile(
-      join(dir, ".atelier", "epics", state.epic_id, "questions.md"),
-      "# Questions\n\n## No open questions\n",
-      "utf8",
-    );
-    await writeFile(
-      join(dir, ".atelier", "epics", state.epic_id, "research", "repo.md"),
-      "# Repo Research\n\nRepository evidence is complete.\n",
-      "utf8",
-    );
-    await writeFile(
       join(dir, ".atelier", "epics", state.epic_id, "plan.md"),
       [
         "# Plan: Add payment endpoint",
@@ -87,6 +71,10 @@ describe("atelier planning protocol", () => {
         "## Goal",
         "",
         "Add the payment endpoint.",
+        "",
+        "## Research Notes",
+        "",
+        "- Route handlers live in src/routes; the new endpoint will be created there.",
         "",
         "## Risks",
         "",
@@ -99,6 +87,10 @@ describe("atelier planning protocol", () => {
         "### Slice 1 - Route",
         "",
         "**Goal:** Add the route",
+        "",
+        "**Allowed files:**",
+        "",
+        "- src/**",
         "",
         "**Acceptance criteria:**",
         "",
@@ -115,7 +107,7 @@ describe("atelier planning protocol", () => {
 
   test("new creates an active planning ledger", async () => {
     const dir = await initialized();
-    await cmdNew(dir, "Add payment endpoint", { mode: "quick" });
+    await cmdNew(dir, "Add payment endpoint", { mode: "standard" });
 
     const active = await readActiveState(dir);
     const state = await readEpicState(dir, "add-payment-endpoint");
@@ -124,18 +116,39 @@ describe("atelier planning protocol", () => {
     expect(state.active_skill).toBe("questioner");
   });
 
-  test("next and done advance planning tasks", async () => {
+  test("quick mode skips research and starts at planning", async () => {
     const dir = await initialized();
     await cmdNew(dir, "Add payment endpoint", { mode: "quick" });
+
+    const state = await readEpicState(dir, "add-payment-endpoint");
+    expect(state.status).toBe("planning");
+    expect(state.active_skill).toBe("planner");
+    expect(state.required_artifacts).toEqual(["plan.md", "review.md"]);
+    expect(state.tasks.map((task) => task.id)).toEqual(["plan"]);
+  });
+
+  test("next and done advance planning tasks", async () => {
+    const dir = await initialized();
+    await cmdNew(dir, "Add payment endpoint", { mode: "standard" });
 
     await cmdNext(dir);
     let state = await readEpicState(dir, "add-payment-endpoint");
     expect(state.tasks.find((task) => task.id === "questions")?.status).toBe("in_progress");
 
-    await writeFile(join(dir, ".atelier", "epics", state.epic_id, "questions.md"), "# Questions\n\n## No open questions\n", "utf8");
+    const researchPath = join(dir, ".atelier", "epics", state.epic_id, "research.md");
+    const research = await readFile(researchPath, "utf8");
+    await writeFile(
+      researchPath,
+      research.replace(
+        /## Questions[\s\S]*?(?=\n## )/,
+        "## Questions\n\n- Does the payments provider expose an idempotency key?\n\n",
+      ),
+      "utf8",
+    );
     await cmdDone(dir);
     state = await readEpicState(dir, "add-payment-endpoint");
-    expect(state.tasks.find((task) => task.id === "repo-research")?.status).toBe("in_progress");
+    expect(state.tasks.find((task) => task.id === "research")?.status).toBe("in_progress");
+    expect(state.active_skill).toBe("researcher");
   });
 
   test("done finalizes planning as planned and exports native mirror", async () => {

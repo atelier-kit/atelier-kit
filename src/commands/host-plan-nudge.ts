@@ -11,7 +11,7 @@ export type HostPlanNudgeState = {
 /**
  * Injected on each Claude Code UserPromptSubmit in plan permission mode when
  * Atelier has an active V2 epic, so the host's plan UI follows the same artifact
- * pipeline (questions -> research -> design/synthesis -> plan) without a second
+ * pipeline (research -> design when scheduled -> plan) without a second
  * operational state file.
  */
 export function formatHostPlanFrameworkNudge(input: HostPlanNudgeState | EpicState): string | null {
@@ -25,7 +25,7 @@ export function formatHostPlanFrameworkNudge(input: HostPlanNudgeState | EpicSta
     ``,
     `Use the host's plan tools for thinking, but **persist** work in the active Atelier epic artifacts below. Do not jump to a user-facing plan narrative until the planner step.`,
     ``,
-    `**Pipeline order:** \`questions.md\` -> \`research/repo.md\` -> \`research/tech.md\` when present -> \`research/business.md\` when present -> \`synthesis.md\` / \`design.md\` -> **then** \`plan.md\`.`,
+    `**Pipeline order:** \`research.md\` (\`## Questions\` first, then the evidence sections) -> \`design.md\` when scheduled -> **then** \`plan.md\`.`,
     ``,
     `- **Epic directory:** \`${base}/\``,
     `- **Source of truth:** \`${base}/state.json\``,
@@ -58,45 +58,36 @@ export function formatHostPlanFrameworkNudge(input: HostPlanNudgeState | EpicSta
   );
 
   switch (task.type) {
+    case "research":
     case "repo":
-      lines.push(
-        `1. Make sure \`${base}/questions.md\` has project-specific questions or an explicit no-open-questions section.`,
-        `2. Fill \`${base}/research/repo.md\` with paths, symbols, coupling, and repo evidence.`,
-        `3. Mark this task done in \`${base}/state.json\` and advance \`active_skill\` to the next pending task.`,
-      );
-      break;
     case "tech":
-      lines.push(
-        `1. Fill \`${base}/research/tech.md\` with current source/version evidence and impact on the plan.`,
-        `2. Mark this task done in \`${base}/state.json\` and advance to the next pending task.`,
-      );
-      break;
     case "business":
       lines.push(
-        `1. Fill \`${base}/research/business.md\` with user flow, rollout, edge cases, and acceptance candidates.`,
-        `2. Mark this task done in \`${base}/state.json\` and advance to the next pending task.`,
+        `1. Fill the evidence sections of \`${base}/research.md\` (Codebase, Constraints, What exists vs what will be created, Open unknowns${state.mode === "deep" ? ", Product behavior" : ""}) with concrete paths, symbols and sources.`,
+        `2. Keep the document consolidated and compact (target 50–300 lines); run \`atelier validate --gate research-ready\`.`,
+        `3. Mark this task done in \`${base}/state.json\` and advance \`active_skill\` to the next pending task.`,
       );
       break;
     case "design":
       lines.push(
-        `1. Replace stubs in \`${base}/design.md\`: **Current** / **Desired** / **Patterns to follow** / **Patterns to avoid** / open decisions.`,
-        `2. Keep \`${base}/decisions.md\` aligned with the design choices.`,
+        `1. Replace stubs in \`${base}/design.md\`: chosen design, contracts, design risks — and record decisions in ADR style under \`## Decisions\`.`,
+        `2. In deep mode, also complete \`## Risk register\`, \`## Rollback\` and \`## Test strategy\`.`,
         `3. Mark this task done in \`${base}/state.json\` and advance to planning.`,
       );
       break;
     case "synthesis":
     case "planning":
       lines.push(
-        `1. Write or refine \`${base}/synthesis.md\` if evidence needs consolidation.`,
-        `2. Write \`${base}/plan.md\` with \`## Goal\`, \`## Risks\`, and \`## Slices\` using \`### Slice N\` sections.`,
-        `3. Reflect the same slices in \`${base}/state.json\`; when ready, set \`status=planned\` and \`active_skill=null\`.`,
+        `1. Write \`${base}/plan.md\` with \`## Goal\`, \`## Risks\`, and \`## Slices\` using \`### Slice N\` sections (each with **Goal:**, **Allowed files:**, **Acceptance criteria:**, **Validation:**).`,
+        `2. Reflect the same slices in \`${base}/state.json\`; when ready, set \`status=planned\` and \`active_skill=null\`.`,
+        `3. Treat \`plan.md\` as a living artifact: during implementation, record per-slice progress under \`## Progress\`.`,
       );
       break;
     case "questions":
       lines.push(
-        `1. Replace generic seed questions in \`${base}/questions.md\` with project-specific questions grouped by scope.`,
-        `2. If nothing is open, write an explicit no-open-questions section.`,
-        `3. Mark this task done in \`${base}/state.json\` and advance to repo research.`,
+        `1. Replace the generic seed questions in the \`## Questions\` section of \`${base}/${task.artifact}\` with project-specific questions grouped by scope.`,
+        `2. If nothing is open, state it explicitly in that section.`,
+        `3. Mark this task done in \`${base}/state.json\` and advance to research.`,
       );
       break;
     default:

@@ -1,13 +1,13 @@
 ---
 name: questioner
-description: Create the first project-specific questions for the active Atelier epic before research starts.
+description: Write the project-specific questions that open research.md before evidence gathering starts.
 ---
 
 # Questioner
 
 ## Mission
 
-Turn the user's goal into concrete investigation questions before repository or technical research begins. The questioner creates the first real planning artifact: `questions.md`.
+Turn the user's goal into concrete investigation questions before research begins. Questions come before evidence: they are the filter that keeps research focused. The questioner owns only the `## Questions` section of `research.md`.
 
 ## Inputs
 
@@ -25,16 +25,15 @@ Turn the user's goal into concrete investigation questions before repository or 
 
 ## Allowed Writes
 
-- `.atelier/epics/<active_epic>/questions.md`
+- `.atelier/epics/<active_epic>/research.md` — **only the `## Questions` section**
 - `.atelier/epics/<active_epic>/state.json` only to update question task status
 
 ## Forbidden Actions
 
 - Do not edit project code.
-- Do not perform deep research.
+- Do not perform deep research or fill the evidence sections of `research.md`.
 - Do not decide architecture.
 - Do not create implementation slices.
-- Do not implement a plan.
 
 ## Instructions
 
@@ -43,28 +42,28 @@ Turn the user's goal into concrete investigation questions before repository or 
    skill and follow the active skill instead.
 3. Read the epic title and goal.
 4. Do a shallow scan only when needed to make questions project-specific.
-5. Replace generic placeholder questions with concrete questions for this project.
-6. Group questions by category: scope, architecture, data, auth, deploy, tests, risks and product impact.
-7. Mark critical questions that block planning.
-8. If no open questions remain, write an explicit `## No Open Questions` section with the reason.
-9. Do not mark the questions task done while `questions.md` is still generic.
-10. Before updating `state.json`, follow the "Plannotator (optional, per phase)"
-    section of `core.md` against `questions.md`.
+5. Replace the generic seed questions in `## Questions` with concrete questions
+   for this project, grouped by scope, architecture, data, auth, deploy, tests,
+   risks and product impact.
+6. Mark critical questions that block planning.
+7. If no open questions remain, state it explicitly in the section with the reason.
+8. Leave every other section of `research.md` untouched for the researcher.
+9. Before updating `state.json`, follow the "Plannotator (optional, per phase)"
+   section of `core.md` against `research.md`.
 
 ## Output Format
 
-Write `.atelier/epics/<active_epic>/questions.md` with:
+The `## Questions` section of `research.md` contains:
 
-1. Goal recap.
-2. Critical planning questions.
-3. Non-blocking questions.
-4. Assumptions that can be validated during research.
-5. Questions deferred to repo, tech, business or design work.
+1. Critical planning questions (blocking).
+2. Non-blocking questions.
+3. Assumptions that research can validate.
 
 ## Completion Criteria
 
-- `questions.md` contains project-specific questions or an explicit no-open-questions section.
+- `## Questions` contains project-specific questions or an explicit no-open-questions note.
 - Critical unknowns are visible before research starts.
+- No other section of `research.md` was modified.
 - No project code was edited.
 - The Plannotator boundary check in `core.md` was followed (run or skipped per host capability).
 - The questions task is marked done in `state.json`; `atelier done` is only an optional helper.

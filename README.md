@@ -17,16 +17,25 @@ While an epic is active, treat these two files as authoritative:
 .atelier/epics/<epic-slug>/state.json
 ```
 
-An epic walks through discovery, synthesis and design (depending on mode),
-planning, then `planned`. After `planned`, coding happens the same way it would
-without Atelier—the agent uses its usual workflow. Review at the end compares
-what shipped with what was planned.
+An epic walks through discovery (questions + research) and design (depending on
+mode), planning, then `planned`. After `planned`, coding happens the same way it
+would without Atelier—the agent uses its usual workflow. Review at the end
+compares what shipped with what was planned, including which files changed
+versus each slice's `allowed_files`.
+
+The artifact set is deliberately small — ceremony scales with risk:
+
+| Mode | Artifacts |
+|---|---|
+| quick | `plan.md` (research inline), `review.md` |
+| standard | `research.md`, `plan.md`, `review.md` |
+| deep | `research.md`, `design.md`, `plan.md`, `review.md` |
 
 Vocabulary you will see:
 
 - **epic**: the initiative you are planning end to end
-- **question**: first artifact; research should not run on boilerplate questions alone
-- **task**: one chunk of the protocol (questions, a research track, planning, etc.)
+- **question**: first section of `research.md`; research should not run on boilerplate questions alone
+- **task**: one chunk of the protocol (questions, research, design, planning)
 - **slice**: a vertical cut inside `plan.md` with scope, acceptance checks and validation
 
 ## Plannotator
@@ -137,13 +146,13 @@ The default protocol shape is:
 explicit activation
   -> .atelier/active.json
   -> .atelier/epics/<epic>/state.json
-  -> questioner writes questions.md
-  -> research artifacts
-  -> design decisions
-  -> plan.md with slices
+  -> questioner writes the ## Questions section of research.md
+  -> researcher fills the remaining sections (one consolidated document)
+  -> design.md when the mode schedules it
+  -> plan.md with slices (living artifact)
   -> planned
-  -> native agent implementation
-  -> review
+  -> native agent implementation (progress recorded back into plan.md)
+  -> review (diff × allowed_files)
 ```
 
 ## Small CLI Surface
@@ -156,6 +165,7 @@ explicit activation
 | `atelier new "<goal>" --mode quick` | Create an active epic ledger |
 | `atelier status` | Show active protocol state |
 | `atelier validate` | Validate schemas, state and planning gates |
+| `atelier validate --gate research-ready` | Validate that research.md is consolidated, concrete and compact |
 | `atelier validate --gate plan-ready` | Validate that the active plan can be finalized |
 | `atelier doctor` | Diagnose installation and state |
 | `atelier render-rules --adapter cursor` | Write adapter rules |

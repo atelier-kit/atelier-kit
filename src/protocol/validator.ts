@@ -8,6 +8,9 @@ import {
   readEpicState,
 } from "./state.js";
 import type { ActiveState, AdapterName, EpicState } from "./schema.js";
+import { researchSectionsForMode } from "./templates.js";
+
+export const RESEARCH_LINE_BUDGET = 300;
 
 export type ValidationReport = {
   ok: boolean;
@@ -43,6 +46,9 @@ function planHasReviewableShape(plan: string, strictSlices = false): string[] {
   }
   if (!/### Slice\s+\d+/i.test(plan)) errors.push("plan.md has no slice sections");
   if (!/\*\*Goal:\*\*/i.test(plan)) errors.push("each slice must include **Goal:**");
+  if (!/\*\*Allowed files:\*\*/i.test(plan)) {
+    errors.push("each slice must include **Allowed files:**");
+  }
   if (!/\*\*Acceptance criteria:\*\*/i.test(plan)) {
     errors.push("each slice must include acceptance criteria");
   }
@@ -56,7 +62,11 @@ function planHasReviewableShape(plan: string, strictSlices = false): string[] {
 function expectedTaskArtifacts(taskType: EpicState["tasks"][number]["type"]): string[] {
   switch (taskType) {
     case "questions":
-      return ["questions.md"];
+      // research.md is the current home of the Questions section;
+      // questions.md is the legacy layout.
+      return ["research.md", "questions.md"];
+    case "research":
+      return ["research.md"];
     case "repo":
       return ["research/repo.md"];
     case "tech":
@@ -77,7 +87,9 @@ function expectedTaskArtifacts(taskType: EpicState["tasks"][number]["type"]): st
 function expectedSkillForStatus(status: EpicState["status"]): string[] {
   switch (status) {
     case "discovery":
-      return ["questioner", "repo-analyst", "tech-analyst", "business-analyst"];
+      // Legacy analyst skills remain valid for ledgers created before the
+      // researcher fusion.
+      return ["questioner", "researcher", "repo-analyst", "tech-analyst", "business-analyst"];
     case "synthesis":
     case "planning":
       return ["planner"];
@@ -99,6 +111,49 @@ function artifactLooksPending(content: string): boolean {
   return /^# .+\n\nPending\.?$/i.test(normalized) ||
     /^# .+\n\n_Pending\b/i.test(normalized) ||
     /\b_Pending\._/i.test(normalized);
+}
+
+export function researchQuestionsLookGeneric(content: string): boolean {
+  const lower = content.toLowerCase();
+  return lower.includes("which existing files and patterns constrain this work") &&
+    lower.includes("which framework or dependency constraints need verification") &&
+    lower.includes("what user-visible outcomes and edge cases define success");
+}
+
+export async function validateResearchReady(
+  cwd: string,
+  state: EpicState,
+): Promise<{ errors: string[]; warnings: string[] }> {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  if (state.mode === "quick") {
+    errors.push("quick mode has no research.md; research lives inline in plan.md (## Research Notes)");
+    return { errors, warnings };
+  }
+  const researchPath = join(epicDir(cwd, state.epic_id), "research.md");
+  if (!(await exists(researchPath))) {
+    errors.push("research requires research.md");
+    return { errors, warnings };
+  }
+  const research = await readFile(researchPath, "utf8");
+  for (const section of researchSectionsForMode(state.mode)) {
+    if (!new RegExp(`^##\\s+${section}\\b`, "im").test(research)) {
+      errors.push(`research.md missing ## ${section}`);
+    }
+  }
+  if (/\b_Pending\._/i.test(research)) {
+    errors.push("research.md still has _Pending._ sections");
+  }
+  if (researchQuestionsLookGeneric(research)) {
+    errors.push("research.md ## Questions still contains only the generic seed questions");
+  }
+  const lines = research.split("\n").length;
+  if (lines > RESEARCH_LINE_BUDGET) {
+    warnings.push(
+      `research.md has ${lines} lines (budget: ~${RESEARCH_LINE_BUDGET}); condense it — compact research is a quality bar, not a style choice`,
+    );
+  }
+  return { errors, warnings };
 }
 
 function questionsLookGenericOnly(content: string): boolean {
@@ -132,6 +187,9 @@ export async function validatePlanReady(
   }
   for (const slice of state.slices) {
     if (!slice.goal.trim()) errors.push(`slice ${slice.id} missing goal`);
+    if (slice.allowed_files.length === 0) {
+      errors.push(`slice ${slice.id} missing allowed files`);
+    }
     if (slice.acceptance_criteria.length === 0) {
       errors.push(`slice ${slice.id} missing acceptance criteria`);
     }
@@ -189,6 +247,14 @@ async function validateCompletedTaskArtifacts(cwd: string, state: EpicState): Pr
       continue;
     }
     const content = await readFile(path, "utf8");
+    if (task.type === "questions" && task.artifact === "research.md") {
+      // The questioner only owns the ## Questions section; later sections may
+      // still be _Pending._ for the researcher.
+      if (researchQuestionsLookGeneric(content)) {
+        errors.push("task questions is done but research.md questions are still generic");
+      }
+      continue;
+    }
     if (artifactLooksPending(content)) {
       errors.push(`task ${task.id} is done but artifact is still pending: ${task.artifact}`);
     }
@@ -277,9 +343,7 @@ export async function doctorProtocol(cwd: string): Promise<ValidationReport> {
     "protocol/skills.yaml",
     "rules/core.md",
     "skills/questioner.md",
-    "skills/repo-analyst.md",
-    "skills/tech-analyst.md",
-    "skills/business-analyst.md",
+    "skills/researcher.md",
     "skills/planner.md",
     "skills/designer.md",
     "skills/reviewer.md",

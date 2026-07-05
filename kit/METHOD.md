@@ -19,12 +19,9 @@ Each epic ledger owns its artifacts:
 ```text
 .atelier/epics/<epic>/
 ├── state.json
-├── questions.md
-├── research/
-├── synthesis.md
-├── decisions.md
-├── design.md
-├── plan.md
+├── research.md   (standard/deep — questions + evidence, consolidated)
+├── design.md     (deep; optional in standard — decisions embedded as ADRs)
+├── plan.md       (living contract; quick mode keeps research inline here)
 └── review.md
 ```
 

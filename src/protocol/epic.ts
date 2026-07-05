@@ -4,7 +4,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { activeStatePath, epicDir } from "./paths.js";
 import { readAtelierConfig, writeJson, writeEpicState } from "./state.js";
-import { defaultEpicState, emptyArtifact } from "./templates.js";
+import { defaultEpicState, designStub, emptyArtifact, researchStub } from "./templates.js";
 import type { AtelierMode, EpicState, ProtocolSlice, SkillName } from "./schema.js";
 
 const execFileAsync = promisify(execFile);
@@ -57,13 +57,11 @@ function artifactStub(artifact: string, state: EpicState): string {
     .split(/[/-]/)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
-  if (artifact === "questions.md") {
-    return `# Questions: ${state.title}
-
-- [repo] Which existing files and patterns constrain this work?
-- [tech] Which framework or dependency constraints need verification?
-- [business] What user-visible outcomes and edge cases define success?
-`;
+  if (artifact === "research.md") {
+    return researchStub(state.title, state.mode);
+  }
+  if (artifact === "design.md") {
+    return designStub(state.title, state.mode);
   }
   if (artifact === "plan.md") {
     return emptyArtifact("plan.md", state.title, state.goal, state.mode);
@@ -90,7 +88,7 @@ export async function createEpic(cwd: string, params: {
     baselineRef: await baselineRef(cwd),
   });
 
-  await mkdir(join(epicDir(cwd, epicId), "research"), { recursive: true });
+  await mkdir(epicDir(cwd, epicId), { recursive: true });
   for (const artifact of state.required_artifacts) {
     await writeText(join(epicDir(cwd, epicId), artifact), artifactStub(artifact, state));
   }

@@ -39,8 +39,11 @@ export const ApprovalStatusSchema = z.enum([
   "rejected",
 ]);
 
+// "repo-analyst", "tech-analyst" and "business-analyst" are legacy names kept
+// so ledgers created before the researcher fusion still parse.
 export const SkillSchema = z.enum([
   "questioner",
+  "researcher",
   "repo-analyst",
   "tech-analyst",
   "business-analyst",
@@ -49,8 +52,11 @@ export const SkillSchema = z.enum([
   "reviewer",
 ]);
 
+// "repo", "tech", "business" and "synthesis" are legacy task types kept for
+// ledgers created before research consolidation.
 export const TaskTypeSchema = z.enum([
   "questions",
+  "research",
   "repo",
   "tech",
   "business",

@@ -2,32 +2,22 @@ skills:
   questioner:
     file: .atelier/skills/questioner.md
     allowed_states: [discovery]
-    writes: [questions.md]
+    writes: [research.md] # only the "## Questions" section
 
-  repo-analyst:
-    file: .atelier/skills/repo-analyst.md
+  researcher:
+    file: .atelier/skills/researcher.md
     allowed_states: [discovery]
-    writes: [research/repo.md]
-
-  tech-analyst:
-    file: .atelier/skills/tech-analyst.md
-    allowed_states: [discovery]
-    writes: [research/tech.md]
-
-  business-analyst:
-    file: .atelier/skills/business-analyst.md
-    allowed_states: [discovery]
-    writes: [research/business.md]
-
-  planner:
-    file: .atelier/skills/planner.md
-    allowed_states: [synthesis, planning, planned]
-    writes: [synthesis.md, plan.md, state.json]
+    writes: [research.md]
 
   designer:
     file: .atelier/skills/designer.md
     allowed_states: [design]
-    writes: [decisions.md, design.md]
+    writes: [design.md]
+
+  planner:
+    file: .atelier/skills/planner.md
+    allowed_states: [planning, planned]
+    writes: [plan.md, state.json]
 
   reviewer:
     file: .atelier/skills/reviewer.md
